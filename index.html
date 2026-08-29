@@ -922,8 +922,8 @@ body.light #dailyGoalStartLine1 b { color:#6b4a12; }
 
 /* 메인 냥전광판 — 홈 상단을 가로지르는 얇은 소식 띠. */
 .oing-ticker {
-  display:flex; align-items:center; width:auto; min-height:38px; margin:0;
-  padding:7px 0; box-sizing:border-box; overflow:hidden;
+  display:flex; align-items:center; width:auto; min-height:44px; margin:0;
+  padding:9px 0; box-sizing:border-box; overflow:hidden;
   border-top:1px solid rgba(126,194,240,0.24);
   border-bottom:1px solid rgba(126,194,240,0.24);
   background:linear-gradient(90deg, rgba(42,107,160,0.09), rgba(6,14,27,0.42) 38%, rgba(42,107,160,0.09));
@@ -943,20 +943,20 @@ body.light #dailyGoalStartLine1 b { color:#6b4a12; }
 }
 .oing-ticker-track {
   display:flex; width:max-content; white-space:nowrap;
-  font-size:12.5px; font-weight:650; letter-spacing:-0.18px;
+  font-size:14px; line-height:1.25; font-weight:650; letter-spacing:-0.2px;
 }
 .oing-ticker-track:not(.is-ready) { padding-left:34px; }
 .oing-ticker-track.is-ready { animation:oingTickerMarquee var(--ticker-duration, 28s) linear infinite; }
 .oing-ticker-group { display:flex; align-items:center; flex-shrink:0; }
 .oing-ticker-item { display:inline-flex; align-items:center; gap:5px; padding:0 11px; color:#97a9bf; }
-.oing-ticker-icon { flex:none; font-size:13px; line-height:1; }
+.oing-ticker-icon { flex:none; font-size:15px; line-height:1; }
 .oing-ticker-part.ticker-label { color:#8296ae; }
 .oing-ticker-part.ticker-name { color:#eef4ff; font-weight:850; }
 .oing-ticker-part.ticker-score { color:#7ec2f0; font-weight:900; font-variant-numeric:tabular-nums; }
 .oing-ticker-part.ticker-accent { color:#f0c66d; font-weight:850; }
 .oing-ticker-part.ticker-good { color:#8ad7aa; font-weight:850; }
 .oing-ticker-part.ticker-quote { color:#b8a7e8; font-style:italic; }
-.oing-ticker-sep { display:inline-block; margin:0; color:rgba(126,194,240,0.42); font-size:8px; }
+.oing-ticker-sep { display:inline-block; margin:0; color:rgba(126,194,240,0.42); font-size:9px; }
 @keyframes oingTickerMarquee { to { transform:translateX(-50%); } }
 body.light .oing-ticker { background:linear-gradient(90deg, rgba(229,192,118,0.08), rgba(255,250,239,0.72) 38%, rgba(229,192,118,0.08)); border-color:rgba(120,90,50,0.20); color:#5c4932; }
 body.light .oing-ticker-item { color:#806f58; }
@@ -3683,6 +3683,18 @@ if ('serviceWorker' in navigator) {
     </div>
     <div style="flex:1; overflow-y:auto; margin-top:10px; text-align:left;">
 
+      <!-- v4.8 -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:700;color:#3b82f6;letter-spacing:1px;">v4.8</div>
+        <span id="newBadge48" style="display:none;background:#DD6032;color:white;font-size:11px;font-weight:900;padding:1px 6px;border-radius:10px;letter-spacing:1px;">NEW</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#DA9845;margin-bottom:5px;">🎉 새 기능 · 개선</div>
+      <ul style="list-style:none;padding:0;font-size:14px;color:#fff;line-height:1.9;margin-bottom:8px;">
+        <li>▫️ 🌐 오잉게임이 새 주소 <b>https://oinggame.com/</b>으로 이사했어요</li>
+        <li>▫️ 🏷️ 메인 프로필과 랭킹의 <b>내 닉네임 앞에 오잉 레벨</b>이 표시돼요</li>
+      </ul>
+      <div style="border-top:1px solid var(--border);margin-bottom:12px;"></div>
+
       <!-- v4.7 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
         <div style="font-size:13px;font-weight:700;color:#3b82f6;letter-spacing:1px;">v4.7</div>
@@ -5601,15 +5613,17 @@ function updateHomeTickerFromRankingRows(rawRows, period = 'weekly', shouldRebui
     const prevRanks = context.prevRanks || {};
     const previousRankOf = (row) => Number(prevRanks[row.nickname]) || row.previousRank || null;
     const risers = rows.map((row) => ({ row, previousRank: previousRankOf(row) }))
-      .filter((x) => x.previousRank && x.previousRank > x.row.rank)
+      .filter((x) => x.previousRank && x.previousRank - x.row.rank >= 5)
       .sort((a, b) => (b.previousRank - b.row.rank) - (a.previousRank - a.row.rank));
-    const nonTopRisers = risers.filter((x) => x.row.rank > 10);
-    const riserPool = (nonTopRisers.length ? nonTopRisers : risers).slice(0, 8);
+    // 5계단 미만의 소소한 변동은 전광판에서 제외한다. 상승 폭 상위 5명 안에서는
+    // 최근에 덜 나온 닉네임을 골라 늘 같은 사람만 보이는 현상을 줄인다.
+    const riserPool = risers.slice(0, 5);
     const riser = tickerFreshFirst(riserPool, (item) => [item.row.nickname])[0];
-    if (riser) messages.push(tickerMessage('📈', [
+    const riseCount = riser ? riser.previousRank - riser.row.rank : 0;
+    if (riser) messages.push(tickerMessage(riseCount >= 10 ? '🚀' : '📈', [
       [`${riser.row.nickname}님이`, 'ticker-name'],
       ['이번 주', 'ticker-label'],
-      [`${riser.previousRank - riser.row.rank}계단 상승!`, 'ticker-good'],
+      [`${riseCount}계단 ${riseCount >= 10 ? '껑충!' : '상승!'}`, 'ticker-good'],
     ], {
       id: '7-rank-rise', category: 'change', event: true,
       tier: riser.row.rank > 10 ? 'nonTop' : 'top', actors: [riser.row.nickname],
@@ -12122,8 +12136,8 @@ function oingTitleOf(lv) {
   if (lv >= 16) return '👑 전설의 오잉러';
   if (lv >= 11) return '💎 오잉코어';
   if (lv >= 7)  return '🧶 베테랑냥';
-  if (lv >= 4)  return '🐾 단골냥';
-  if (lv >= 3)  return '🍯 츄르냥';   // 유저가 가장 몰린 초반 구간 세분화 — 말랑냥과 츄르냥 구분
+  if (lv >= 4)  return '🏠 단골냥';
+  if (lv >= 3)  return '🐟 츄르냥';   // 유저가 가장 몰린 초반 구간 세분화 — 말랑냥과 츄르냥 구분
   if (lv >= 2)  return '🍡 말랑냥';
   return '🌱 새싹냥';
 }
@@ -12961,19 +12975,19 @@ document.addEventListener('mouseup', () => {
 });
 
 // 업데이트 내역 팝업
-const UPDATE_VERSION = 'v4.5';
+const UPDATE_VERSION = 'v4.8';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1786412600; // v4.7 — 서버 장애(결제 정지)로 랭킹 등록이 안 되던 문제 수정 + 누락 기록 복구
+const BUILD = 1788024304; // v4.8 — 새 도메인 안내 + 오잉 레벨 표시
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
-const SEEN_KEY = 'seenUpdate_v4.7';
+const SEEN_KEY = 'seenUpdate_v4.8';
 
 function openUpdateLog() {
   document.getElementById('updateLog').style.display = 'flex';
   // NEW 뱃지 숨기기 + 본 것으로 저장
   localStorage.setItem(SEEN_KEY, '1');
-  const badge = document.getElementById('newBadge47');
+  const badge = document.getElementById('newBadge48');
   if (badge) badge.style.display = 'none';
   const btnBadge = document.getElementById('updateLogBtnNew');
   if (btnBadge) btnBadge.style.display = 'none';
@@ -12986,7 +13000,7 @@ document.getElementById('updateLogBtn').addEventListener('click', openUpdateLog)
 
 // 최초 방문 시 NEW 뱃지 표시
 if (!localStorage.getItem(SEEN_KEY)) {
-  const badge = document.getElementById('newBadge47');
+  const badge = document.getElementById('newBadge48');
   if (badge) badge.style.display = 'inline';
   const btnBadge = document.getElementById('updateLogBtnNew');
   if (btnBadge) btnBadge.style.display = 'inline';
