@@ -4167,6 +4167,8 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- 플랫폼 브리지 — module script 보다 먼저 로드돼야 한다(웹에선 no-op stub). -->
+<script src="./app-bridge.js"></script>
 <script type="module">
 // ══════════════════════════════
 //  FIREBASE 초기화
@@ -4178,6 +4180,24 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken }
   from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { getFunctions, httpsCallable }
   from "https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js";
+
+// ══════════════════════════════════════════════════════════════════════
+//  플랫폼 분기 (OING_PLATFORM v1) — 계약 문서: PLATFORM_HOOKS.md
+//  · 플랫폼 판별은 아래 한 줄만 쓴다. User-Agent 판별 금지.
+//  · 웹에서는 IS_APP === false 이므로 아래 훅이 단 한 번도 호출되지 않는다.
+//    (= 웹 동작은 이 변경 전과 완전히 동일하다)
+// ══════════════════════════════════════════════════════════════════════
+const IS_APP = !!window.Capacitor;
+const PLATFORM = window.OING_PLATFORM;
+if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 1)) {
+  throw new Error('OING_PLATFORM v1이 필요합니다.');
+}
+// 배너 표시 위치 동기화 헬퍼 — 화면 전환마다 호출한다. 웹에선 즉시 반환.
+// 광고 브리지 오류가 게임 흐름을 막지 않도록 항상 try 로 감싼다.
+function appBanner(placement) {
+  if (!IS_APP) return;
+  try { PLATFORM.ads.setBannerPlacement(placement); } catch (e) { console.warn('배너 배치 실패:', e); }
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg",
@@ -4821,6 +4841,17 @@ async function initAccountSystem() {
   } catch (e) { console.warn('계정 시스템 초기화 실패(레거시 모드로 계속):', e); }
 }
 setTimeout(() => { initAccountSystem(); }, 0);
+// ── 앱 전용 초기화 ──
+//  module script 실행이 끝나 모든 DOM 리스너가 연결된 다음 틱에 딱 1회 실행한다.
+//  applyAppPolicy 로 상점·후원·후기·문의 DOM 을 걷어낸 뒤 광고를 초기화한다.
+//  광고 초기화 실패가 게임 실행을 막아서는 안 된다.
+if (IS_APP) {
+  setTimeout(() => {
+    try { PLATFORM.ui.applyAppPolicy(); } catch (e) { console.warn('앱 정책 적용 실패:', e); }
+    Promise.resolve(PLATFORM.ads.initialize())
+      .catch((e) => { console.warn('앱 광고 초기화 실패:', e); });
+  }, 0);
+}
 // 닉변 v2 자가복구 — 응답 유실/앱 종료로 pending이 남았을 때만 서버 status로 표시 닉을 맞춤
 setTimeout(() => { try { selfHealRenameIfPending(); } catch {} }, 0);
 // 계정 연결 버튼 초기 표시 상태(닉네임 있고 미연결일 때만) — 인증 초기화 후 반영
@@ -9027,6 +9058,16 @@ async function endGame() {
   }
   updateEndedLayout();
 
+  // ── 앱 전용: 한 판 완료 기록 + Play 게임즈 점수 제출 ──
+  //  endGame 은 gameEnding 플래그로 한 판당 1회만 실행되므로 중복 집계가 없다.
+  //  둘 다 실패해도 결과 화면·재시작은 그대로 동작해야 한다(fail-open).
+  if (IS_APP) {
+    try { PLATFORM.ads.recordClassicGameComplete(); } catch (e) { console.warn('판수 기록 실패:', e); }
+    // 앱 랭킹은 Play 게임즈 단독 — 실패해도 Firebase 랭킹으로 폴백하지 않는다.
+    PLATFORM.leaderboard.submitClassicScore(score)
+      .catch((e) => { console.warn('Play 게임즈 점수 제출 실패:', e); });
+  }
+
   // 결과 패널 표시
   document.getElementById('finalScore').textContent = score;
   document.getElementById('resClear2').textContent = `클리어 ${clearCount}회`;
@@ -10255,6 +10296,7 @@ document.addEventListener('click', async (e) => {
   const nick = tag.dataset.nick;
   if (!nick || nick !== loadNickname()) return;
   if (guardLocalOnlyForShop()) return;
+  if (IS_APP && tag.classList.contains('rank-bubble-empty')) return; // 앱: 상점 유도 경로 차단
   if (tag.classList.contains('rank-bubble-empty')) {
     // 아직 말풍선 없음 → 상점에서 구매 유도
     openJellyShop();
@@ -10298,6 +10340,18 @@ async function renderRanking() {
 }
 
 async function renderRankingInner(gen = ++_rankRenderGen) {
+  // ── 앱 전용: 랭킹은 Play 게임즈 단독 ──
+  //  앱은 Firebase rankings / weekly_rankings 를 조회하지 않는다(폴백도 없다).
+  //  조회 실패 시엔 빈 상태만 보여주고 웹 경로로 내려가지 않는다.
+  if (IS_APP) {
+    const data = await PLATFORM.leaderboard.loadScores({
+      period: currentRankMode === 'week' ? 'weekly' : 'all',
+      collection: 'public',
+    }).catch((e) => { console.warn('Play 게임즈 랭킹 조회 실패:', e); return null; });
+    if (gen !== _rankRenderGen) return; // 더 최신 렌더가 시작됨
+    renderAppLeaderboard(data);
+    return;
+  }
   try { updateAccountLinkBtn(); } catch {}
   await loadSkinsCache();
   if (gen !== _rankRenderGen) return; // 더 최신 렌더가 시작됨 → 이 렌더는 중단(탭 뒤섞임 방지)
@@ -10625,6 +10679,38 @@ async function mergeWeeklyRankSnapshot(partialRanksDotted) {
   } catch (e) { console.warn('주간 순위 스냅샷 병합 실패:', e); }
 }
 
+// ── 앱 전용 랭킹 렌더 (Play 게임즈 데이터) ──
+//  반환 형식은 PLATFORM_HOOKS.md 4번 계약을 따른다.
+//  ⚠️ 기본 목록 렌더까지만 구현돼 있다. 웹의 시상대(1~3위) 연출 통합은
+//     앱 실기기에서 실제 데이터를 보며 마감한다(PLATFORM_HOOKS.md 4번 '미완' 항목).
+function renderAppLeaderboard(data) {
+  const listEl = document.getElementById('rankList');
+  const emptyEl = document.getElementById('rankEmpty');
+  if (!listEl) return;
+  const rows = (data && Array.isArray(data.scores)) ? data.scores : [];
+  if (!rows.length) {
+    listEl.innerHTML = '';
+    if (emptyEl) {
+      emptyEl.style.display = 'block';
+      emptyEl.textContent = '아직 랭킹이 없다냥! 한 판 하고 오면 여기 올라간다냥 🐱';
+    }
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = rows.map((r) => {
+    const me = r.isCurrentPlayer ? ' rank-row-me' : '';
+    const icon = r.iconUrl
+      ? `<img src="${escapeHtml(r.iconUrl)}" alt="" width="28" height="28" style="border-radius:50%;flex-shrink:0;">`
+      : '';
+    return `<div class="rank-row${me}">`
+      + `<span class="rank-num">${Number(r.rank) || 0}</span>`
+      + icon
+      + `<span class="rank-nick">${escapeHtml(r.displayName || '')}</span>`
+      + `<span class="rank-score">${(Number(r.score) || 0).toLocaleString()}</span>`
+      + `</div>`;
+  }).join('');
+}
+
 async function renderWeeklyRanking(gen = ++_rankRenderGen) {
   try {
     await renderWeeklyRankingInner(gen);
@@ -10929,9 +11015,11 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (tab === 'game') {
+    appBanner(null); // 플레이 화면엔 배너 금지 — 드래그 조작과 겹쳐 오클릭이 난다
     document.getElementById('panelGame').classList.add('active');
     document.getElementById('tabGame').classList.add('active');
   } else {
+    appBanner('ranking');
     const panel = document.getElementById('panelRank');
     panel.classList.add('active');
     document.getElementById('tabRank').classList.add('active');
@@ -11620,6 +11708,7 @@ function maybeCelebrateOingLevelUp(stats) {
   } catch {}
 }
 function openMyInfoOverlay() {
+  appBanner('records'); // 내 기록 화면 — 비플레이 화면이라 배너 허용
   const nick = loadNickname();
   let d = {};
   if (nick) { try { d = JSON.parse(localStorage.getItem('oeing_local_stats_' + nick) || 'null') || {}; } catch {} }
@@ -11829,7 +11918,12 @@ async function linkAccountWithPin() {
   alert('계정 연결 완료다냥! 🐾 점수·젤리·스킨 다 그대로다냥');
 }
 document.getElementById('accountLinkBtn').addEventListener('click', linkAccountWithPin);
-document.getElementById('resultRestartBtn').addEventListener('click', () => {
+document.getElementById('resultRestartBtn').addEventListener('click', async () => {
+  // 앱: '한 판 더'를 누른 뒤 → 전면광고 → 다음 판. 결과 화면 등장 순간의 자동 광고는 금지.
+  // 광고가 실패하거나 없으면 그대로 다음 판으로 넘어간다(게임을 막지 않는다).
+  if (IS_APP) {
+    try { await PLATFORM.ads.beforeReplay(); } catch (e) { console.warn('전면광고 실패(게임은 계속):', e); }
+  }
   switchTab('game');
   startGame();
 });
@@ -12205,6 +12299,7 @@ setTimeout(checkForNewVersion, 3000);
 //  문의하기 / 피드백 게시판
 // ══════════════════════════════
 function openContactOverlay() {
+  if (IS_APP) { PLATFORM.support.openEmail(); return; } // 앱: 공개 게시판·오픈채팅 대신 이메일
   document.getElementById('contactOverlay').style.display = 'flex';
 }
 function closeContactOverlay() {
@@ -12212,6 +12307,7 @@ function closeContactOverlay() {
 }
 const DEFAULT_DONATE_BUBBLE = '🐱 오잉게임은 냥집사가 혼자 취미로<br>개발하고 운영하고 있다냥!<br>여러분의 응원은 <b>서버 유지</b>와<br><b>꾸준한 업데이트</b>에 큰 힘이 된다냥! ♥︎';
 function openDonateOverlay() {
+  if (IS_APP) return; // 앱: 외부 결제(카카오페이) 링크 노출 금지
   const bubbleEl0 = document.getElementById('donateBubbleText');
   if (bubbleEl0) bubbleEl0.innerHTML = DEFAULT_DONATE_BUBBLE;
   const noteElX = document.getElementById('donateSkinNote');
@@ -12330,6 +12426,7 @@ function updateSkinPreview() {
 }
 
 async function openSkinOverlay() {
+  if (IS_APP) return; // 앱: 유료 스킨 판매 진입 차단
   const nick = loadNickname();
   if (!nick) {
     alert('먼저 닉네임을 등록해야 스킨을 꾸밀 수 있다냥! 게임을 한 판 하고 점수를 등록해보라냥 🐱');
@@ -12479,6 +12576,7 @@ async function loadJellyBalance() {
 }
 
 async function openJellyShop() {
+  if (IS_APP) return; // 앱: 인앱 재화 판매는 Play 결제 정책 위반 — 진입 자체를 막는다
   await loadJellyBalance();
   updateClaimBtnState();
   const nick = loadNickname();
@@ -12785,6 +12883,7 @@ function invalidateReviewCaches() {
 
 // ── 입구 뱃지 (메인 화면 + 랭킹 상단, 같은 캐시 공유) ──
 async function refreshReviewEntryChip() {
+  if (IS_APP) return; // 앱: 내부 후기 미사용(Play 스토어 리뷰로 대체)
   const chips = document.querySelectorAll('.review-entry-chip');
   if (!chips.length) return;
   let meta = null;
@@ -12862,6 +12961,7 @@ function reviewAvatarHtml(key) {
   return `<span class="rv-face" style="background:${bg};border-color:${bd}"><img src="${MY_CAT_IMG}" style="filter:${filt}" alt=""></span>`;
 }
 async function openReviewBoard(forceReload) {
+  if (IS_APP) return; // 앱: 내부 후기 미사용
   document.getElementById('reviewBoardOverlay').style.display = 'flex';
   // 브이냥 — 캡처 기능과 같은 이미지 재활용 (용량 추가 없음)
   try {
@@ -12994,6 +13094,7 @@ const REVIEW_PROMPT_DELAY_AFTER_PANEL = 1000; // 결과 패널이 뜬 시점 기
 let _reviewPromptChecked = false; // 한 세션에서 중복 검사/노출 방지
 let _reviewPromptTimer = null;    // 대기 중 타이머 — 새 게임 시작 시 취소
 async function maybeShowReviewPrompt(playCount) {
+  if (IS_APP) return; // 앱: 내부 후기 미사용
   try {
     if (_reviewPromptChecked) return;
     if (!isUidLinked() || !MY_UID) return;                 // 익명/미연결 → 조용히 스킵(안내 없음)
@@ -13041,6 +13142,7 @@ function hideReviewPromptCard() {
   setTimeout(() => card.classList.remove('show'), 460);
 }
 function showReviewPromptCard() {
+  if (IS_APP) return; // 앱: 내부 후기 미사용
   const card = document.getElementById('reviewPromptCard');
   if (!card) return;
   const cat = document.getElementById('rpcCat');
@@ -13067,6 +13169,7 @@ function paintRvwStars() {
   document.getElementById('rvwSubmitBtn').disabled = _rvwRating === 0;
 }
 async function openReviewWrite(existing) {
+  if (IS_APP) return; // 앱: 내부 후기 미사용
   const myNick = loadNickname();
   // ① 닉네임이 아예 없음(완전 신규) — 게임부터 안내
   if (!myNick) {
@@ -13290,6 +13393,7 @@ let currentOpenFeedbackCol = 'feedback'; // 답장 전송 시 어느 게시판�
 // colName: 'feedback'(일반 문의) 또는 'feedback_donate'(후원 확인 쪽지).
 // 양방향 대화: 글쓴이 본인은 'user'로, 운영자(오너/어드민)는 'admin'으로 답장(서버가 from 고정).
 function openMyFeedbackDetail(id, data, readOnly, colName = 'feedback') {
+  if (IS_APP) return; // 앱: 문의 상세 미사용
   currentOpenFeedbackId = readOnly ? null : id;
   currentOpenFeedbackCol = colName;
   const isMine = !!(data && data.uid) && data.uid === MY_UID; // 열람자가 글쓴이 본인인지
@@ -13440,6 +13544,7 @@ document.getElementById('thanksNoteCloseBtn').addEventListener('click', () => {
 });
 
 async function checkUnreadReply() {
+  if (IS_APP) return; // 앱: 답장 알림 미사용(Firebase feedback 조회 안 함)
   // 닉네임은 인증과 무관한 자유 텍스트라 규칙에서 소유권 판별 기준으로 쓸 수 없음(누구나
   // 자기 nickname 값을 아무거나 넣어 남의 글처럼 조회를 시도할 수 있어서). uid로 연결된
   // 사람만 안전하게 조회 가능 — 아직 연결 안 됐으면 이 확인 자체를 건너뜀(조용히, 기능 저하 없음).
@@ -13539,6 +13644,7 @@ async function renderOwnerFeedbackList(boardEl, pinnedIds) {
 }
 
 async function renderFeedbackBoard() {
+  if (IS_APP) return; // 앱: 공개 문의 게시판 미사용
   const boardEl = document.getElementById('feedbackBoard');
   if (!boardEl) return;
 
