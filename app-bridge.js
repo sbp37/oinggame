@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════
-//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v1)
+//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v2)
 //
 //  이 파일은 "웹에서는 아무 일도 하지 않는 stub"이다.
 //  index.html 은 IS_APP(=!!window.Capacitor)일 때만 아래 훅을 호출하므로,
@@ -11,17 +11,17 @@
 //  ⚠️ 이 파일은 반드시 index.html 의 module script 보다 먼저 로드돼야 한다.
 //     (index.html 상단에 <script src="./app-bridge.js"></script> 로 연결됨)
 //
-//  ⚠️ stub 이지만 no-op 구현을 갖추고 있다. 앱이 실수로 실제 브리지 없이
-//     빌드되더라도 게임이 예외로 죽지 않고 "광고·리더보드만 없는 상태"로
-//     동작하게 하기 위한 안전장치다. 실제 앱은 이걸 전부 덮어써야 한다.
+//  ⚠️ 광고·리더보드·문의 훅은 no-op 이라도 안전하다(없으면 그 기능만 빠진다).
+//     그러나 firebase.loadLocalSdk() 만은 예외다 — 앱에서 이게 SDK 를 돌려주지
+//     않으면 게임이 아예 뜨지 않는다. 앱 빌드는 반드시 실제 구현으로 덮어써야 한다.
 // ══════════════════════════════════════════════════════════════════════
 window.OING_PLATFORM = window.OING_PLATFORM || {
-  apiVersion: 1,
+  apiVersion: 2,
 
   ads: {
     // 앱 광고 초기화 — 실패해도 게임 실행을 막지 않는다.
     initialize: async () => {},
-    // 클래식 한 판 완료 기록 (한 판당 정확히 1회). 전면광고 주기 계산용.
+    // 클래식 한 판 완료 기록 (한 판당 정확히 1회). 자유모드는 포함되지 않는다.
     recordClassicGameComplete: () => {},
     // '한 판 더' 직후, startGame() 직전. 3판마다 전면광고를 띄우고 닫힌 뒤 resolve.
     beforeReplay: async () => {},
@@ -32,12 +32,12 @@ window.OING_PLATFORM = window.OING_PLATFORM || {
   leaderboard: {
     // 앱 전용 — Play 게임즈에 점수 제출. 실패해도 결과 화면은 정상 동작해야 한다.
     submitClassicScore: async () => {},
-    // 앱 전용 — Play 게임즈에서 랭킹 조회. null 반환 시 index.html 이 렌더를 건너뛴다.
+    // 앱 전용 — Play 게임즈에서 랭킹 조회. null 반환 시 빈 상태를 보여준다.
     loadScores: async () => null,
   },
 
   ui: {
-    // 앱 정책 적용 — 상점·후원·후기·문의 게시판 DOM 제거.
+    // 앱 정책 적용 — 상점·후원·후기·문의 게시판 DOM 제거, #rankModeFriends 숨김.
     applyAppPolicy: () => {},
   },
 
@@ -47,8 +47,11 @@ window.OING_PLATFORM = window.OING_PLATFORM || {
   },
 
   firebase: {
-    // 앱 전용 — 번들된 오프라인 Firebase SDK 로드.
-    // ⚠️ v1 시점에는 index.html 이 이 훅을 호출하지 않는다. 사유는 PLATFORM_HOOKS.md 9번 참고.
+    // 앱 전용 — 번들된 오프라인 Firebase SDK(./vendor/firebase-sdk.js)를 import 해
+    // 모듈 객체를 반환한다. index.html 이 그 객체에서 심볼을 구조 분해하므로
+    // firebase-app / firestore / auth / functions 의 export 를 모두 갖고 있어야 한다.
+    // 실패 시 gstatic 폴백 금지 — 오프라인 실행 보장이 깨진다.
+    // ⚠️ stub 은 null 을 반환한다. 앱은 반드시 실제 구현으로 덮어써야 한다.
     loadLocalSdk: async () => null,
   },
 };

@@ -1,4 +1,4 @@
-# OING_PLATFORM 훅 계약 (apiVersion: 1)
+# OING_PLATFORM 훅 계약 (apiVersion: 2)
 
 오잉게임은 **웹(oinggame.com)** 과 **안드로이드 앱(오잉게임 클래식)** 이 같은
 `index.html` 을 공유한다. 플랫폼별로 달라야 하는 동작은 전부 이 문서의 훅을 통해서만
@@ -29,8 +29,8 @@ const IS_APP = !!window.Capacitor;
 <script type="module">
   const IS_APP = !!window.Capacitor;
   const PLATFORM = window.OING_PLATFORM;
-  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 1)) {
-    throw new Error('OING_PLATFORM v1이 필요합니다.');
+  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 2)) {
+    throw new Error('OING_PLATFORM v2가 필요합니다.');
   }
   …
 </script>
@@ -60,13 +60,14 @@ const IS_APP = !!window.Capacitor;
 |---|---|
 | 인자 | 없음 |
 | 반환 | 없음 |
-| 호출 시점 | `endGame()` 안, 최종 점수가 확정되고 결과 패널을 채우기 직전 |
+| 호출 시점 | `endGame()` 안, **`isFreeMode` 분기 뒤** — 자유모드는 카운트하지 않는다 |
 | 호출 횟수 | **한 판당 정확히 1회** (`gameEnding` 플래그가 중복 실행을 막는다) |
 | 목적 | 전면광고 주기 계산용 완료 판수 기록 및 다음 광고 예열 |
 | 실패 처리 | `try`/`catch` 로 감싸 무시. 게임 결과 표시에 영향 없음 |
 
 **주의**
 
+- **자유모드(`isFreeMode`)는 카운트하지 않는다.** 훅이 자유모드 `return` 뒤에 놓여 있다.
 - 중도 포기·튜토리얼은 `endGame()` 을 타지 않으므로 카운트되지 않는다.
 - 게임 로직·점수 계산에 어떤 영향도 주면 안 된다.
 
@@ -132,9 +133,18 @@ function appBanner(placement) {
 이 게임은 보드를 **손가락으로 드래그**해서 조작하므로 하단 배너를 깔면
 오클릭이 대량 발생하고 무효 트래픽으로 AdMob 계정이 정지될 수 있다.
 
-**미완 항목** — 오버레이(내 기록·도움말·일시정지 등)를 **닫을 때** 이전 화면 값으로
-되돌리는 호출은 아직 없다. `applyAppPolicy()` 단계에서 오버레이 닫기 핸들러에
-`setBannerPlacement` 복원을 붙이거나, v2에서 index.html 에 추가한다.
+**복원** — 오버레이를 닫으면 `restoreAppBanner()` 가 "지금 보이는 화면" 기준으로 되돌린다.
+
+```js
+function restoreAppBanner() {
+  if (!IS_APP) return;
+  const rank = document.getElementById('panelRank');
+  appBanner(rank && rank.classList.contains('active') ? 'ranking' : null);
+}
+```
+
+현재 `closeMyInfoOverlay()` 끝에 연결돼 있다. 다른 오버레이(도움말·일시정지 등)는
+배너를 건드리지 않으므로 복원이 필요 없다.
 
 ---
 
@@ -173,9 +183,18 @@ function appBanner(placement) {
 
 Firebase `rankings` · `weekly_rankings` · 웹 닉네임 랭킹 · 친구 랭킹 · Firebase 폴백.
 
-**미완 항목** — index.html 의 `renderAppLeaderboard(data)` 는 현재 `#rankList` 에
-**기본 목록 렌더까지만** 구현돼 있다. 웹의 시상대(1~3위) 연출 통합은 앱 실기기에서
-실제 Play 게임즈 데이터를 보며 마감한다. 데이터 계약(위 형식)은 확정이다.
+**렌더 구현 상태** — `renderAppLeaderboard(data)` 는 `#rankList` 에 목록을 그리고,
+본인 행에 `.rank-row.me` 클래스를 붙인다(웹 CSS 와 동일).
+앱에서 쓰지 않는 웹 전용 영역은 렌더 시 `display:none` 으로 정리한다:
+`#podiumWrap` · `#podiumFloor` · `#myRankInfo` · `#myWeeklyLink` ·
+`#weeklyThanksToggle` · `#weeklyThanksDisplay` · `#weekSpurtBanner`
+
+**미완** — 웹의 시상대(1~3위) 연출 통합은 앱 실기기에서 실제 Play 게임즈 데이터를
+보며 마감한다. 데이터 계약(위 형식)은 확정이다.
+
+**친구 랭킹** — 앱은 사용하지 않는다. `applyAppPolicy()` 가 `#rankModeFriends` 를
+숨기고, index.html 의 클릭 핸들러 진입부에도 `if (IS_APP) return;` 가드가 있어
+DOM 조작으로 눌러도 전체 랭킹이 친구 랭킹처럼 표시되지 않는다.
 
 ---
 
@@ -185,7 +204,7 @@ Firebase `rankings` · `weekly_rankings` · 웹 닉네임 랭킹 · 친구 랭�
 |---|---|
 | 인자 | `score` — 0 이상의 정수형 최종 점수 |
 | 반환 | `Promise<void>` |
-| 호출 시점 | `endGame()` 안, 최종 점수 확정 직후 (1번 훅 바로 다음) |
+| 호출 시점 | `endGame()` 안, `isFreeMode` 분기 뒤 · 1번 훅 바로 다음 |
 | 목적 | 앱 점수를 Play 게임즈 리더보드에 제출 |
 | 실패 처리 | `.catch()` 로 경고만 — 결과 화면·재시작은 정상 동작 |
 
@@ -194,6 +213,10 @@ Firebase `rankings` · `weekly_rankings` · 웹 닉네임 랭킹 · 친구 랭�
 - 앱 랭킹은 기존 웹 기록 없이 **새로 시작**한다.
 - 앱 점수를 Firebase `rankings` / `weekly_rankings` 에 저장하지 않는다.
 - Play 게임즈 제출 실패 시 **Firebase 랭킹으로 폴백 금지**.
+- 이 훅 블록은 **반드시 `return` 으로 끝난다.** return 하지 않으면 아래 웹
+  `savedNick`/Firebase 저장 경로가 이어서 실행돼 **점수가 양쪽에 이중 저장**된다.
+- 앱에서는 닉네임 입력(`#nickSection2`)을 숨기고 `#nickDone` 에 등록 상태를 표시한다
+  (등록 중 → 등록 완료 / 실패 안내).
 
 > 참고: 웹의 점수 등록은 닉네임 입력(`#submitScore` 버튼) 흐름을 그대로 쓴다.
 > 앱은 Play 게임즈가 신원을 제공하므로 그 흐름을 타지 않고 `endGame()` 에서 바로 제출한다.
@@ -266,7 +289,11 @@ index.html 구현:
 
 ```js
 function openContactOverlay() {
-  if (IS_APP) { PLATFORM.support.openEmail(); return; }
+  // 브리지가 실패해도 게임을 막지 않는다(fail-open).
+  if (IS_APP) {
+    try { PLATFORM.support.openEmail(); } catch (e) { console.warn('이메일 문의 열기 실패:', e); }
+    return;
+  }
   // 웹: 기존 문의 오버레이
 }
 ```
@@ -285,45 +312,61 @@ function openContactOverlay() {
 
 ---
 
-## 9. `await PLATFORM.firebase.loadLocalSdk()` — ⚠️ v1 미사용
+## 9. `await PLATFORM.firebase.loadLocalSdk()`
 
-**계약은 예약돼 있으나 index.html 은 이 훅을 아직 호출하지 않는다.**
+| 항목 | 내용 |
+|---|---|
+| 인자 | 없음 |
+| 반환 | Firebase 모듈 객체 (`firebase-app`/`firestore`/`auth`/`functions` export 를 모두 포함) |
+| 호출 시점 | module script 최상단, Firebase 초기화 직전 |
+| 목적 | 앱에서 번들된 오프라인 SDK(`./vendor/firebase-sdk.js`)를 쓴다 |
+| 실패 처리 | **폴백 없음** — gstatic 으로 내려가면 오프라인 실행 보장이 깨진다 |
 
-### 보류 사유
+### 구현 (index.html)
 
-현재 index.html 은 Firebase 심볼 **24개**를 gstatic 에서 정적 `import` 하고,
-그 심볼들을 코드 **259곳**에서 직접 호출한다(`doc` 75회, `getDoc` 53회, `setDoc` 32회 …).
-원래 제안대로 `firestoreSdk.doc(...)` 형태의 네임스페이스 객체로 바꾸면
-**라이브 서비스 중인 코드 259곳을 수정**해야 한다. 위험 대비 이득이 맞지 않는다.
-
-또한 이 작업 환경에서는 gstatic 접근이 차단돼 있어 **Firebase 로딩 경로 변경을
-실행 검증할 수 없다.** 검증 불가능한 변경을 라이브 게임에 넣지 않는다.
-
-### 권장 구현 방안 (v2에서 적용)
-
-호출부 259곳을 **하나도 건드리지 않는** 방법이 있다 — 동적 `import()` 로 URL만 바꾸고
-구조 분해 이름은 그대로 유지한다(모듈 최상위 `await` 사용 가능).
+정적 `import` 를 동적 `import()` 로 바꾸되 **구조 분해 이름을 그대로 유지**한다.
+덕분에 코드 **259곳**의 호출부(`doc` 75회 · `getDoc` 53회 · `setDoc` 32회 …)는
+하나도 바뀌지 않는다.
 
 ```js
-const FB_BASE = IS_APP
-  ? await PLATFORM.firebase.localSdkBase()   // 앱: './vendor/'
-  : 'https://www.gstatic.com/firebasejs/12.15.0/';
-
-const { initializeApp } = await import(FB_BASE + 'firebase-app.js');
-const { getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc,
-        orderBy, query, limit, deleteDoc, addDoc, increment, where, runTransaction }
-  = await import(FB_BASE + 'firebase-firestore.js');
-const { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken }
-  = await import(FB_BASE + 'firebase-auth.js');
-const { getFunctions, httpsCallable }
-  = await import(FB_BASE + 'firebase-functions.js');
+let firebaseAppSdk, firestoreSdk, authSdk, functionsSdk;
+if (IS_APP) {
+  const sdk = await PLATFORM.firebase.loadLocalSdk();
+  firebaseAppSdk = firestoreSdk = authSdk = functionsSdk = sdk;
+} else {
+  [firebaseAppSdk, firestoreSdk, authSdk, functionsSdk] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js"),
+  ]);
+}
+const { initializeApp } = firebaseAppSdk;
+const { getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, orderBy,
+        query, limit, deleteDoc, addDoc, increment, where, runTransaction } = firestoreSdk;
+const { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = authSdk;
+const { getFunctions, httpsCallable } = functionsSdk;
 ```
 
-이 방식은 import 문 **5줄만** 바뀌고 호출부 259곳은 그대로다.
-대신 훅 이름이 `loadLocalSdk()` → `localSdkBase()`(경로 문자열 반환)로 바뀌므로
-**계약 변경 절차를 거쳐 확정한 뒤** 적용한다.
+### app-bridge.js 쪽 요구사항
 
-앱에서 로컬 SDK 로드가 실패해도 **gstatic CDN 으로 폴백하지 않는다**(오프라인 실행 보장).
+`loadLocalSdk()` 는 `./vendor/firebase-sdk.js` 를 import 해 **모듈 객체 하나**를
+반환한다. index.html 이 그 객체에서 위 24개 심볼을 구조 분해하므로,
+번들은 firebase-app · firestore · auth · functions 의 export 를 **모두** 갖고 있어야 한다.
+하나라도 빠지면 해당 심볼이 `undefined` 가 되어 런타임에 터진다.
+
+### App Check
+
+`initializeAppCheck` / `ReCaptchaV3Provider` 정적 import 는 **제거했다.**
+사용처가 전부 주석 처리된 죽은 import 였고, 그대로 두면 앱에서도 gstatic 을
+강제로 불러 오프라인 실행이 깨진다. 나중에 App Check 를 켤 때는 위
+Firebase 로드 블록에 함께 넣는다.
+
+### ⚠️ 검증 한계
+
+이 작업 환경은 gstatic 접근이 차단돼 있어 **웹 경로의 Firebase 로딩을 실제로
+실행 검증하지 못했다.** 문법 검사와 gstatic 스텁 주입 테스트까지만 마쳤으므로,
+배포 후 `oinggame.com` 에서 랭킹·점수 등록이 정상인지 한 번 확인해야 한다.
 
 ---
 
