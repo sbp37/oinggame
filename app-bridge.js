@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════
-//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v2)
+//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v3)
 //
 //  이 파일은 "웹에서는 아무 일도 하지 않는 stub"이다.
 //  index.html 은 IS_APP(=!!window.Capacitor)일 때만 아래 훅을 호출하므로,
@@ -16,7 +16,7 @@
 //     않으면 게임이 아예 뜨지 않는다. 앱 빌드는 반드시 실제 구현으로 덮어써야 한다.
 // ══════════════════════════════════════════════════════════════════════
 window.OING_PLATFORM = window.OING_PLATFORM || {
-  apiVersion: 2,
+  apiVersion: 3,
 
   ads: {
     // 앱 광고 초기화 — 실패해도 게임 실행을 막지 않는다.
@@ -36,8 +36,22 @@ window.OING_PLATFORM = window.OING_PLATFORM || {
     loadScores: async () => null,
   },
 
+  records: {
+    // 앱 전용 로컬 기록 저장 — 앱은 웹 updateUserStats() 경로를 타지 않으므로
+    // 이걸 저장하지 않으면 앱 '내 기록'이 영원히 빈 화면이 된다.
+    // Firebase(rankings·weekly_rankings·user_stats)에는 절대 쓰지 않는다.
+    //  result = { score, maxCombo, clearCount, sessionCats, playTimeSeconds, completedAt }
+    recordClassicResult: () => {},
+    // 앱 '내 기록' 화면이 읽는 스냅샷 (동기 반환).
+    //  { displayName, iconUrl, stats: { playCount, totalPlayTime, firstPlayed, lastPlayed,
+    //    lastScore, bestScore, bestCombo, totalCats, recentScores, daysPlayed, streak, lastPlayDate } }
+    getSnapshot: () => null,
+  },
+
   ui: {
-    // 앱 정책 적용 — 상점·후원·후기·문의 게시판 DOM 제거, #rankModeFriends 숨김.
+    // 앱 정책 적용 — 상점·후원·후기·문의 게시판 DOM 제거.
+    // ⚠️ #rankModeFriends 는 DOM 에서 삭제하지 말고 CSS 로만 숨긴다
+    //    (setActiveRankModeBtn() 이 계속 참조한다).
     applyAppPolicy: () => {},
   },
 

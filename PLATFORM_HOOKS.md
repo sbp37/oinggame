@@ -1,4 +1,4 @@
-# OING_PLATFORM 훅 계약 (apiVersion: 2)
+# OING_PLATFORM 훅 계약 (apiVersion: 3)
 
 오잉게임은 **웹(oinggame.com)** 과 **안드로이드 앱(오잉게임 클래식)** 이 같은
 `index.html` 을 공유한다. 플랫폼별로 달라야 하는 동작은 전부 이 문서의 훅을 통해서만
@@ -29,8 +29,8 @@ const IS_APP = !!window.Capacitor;
 <script type="module">
   const IS_APP = !!window.Capacitor;
   const PLATFORM = window.OING_PLATFORM;
-  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 2)) {
-    throw new Error('OING_PLATFORM v2가 필요합니다.');
+  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 3)) {
+    throw new Error('OING_PLATFORM v3가 필요합니다.');
   }
   …
 </script>
@@ -195,6 +195,10 @@ Firebase `rankings` · `weekly_rankings` · 웹 닉네임 랭킹 · 친구 랭�
 **친구 랭킹** — 앱은 사용하지 않는다. `applyAppPolicy()` 가 `#rankModeFriends` 를
 숨기고, index.html 의 클릭 핸들러 진입부에도 `if (IS_APP) return;` 가드가 있어
 DOM 조작으로 눌러도 전체 랭킹이 친구 랭킹처럼 표시되지 않는다.
+
+> ⚠️ **`#rankModeFriends` 를 DOM 에서 삭제하면 안 된다.**
+> `setActiveRankModeBtn()` 이 계속 이 요소를 참조하므로 제거하면 랭킹 탭 전환이 깨진다.
+> **반드시 CSS(`display:none`)로만 숨긴다.**
 
 ---
 
@@ -367,6 +371,85 @@ Firebase 로드 블록에 함께 넣는다.
 이 작업 환경은 gstatic 접근이 차단돼 있어 **웹 경로의 Firebase 로딩을 실제로
 실행 검증하지 못했다.** 문법 검사와 gstatic 스텁 주입 테스트까지만 마쳤으므로,
 배포 후 `oinggame.com` 에서 랭킹·점수 등록이 정상인지 한 번 확인해야 한다.
+
+---
+
+## 9-B. `PLATFORM.records.*` — 앱 전용 로컬 기록 (v3 신설)
+
+앱의 `endGame()` 분기는 Play 게임즈 제출 후 **`return` 으로 끝나므로**
+웹의 `updateUserStats()` 가 실행되지 않는다. 그 결과 앱의 '내 기록' 화면이
+`loadNickname()` + `oeing_local_stats_{nickname}` 을 읽어 **빈 기록**으로 나온다.
+
+`return` 을 웹 저장 코드 아래로 옮기는 것은 **금지**다 — Firebase 이중 저장이 생긴다.
+그래서 앱 전용 기록 경로를 따로 둔다.
+
+### `PLATFORM.records.recordClassicResult(result)`
+
+| 항목 | 내용 |
+|---|---|
+| 인자 | 아래 형식 |
+| 반환 | 없음 (동기) |
+| 호출 시점 | `endGame()` 의 `isFreeMode` return 뒤 → `ads.recordClassicGameComplete()` **직후** → Play 게임즈 제출 **전** |
+| 목적 | 앱 전용 로컬 기록 저장 |
+| 실패 처리 | `try`/`catch` 로 감싸 무시 |
+
+```js
+{
+  score: number,
+  maxCombo: number,
+  clearCount: number,
+  sessionCats: number,
+  playTimeSeconds: number,
+  completedAt: number
+}
+```
+
+`playTimeSeconds` 는 웹 경로에서만 계산되므로 index.html 이 훅 지점에서
+같은 식(`Math.round((Date.now() - gameStartTime) / 1000)`)으로 직접 구해 넘긴다.
+
+**Firebase `rankings` · `weekly_rankings` · `user_stats` 에는 쓰지 않는다.**
+
+### `PLATFORM.records.getSnapshot()`
+
+| 항목 | 내용 |
+|---|---|
+| 인자 | 없음 |
+| 반환 | 아래 형식 또는 `null` (**동기** 반환) |
+| 호출 시점 | `openMyInfoOverlay()` 진입 시, 앱에서만 |
+| 목적 | 앱 '내 기록' 화면 데이터 |
+| 실패 처리 | `catch` 후 `null` — 웹 로컬통계로 폴백하지 않고 빈 값으로 표시 |
+
+```js
+{
+  displayName: string,
+  iconUrl: string,
+  stats: {
+    playCount: number, totalPlayTime: number,
+    firstPlayed: number, lastPlayed: number,
+    lastScore: number, bestScore: number, bestCombo: number,
+    totalCats: number, recentScores: number[],
+    daysPlayed: number, streak: number, lastPlayDate: string
+  }
+}
+```
+
+앱에서는 `loadNickname()` 과 `oeing_local_stats_{nickname}` 대신 이 스냅샷을 쓴다.
+`iconUrl` 이 있으면 아바타로 표시하고, 없으면 기존 고양이 아이콘을 쓴다.
+
+### 앱에서 숨기는 웹 계정 기능
+
+`openMyInfoOverlay()` 가 앱에서 아래를 `display:none` 처리한다.
+
+| 요소 | 내용 |
+|---|---|
+| `#myiEditBtn` | 닉네임 수정 |
+| `#deleteMyRankBtn` | 기록 삭제 |
+| `#myiLink` | PIN / 연결 정보 |
+
+추가로 `syncPlayXpFromServer()` 진입부에 `if (IS_APP) return;` 가드가 있다
+(앱은 웹 계정 XP 미러를 쓰지 않는다).
+
+**최고점수·최고콤보·플레이 수·고양이 수 등 일반 기록은 앱에서도 정상 표시된다.**
 
 ---
 
