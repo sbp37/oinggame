@@ -53,3 +53,11 @@ test('레거시 계정도 접속 승급을 확인하고 미리보기·앱은 운
   assert.match(src, /hostname === 'oinggame\.com'[\s\S]{0,180}hostname === 'www\.oinggame\.com'/);
   assert.match(src, /BUILD > serverBuild && canPublishBuild/);
 });
+
+test('승급 팝업은 밝은 테마에서도 읽히고 폭죽이 카드 아래에 있으며 Lv.1~20 조건을 모두 보여준다', () => {
+  assert.match(src, /body\.light \.oing-levelup-reason \{ color: #3b3328; \}/);
+  assert.match(src, /burstConfetti\(1, overlay\)/);
+  const tierRows = src.match(/class="lv-pop-row" data-min="\d+" data-max="\d+"/g) || [];
+  assert.equal(tierRows.length, 20);
+  assert.match(src, /Lv\.19 전설의 오잉러<\/span><span class="val">6,450 XP/);
+});

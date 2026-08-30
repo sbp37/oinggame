@@ -2748,7 +2748,7 @@ body.light .mwk-note, body.light .mwk-stat-label, body.light .mwk-hero-label { c
 
 /* v2 레벨 승급 축하 — 다른 팝업과 겹치지 않게 전용 상위 레이어 */
 .oing-levelup-overlay { position: fixed; inset: 0; z-index: 450; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(5,12,24,0.88); }
-.oing-levelup-card { position: relative; width: 100%; max-width: 360px; max-height: 88vh; overflow-y: auto; border-radius: 22px; padding: 26px 20px 19px; text-align: center; background: linear-gradient(160deg, #17243d 0%, #101b30 100%); border: 1px solid rgba(234,194,117,0.58); box-shadow: 0 18px 55px rgba(0,0,0,0.55), 0 0 30px rgba(218,152,69,0.12); animation: oingLevelUpIn 0.34s cubic-bezier(.2,.8,.2,1); }
+.oing-levelup-card { position: relative; z-index: 2; width: 100%; max-width: 360px; max-height: 88vh; overflow-y: auto; border-radius: 22px; padding: 26px 20px 19px; text-align: center; background: linear-gradient(160deg, #17243d 0%, #101b30 100%); border: 1px solid rgba(234,194,117,0.58); box-shadow: 0 18px 55px rgba(0,0,0,0.55), 0 0 30px rgba(218,152,69,0.12); animation: oingLevelUpIn 0.34s cubic-bezier(.2,.8,.2,1); }
 .oing-levelup-kicker { color: #ffe7aa; font-size: 18px; font-weight: 950; letter-spacing: -0.4px; }
 .oing-levelup-jump { margin: 12px 0 4px; font-size: 32px; line-height: 1.1; font-weight: 950; color: #fff5d6; font-variant-numeric: tabular-nums; text-shadow: 0 0 18px rgba(255,211,107,0.35); }
 .oing-levelup-title { color: var(--accent-lemon); font-size: 17px; font-weight: 900; }
@@ -2762,6 +2762,11 @@ body.light .mwk-note, body.light .mwk-stat-label, body.light .mwk-hero-label { c
 body.light .oing-levelup-overlay { background: rgba(244,239,228,0.9); }
 body.light .oing-levelup-card { background: linear-gradient(160deg, #fffdf8, #f8f0df); border-color: rgba(160,104,29,0.45); }
 body.light .oing-levelup-kicker, body.light .oing-levelup-jump { color: #704610; text-shadow: none; }
+body.light .oing-levelup-title { color: #91570d; }
+body.light .oing-levelup-msg { color: #625b50; }
+body.light .oing-levelup-toggle { color: #285d89; border-color: rgba(40,93,137,0.42); background: rgba(47,126,201,0.09); }
+body.light .oing-levelup-reasons { background: rgba(112,70,16,0.055); border-color: rgba(112,70,16,0.2); }
+body.light .oing-levelup-reason { color: #3b3328; }
 @media (max-width: 350px) { .myi-lv-info { padding: 0 9px; font-size: 11.5px; } .oing-levelup-jump { font-size: 28px; } }
 @media (prefers-reduced-motion: reduce) { .oing-levelup-card { animation: none; } }
 
@@ -4238,10 +4243,22 @@ if ('serviceWorker' in navigator) {
         <div class="lv-pop-row" data-min="1" data-max="1"><span class="ic">🌱</span><span class="lbl">Lv.1 새싹냥</span><span class="val">0 XP</span></div>
         <div class="lv-pop-row" data-min="2" data-max="2"><span class="ic">🍡</span><span class="lbl">Lv.2 말랑냥</span><span class="val">80 XP</span></div>
         <div class="lv-pop-row" data-min="3" data-max="3"><span class="ic">🐟</span><span class="lbl">Lv.3 츄르냥</span><span class="val">300 XP</span></div>
-        <div class="lv-pop-row" data-min="4" data-max="6"><span class="ic">🏠</span><span class="lbl">Lv.4~6 단골냥</span><span class="val">600 XP부터</span></div>
-        <div class="lv-pop-row" data-min="7" data-max="10"><span class="ic">🧶</span><span class="lbl">Lv.7~10 베테랑냥</span><span class="val">1,350 XP부터</span></div>
-        <div class="lv-pop-row" data-min="11" data-max="15"><span class="ic">💎</span><span class="lbl">Lv.11~15 오잉코어</span><span class="val">2,500 XP부터</span></div>
-        <div class="lv-pop-row" data-min="16" data-max="19"><span class="ic">👑</span><span class="lbl">Lv.16~19 전설의 오잉러</span><span class="val">4,800 XP부터</span></div>
+        <div class="lv-pop-row" data-min="4" data-max="4"><span class="ic">🏠</span><span class="lbl">Lv.4 단골냥</span><span class="val">600 XP</span></div>
+        <div class="lv-pop-row" data-min="5" data-max="5"><span class="ic">🏠</span><span class="lbl">Lv.5 단골냥</span><span class="val">850 XP</span></div>
+        <div class="lv-pop-row" data-min="6" data-max="6"><span class="ic">🏠</span><span class="lbl">Lv.6 단골냥</span><span class="val">1,100 XP</span></div>
+        <div class="lv-pop-row" data-min="7" data-max="7"><span class="ic">🧶</span><span class="lbl">Lv.7 베테랑냥</span><span class="val">1,350 XP</span></div>
+        <div class="lv-pop-row" data-min="8" data-max="8"><span class="ic">🧶</span><span class="lbl">Lv.8 베테랑냥</span><span class="val">1,600 XP</span></div>
+        <div class="lv-pop-row" data-min="9" data-max="9"><span class="ic">🧶</span><span class="lbl">Lv.9 베테랑냥</span><span class="val">1,900 XP</span></div>
+        <div class="lv-pop-row" data-min="10" data-max="10"><span class="ic">🧶</span><span class="lbl">Lv.10 베테랑냥</span><span class="val">2,200 XP</span></div>
+        <div class="lv-pop-row" data-min="11" data-max="11"><span class="ic">💎</span><span class="lbl">Lv.11 오잉코어</span><span class="val">2,500 XP</span></div>
+        <div class="lv-pop-row" data-min="12" data-max="12"><span class="ic">💎</span><span class="lbl">Lv.12 오잉코어</span><span class="val">2,900 XP</span></div>
+        <div class="lv-pop-row" data-min="13" data-max="13"><span class="ic">💎</span><span class="lbl">Lv.13 오잉코어</span><span class="val">3,300 XP</span></div>
+        <div class="lv-pop-row" data-min="14" data-max="14"><span class="ic">💎</span><span class="lbl">Lv.14 오잉코어</span><span class="val">3,750 XP</span></div>
+        <div class="lv-pop-row" data-min="15" data-max="15"><span class="ic">💎</span><span class="lbl">Lv.15 오잉코어</span><span class="val">4,250 XP</span></div>
+        <div class="lv-pop-row" data-min="16" data-max="16"><span class="ic">👑</span><span class="lbl">Lv.16 전설의 오잉러</span><span class="val">4,800 XP</span></div>
+        <div class="lv-pop-row" data-min="17" data-max="17"><span class="ic">👑</span><span class="lbl">Lv.17 전설의 오잉러</span><span class="val">5,350 XP</span></div>
+        <div class="lv-pop-row" data-min="18" data-max="18"><span class="ic">👑</span><span class="lbl">Lv.18 전설의 오잉러</span><span class="val">5,900 XP</span></div>
+        <div class="lv-pop-row" data-min="19" data-max="19"><span class="ic">👑</span><span class="lbl">Lv.19 전설의 오잉러</span><span class="val">6,450 XP</span></div>
         <div class="lv-pop-row" data-min="20" data-max="20"><span class="ic">🌟</span><span class="lbl">Lv.20 오잉신(神)</span><span class="val">7,000 XP</span></div>
       </div>
 
@@ -10110,7 +10127,7 @@ function isResultScreenVisible() {
 
 // 🎆 축포 파티클 버스트 — 화면 상단 중앙에서 색색 조각이 터져 퍼지고 중력으로 떨어짐.
 //  캔버스 1장, ~1.5초 후 자동 제거. 움직임 최소 선호 시 생략. 콘텐츠는 안 덮음(pointer 무시).
-function burstConfetti(zIndex = 299) {
+function burstConfetti(zIndex = 299, host = document.body) {
   try {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cv = document.createElement('canvas');
@@ -10118,7 +10135,7 @@ function burstConfetti(zIndex = 299) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = W * dpr; cv.height = H * dpr;
     cv.style.cssText = `position:fixed; inset:0; width:${W}px; height:${H}px; pointer-events:none; z-index:${zIndex};`;
-    document.body.appendChild(cv);
+    (host || document.body).appendChild(cv);
     const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
     const colors = ['#FFD36B', '#FFE9A8', '#7ecdf0', '#B7BFFF', '#f9a8d4', '#86efac', '#fca5a5'];
     // 좌·중·우 3지점에서 시간차로 연달아 터지는 '풍성한' 축포
@@ -12584,7 +12601,8 @@ function showOingLevelUpCelebration(data) {
   _oingLevelUpAck = data.preview ? null : { key: data.ackKey, level: data.toLv };
   overlay.style.display = 'flex';
   requestAnimationFrame(() => {
-    try { burstConfetti(455); } catch {}
+    // 축포는 오버레이 배경 위·카드 아래에 둬서 글씨를 가리지 않는다.
+    try { burstConfetti(1, overlay); } catch {}
     try { document.getElementById('oingLevelUpOk')?.focus(); } catch {}
   });
 }
