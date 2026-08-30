@@ -13230,9 +13230,14 @@ document.getElementById('shareResultBtn').addEventListener('click', async () => 
   const myNickForShare = loadNickname();
   let gameUrl = 'https://oinggame.com/';
   if (myNickForShare) {
-    const code = await getOrCreateRefCode(myNickForShare);
-    if (code) gameUrl = `https://oinggame.com/?r=${code}`;
-    logShareClick(myNickForShare);
+    try {
+      const code = await getOrCreateRefCode(myNickForShare);
+      if (code) gameUrl = `https://oinggame.com/?r=${code}`;
+      logShareClick(myNickForShare);
+    } catch (e) {
+      // 추천코드 서버가 잠시 불안정해도 공유 자체는 기본 주소로 계속할 수 있어야 한다.
+      console.warn('추천 링크 생성 실패, 기본 링크로 공유:', e);
+    }
   }
   const shareText = `오잉게임에서 ${score}점 냈다냥! 이겨보라냥 🐱`;
 

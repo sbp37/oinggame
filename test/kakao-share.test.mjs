@@ -26,3 +26,8 @@ test('카카오 SDK를 못 쓰면 기존 공유 경로를 유지한다', () => {
   assert.match(src, /if \(!sharedWithKakao && navigator\.share\)/);
   assert.match(src, /else if \(!sharedWithKakao && navigator\.clipboard\)/);
 });
+
+test('추천코드 생성 실패 시에도 기본 주소로 공유를 계속한다', () => {
+  assert.match(src, /let gameUrl = 'https:\/\/oinggame\.com\/';/);
+  assert.match(src, /try \{[\s\S]*?await getOrCreateRefCode\(myNickForShare\)[\s\S]*?\} catch \(e\) \{[\s\S]*?기본 링크로 공유/);
+});
