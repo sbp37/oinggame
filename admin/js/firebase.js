@@ -95,16 +95,16 @@ export function todayStartTs() {
   d.setHours(0, 0, 0, 0);
   return d.getTime();
 }
-// 게임 본체 getWeekId()와 동일 — 2026-07-13 이전엔 고정 주차 반환 (특별 조기 리셋 과도기)
+// 게임 본체 getWeekId()·서버 getWeekIdKST()와 동일 — 반드시 KST(UTC+9) 기준.
+// 운영자가 해외에서 접속해도 서버와 같은 주차를 보고, '이번주 기록 삭제' 같은 작업이
+// 엉뚱한 주차를 건드리지 않는다. (2026-07-13 이전엔 고정 주차 — 특별 조기 리셋 과도기)
 export function getWeekId() {
   const NEXT_RESET = new Date('2026-07-13T00:00:00+09:00').getTime();
   if (Date.now() < NEXT_RESET) return '2026-06-29';
-  const d = new Date();
-  const day = d.getDay();
-  const diffToMonday = day === 0 ? 6 : day - 1;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - diffToMonday);
-  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+  const k = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const day = k.getUTCDay();
+  k.setUTCDate(k.getUTCDate() - (day === 0 ? 6 : day - 1));
+  return `${k.getUTCFullYear()}-${String(k.getUTCMonth() + 1).padStart(2, '0')}-${String(k.getUTCDate()).padStart(2, '0')}`;
 }
 
 // ── 표시 헬퍼 ─────────────────────────────────────────────────
