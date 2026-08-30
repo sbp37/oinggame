@@ -12,7 +12,7 @@ import {
   db, collection, doc, orderBy, query, limit,
   fetchDoc, fetchDocs, deleteDoc, setDoc, makePager, getUserDocByNick, resolveUserDocId,
   getWeekId, getTodayDateStr, fmtAgo, fmtDateTime, fmtDuration, fmtNum, escapeHtml,
-  humanError, normalizeNickname,
+  humanError, normalizeNickname, cache,
 } from './firebase.js';
 import { getTodaySessions, todayNewUsersList } from './stats.js';
 import { setLoading, setError, setEmpty, guardBtn, resultMsg } from './admin.js';
@@ -86,7 +86,10 @@ async function loadTodayUsers({ force = false, full = false } = {}) {
   const el = document.getElementById('usersTodayList');
   setLoading(el);
   try {
-    const sessions = full
+    // 홈(오늘) 탭이 이미 받아둔 오늘 세션 캐시가 있으면 그대로 재사용 — 추가 조회 0.
+    // 캐시가 없을 때(유저 탭으로 바로 들어온 경우)만 최근 30건을 따로 읽는다.
+    const cached = !force && cache.peek('shared:todaySessions');
+    const sessions = (full || cached)
       ? await getTodaySessions({ force })
       : await fetchDocs(query(collection(db, 'visit_sessions'), orderBy('lastSeenTs', 'desc'), limit(30)));
     // 방문자 단위로 합산 (같은 유저의 여러 세션 → 1행)
@@ -309,19 +312,9 @@ async function loadNewUsers() {
   } catch (e) { setError(el, humanError(e)); }
 }
 
-// 최근 활동 유저 10명 (user_stats lastPlayed desc)
-async function loadRecentActive() {
-  const el = document.getElementById('usersRecentList');
-  setLoading(el);
-  try {
-    const rows = await fetchDocs(query(collection(db, 'user_stats'), orderBy('lastPlayed', 'desc'), limit(10)));
-    el.innerHTML = rows.length ? rows.map(r => `
-      <div class="list-row clickable user-row" data-nick="${escapeHtml(r.nickname || r.id)}">
-        <span class="main"><span class="nick">${escapeHtml(r.nickname || r.id)}</span></span>
-        <span class="sub">${r.lastPlayed ? fmtAgo(r.lastPlayed) : '-'} · 최고 ${fmtNum(r.bestScore || 0)}pt</span>
-      </div>`).join('') : `<div class="list-empty">기록이 없어요</div>`;
-  } catch (e) { setError(el, humanError(e)); }
-}
+// (2026-08-30) '⏱ 최근 활동' 제거 — 홈(오늘) 탭의 '🎮 최근 플레이'·'🟢 오늘 접속'과
+// 삼중 중복이었고, 혼자만 user_stats 를 10건 따로 읽었다. 전체 유저 목록은 아래
+// '전체 유저 목록 → 불러오기'에서 정렬 바꿔가며 보면 된다(누를 때만 조회).
 
 export async function loadUsers({ force = false } = {}) {
   if (force) {
@@ -332,6 +325,5 @@ export async function loadUsers({ force = false } = {}) {
   await Promise.allSettled([
     loadTodayUsers({ force }),
     loadNewUsers(),
-    loadRecentActive(),
   ]);
 }

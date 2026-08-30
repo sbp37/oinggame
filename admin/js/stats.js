@@ -26,7 +26,10 @@ import {
   getTodayDateStr, daysAgoDateStr, cache,
 } from './firebase.js';
 
-export const SESSION_FETCH_CAP = 1000; // 하루 세션 원본 조회 상한 (폭주 방지)
+// 하루 세션 원본 조회 상한. 홈/분석/유저 탭이 공유하는 가장 큰 읽기라 어드민 데이터
+// 사용량을 사실상 이 값이 결정한다. 실사용 규모(하루 방문 ~30명)에서 400이면 하루치가
+// 통째로 들어오고, 넘치면 truncated 표시로 근사치임을 알린다. (2026-08-30 1000 → 400)
+export const SESSION_FETCH_CAP = 400;
 const LS_PREFIX = 'oeing_admin_dailystats_';
 
 // 집계 로직 버전 — 기준이 바뀌면 올린다. 저장된 dailyStats의 v가 다르면 그 날짜만 1회 재집계.

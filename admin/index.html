@@ -149,10 +149,10 @@
 
       <div class="card">
         <div class="card-head">
-          <h3>⏱ 최근 활동</h3>
-          <button id="usersAllBtn" class="btn btn-ghost btn-sm">전체 보기</button>
+          <h3>👥 전체 유저 목록</h3>
+          <button id="usersAllBtn" class="btn btn-primary btn-sm">불러오기</button>
         </div>
-        <div id="usersRecentList" class="list"></div>
+        <div class="card-note">최근 접속·신규·점수·플레이 횟수 순으로 20명씩 봅니다. (누를 때만 조회)</div>
       </div>
 
       <!-- 전체 목록 (전체 보기를 눌렀을 때만 조회) -->
@@ -322,16 +322,6 @@
         <summary>🎮 게임 운영</summary>
         <div class="tool-body">
           <div class="card">
-            <div class="card-head"><h3>🐾 이번 달 함께해주신 분</h3></div>
-            <textarea id="opThanksText" rows="3" placeholder="예: 제제, 준석리, 쿠앙"></textarea>
-            <div class="btn-row" style="margin-top:8px;">
-              <button id="opThanksSaveBtn" class="btn btn-warm">저장 (랭킹 화면 하단에 표시)</button>
-              <button id="opThanksClearBtn" class="btn btn-ghost">비우기</button>
-            </div>
-            <div id="opThanksPreview"></div>
-            <div id="opThanksResult"></div>
-          </div>
-          <div class="card">
             <div class="card-head"><h3>👑 명예의전당</h3></div>
             <div id="hallList" class="list"></div>
             <div class="row" style="margin-top:10px;">
@@ -364,17 +354,6 @@
             <div class="card-head"><h3>🛟 점수 누락 복구</h3><button id="recoverScanBtn" class="btn btn-primary btn-sm">누락 후보 스캔</button></div>
             <div class="card-note" style="margin-bottom:8px;">오늘 플레이했지만 랭킹에 반영되지 않은 후보를 찾습니다. 자동 복구는 없습니다.</div>
             <div id="recoverResult"></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>🏅 고득점 세션 (4만+)</h3><button id="highScoreScanBtn" class="btn btn-ghost btn-sm">조회</button></div>
-            <div class="card-note" style="margin-bottom:8px;">줄을 누르면 상세(주의 신호·점수 검증·입력 리듬·기기)가 펼쳐져요. 입력 리듬·점수 검증은 v4.6.6 이후 판부터 기록돼요.</div>
-            <div id="highScoreSort" class="seg" style="display:none; margin-bottom:8px;">
-              <button class="seg-btn active" data-hssort="recent">최근순</button>
-              <button class="seg-btn" data-hssort="score">점수순</button>
-            </div>
-            <div id="highScoreWatchSummary" class="card-note" style="display:none; margin-bottom:8px;"></div>
-            <div id="highScoreList" class="list"></div>
-            <button id="highScoreMoreBtn" class="btn btn-ghost btn-block" style="display:none; margin-top:8px;">더 보기 (10건씩)</button>
           </div>
           <div class="card">
             <div class="card-head"><h3>🔑 핀번호 재설정</h3></div>
@@ -411,9 +390,8 @@
               <button class="btn btn-ghost backup-btn" data-backup="rankings">전체 랭킹</button>
               <button class="btn btn-ghost backup-btn" data-backup="weekly">이번주 랭킹</button>
               <button class="btn btn-ghost backup-btn" data-backup="champions">왕관 기록</button>
-              <button class="btn btn-ghost backup-btn" data-backup="user_stats">유저 통계</button>
             </div>
-            <div class="card-note">JSON 파일로 다운로드됩니다.</div>
+            <div class="card-note">JSON 파일로 다운로드됩니다. (유저 통계 백업은 전체 문서를 읽어 비용이 커 2026-08-30 제거)</div>
             <div id="backupResult"></div>
           </div>
           <div class="card danger-card">
