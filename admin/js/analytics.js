@@ -77,13 +77,11 @@ export async function loadAnalytics({ force = false } = {}) {
     // (오늘 세션 집계에는 이 필드들이 없어서, 주입하지 않으면 그래프 오늘 막대와
     //  주간 합계가 0으로 어긋난다 — 홈 11명 vs 그래프 0명 불일치의 원인이었음)
     const todayEntry = daily[daily.length - 1];
-    const [tNew, tDonate, tShare] = await Promise.all([
+    const [tNew, tShare] = await Promise.all([
       todayNewUsersCount().catch(() => null),
-      countTodayCached('donate_clicks').catch(() => null),
       countTodayCached('share_clicks').catch(() => null),
     ]);
     todayEntry.newUsers = tNew;
-    todayEntry.donateClicks = tDonate;
     todayEntry.shareClicks = tShare;
 
     barChart(chartEls[0], daily, { valueKey: 'uniqueVisitors', unit: '명' });
@@ -118,7 +116,6 @@ export async function loadAnalytics({ force = false } = {}) {
       ['주간 플레이 (전주 대비)', `${fmtNum(sum(last7, 'gamePlays'))} (${growth(sum(last7, 'gamePlays'), sum(prev7, 'gamePlays'))})`],
       ['주간 신규 유저', `${fmtNum(sum(last7, 'newUsers'))}명`],
       ['주간 평균 체류', fmtDuration(Math.round(sum(last7, 'avgDurationSec') / Math.max(1, last7.length)))],
-      ['주간 990원 클릭', `${fmtNum(sum(last7, 'donateClicks'))}회`],
       ['주간 공유 클릭', `${fmtNum(sum(last7, 'shareClicks'))}회`],
     ];
     weeklyEl.innerHTML = tiles.map(([label, val]) => `

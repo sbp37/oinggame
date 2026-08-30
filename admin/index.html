@@ -261,7 +261,6 @@
           <div class="seg" id="rwSeg">
             <button class="seg-btn active" data-kind="skin">🎁 스킨 선물</button>
             <button class="seg-btn" data-kind="note">💌 개인 쪽지</button>
-            <button class="seg-btn" data-kind="greeting">💛 감사 인사</button>
           </div>
           <div class="rw-panel skin" data-panel="skin">
             <div class="rw-title">🎁 고양이 스킨 선물하기</div>
@@ -281,18 +280,40 @@
               <button id="rwNoteBtn" class="btn btn-pink">💌 쪽지 보내기</button>
             </div>
           </div>
-          <div class="rw-panel greeting" data-panel="greeting" style="display:none;">
-            <div class="rw-title">💛 감사 인사 보내기</div>
-            <div class="rw-desc">미리 정해진 문구로 짧게 마음을 전해요.</div>
-            <div class="rw-fixed">보내지는 문구 · <b id="rwGreetPreview">○○님 감사합니다!</b></div>
-            <div class="btn-row" style="margin-top:8px;">
-              <button id="rwGreetBtn" class="btn btn-yellow">💛 감사 인사 보내기</button>
-            </div>
-          </div>
           <button id="rwPreviewBtn" class="btn btn-ghost btn-sm btn-block" style="margin-top:10px;">👀 받는 화면 미리보기</button>
           <div id="rwPreview" style="display:none; margin-top:10px;"></div>
-          <div class="card-note" style="margin-top:8px;">셋 다 유저가 다음에 게임을 열 때 팝업으로 한 번 전달돼요.</div>
+          <div class="card-note" style="margin-top:8px;">둘 다 유저가 다음에 게임을 열 때 팝업으로 한 번 전달돼요.</div>
           <div id="rwResult"></div>
+        </div>
+      </details>
+
+      <!-- 🍮 젤리 관리 -->
+      <details class="tool-acc" id="acc-jelly">
+        <summary>🍮 젤리 관리</summary>
+        <div class="tool-body">
+          <div class="card">
+            <div class="card-head"><h3>👤 유저 젤리 조회 · 지급/차감</h3></div>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <input id="jellyNick" type="text" placeholder="닉네임" style="flex:1; min-width:0;">
+              <button id="jellyLookupBtn" class="btn btn-primary btn-sm" style="flex:0 0 auto;">조회</button>
+            </div>
+            <div id="jellyWalletBox"></div>
+            <div id="jellyAdjustBox" style="display:none; margin-top:10px;">
+              <div style="display:flex; gap:8px;">
+                <input id="jellyAmount" type="number" placeholder="±개수 (예: 20, -5)" style="flex:0 0 130px; min-width:0;">
+                <input id="jellyReason" type="text" placeholder="사유 (원장에 기록됨)" style="flex:1; min-width:0;">
+                <button id="jellyAdjustBtn" class="btn btn-gold btn-sm" style="flex:0 0 auto;">적용</button>
+              </div>
+              <div class="card-note" style="margin-top:6px;">양수 = 지급, 음수 = 회수. 잔액과 원장(jelly_log)에 함께 기록돼요.</div>
+            </div>
+            <div id="jellyUserLog" class="list" style="margin-top:10px;"></div>
+            <div id="jellyResult"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>📜 최근 지급·차감 내역 (전체)</h3><button id="jellyLogLoadBtn" class="btn btn-ghost btn-sm">불러오기</button></div>
+            <div class="card-note" style="margin-bottom:8px;">서버가 기록한 젤리 원장 최근 30건 — 획득(게임·출석·선물)과 사용(구매·닉변)이 모두 남아요.</div>
+            <div id="jellyGlobalLog" class="list"></div>
+          </div>
         </div>
       </details>
 
@@ -356,10 +377,6 @@
             <button id="highScoreMoreBtn" class="btn btn-ghost btn-block" style="display:none; margin-top:8px;">더 보기 (10건씩)</button>
           </div>
           <div class="card">
-            <div class="card-head"><h3>🕵️ 의심 기록 수동 스캔</h3><button id="suspectScanBtn" class="btn btn-primary btn-sm">스캔 실행</button></div>
-            <div id="suspectResult"></div>
-          </div>
-          <div class="card">
             <div class="card-head"><h3>🔑 핀번호 재설정</h3></div>
             <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
               <input id="pinResetNickInput" type="text" placeholder="닉네임" style="flex:1; min-width:0;">
@@ -369,22 +386,17 @@
             <div id="pinResetResult"></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>🚫 랭킹 영구차단 (섀도우밴)</h3><button id="blocklistLoadBtn" class="btn btn-ghost btn-sm">명단 보기</button></div>
+            <div class="card-head"><h3>🚫 부정 유저 대응</h3><button id="blocklistLoadBtn" class="btn btn-ghost btn-sm">차단 명단</button></div>
             <div class="row">
-              <input id="blockNick" type="text" placeholder="차단할 닉네임">
-              <button id="blockAddBtn" class="btn btn-danger">차단</button>
+              <input id="abuseNick" type="text" placeholder="닉네임">
+              <button id="blockAddBtn" class="btn btn-danger">🚫 섀도우밴</button>
+              <button id="secDeleteBtn" class="btn btn-ghost">🗑 기록 삭제</button>
             </div>
+            <div class="card-note"><b>섀도우밴(권장)</b> — 기록은 남기고 랭킹 반영만 영구 차단, 본인은 눈치 못 챔. 오판이어도 해제하면 끝.<br>
+              <b>기록 삭제</b> — 전체+이번주 랭킹에서 점수를 지움(계정·스킨 유지). 삭제는 되돌릴 수 없어요.</div>
             <div id="blocklistResult"></div>
-            <div id="blocklistList" class="list" style="margin-top:8px;"></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>🗑️ 랭킹 기록 삭제</h3></div>
-            <div class="row">
-              <input id="secDeleteNick" type="text" placeholder="삭제할 닉네임">
-              <button id="secDeleteBtn" class="btn btn-danger">기록 삭제</button>
-            </div>
-            <div class="card-note">전체 랭킹 + 이번주 랭킹에서 해당 닉네임 점수를 삭제합니다. (유저 계정/스킨은 유지)</div>
             <div id="secDeleteResult"></div>
+            <div id="blocklistList" class="list" style="margin-top:8px;"></div>
           </div>
         </div>
       </details>
@@ -409,9 +421,8 @@
             <div class="card-note" style="margin-bottom:10px;">실행 전 자동 JSON 백업 + 다단계 확인창을 거칩니다.</div>
             <div class="btn-row">
               <button id="resetWeekBtn" class="btn btn-danger">이번주 랭킹만 초기화</button>
-              <button id="resetCrownBtn" class="btn btn-danger">👑 왕관 기록만 초기화</button>
-              <button id="resetAllBtn" class="btn btn-danger">랭킹 전체 초기화</button>
             </div>
+            <div class="card-note" style="margin-top:6px;">전체 랭킹·왕관 초기화 버튼은 2026-08-30 제거 — 상시 노출될 이유가 없는 파괴적 작업이라, 정말 필요하면 Firebase 콘솔에서.</div>
             <div id="resetResult"></div>
           </div>
         </div>

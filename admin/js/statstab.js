@@ -42,11 +42,8 @@ const BH_GROUPS = [
   { id: 'review', label: '📣 리뷰 요청 반응', cols: [
     { col: 'review_prompt_shown',  label: '📣 리뷰요청 팝업' },
   ]},
-  { id: 'shop',   label: '💛 후원·상점',    cols: [
-    { col: 'donate_clicks',         label: '💛 990원 응원' },
-    { col: 'support_topbtn_clicks', label: '🛍 스킨샵 버튼' },
-    { col: 'snack_clicks',          label: '🍪 간식 버튼' },
-  ]},
+  // (2026-08-30) 💛 후원·상점 그룹 제거 — 입구 버튼이 전부 display:none 이라 클릭이
+  // 물리적으로 불가능(영원히 0건). 현금 상점을 다시 열면 여기 그룹으로 복원한다.
 ];
 const DETAIL_PAGE = 20;
 const bhState = {}; // { [col]: { rows, pager, todayCount } }

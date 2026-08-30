@@ -17,7 +17,7 @@ import {
   getFirestore, collection, doc,
   getDoc, getDocs, setDoc, deleteDoc, addDoc,
   query, where, orderBy, limit, startAfter, increment, deleteField,
-  getCountFromServer,
+  getCountFromServer, runTransaction,
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged,
@@ -59,7 +59,7 @@ export {
   collection, doc,
   getDoc, getDocs, setDoc, deleteDoc, addDoc,
   query, where, orderBy, limit, startAfter, increment, deleteField,
-  httpsCallable,
+  httpsCallable, runTransaction,
 };
 
 // ── 인증 ──────────────────────────────────────────────────────

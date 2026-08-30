@@ -124,10 +124,9 @@ async function computeDayFromRaw(dateStr) {
     );
   } catch { agg.newUsers = null; }
   // 후원/공유 클릭 수 — count 집계 (문서당 읽기 아님)
+  // (2026-08-30) donate/support/snack 집계 제거 — 입구가 닫혀 있어 항상 0인데
+  // 매일 count 쿼리 비용만 나갔다. 현금 상점 재오픈 시 복원.
   const clickCols = [
-    ['donateClicks', 'donate_clicks'],
-    ['supportClicks', 'support_topbtn_clicks'],
-    ['snackClicks', 'snack_clicks'],
     ['shareClicks', 'share_clicks'],
   ];
   for (const [field, col] of clickCols) {

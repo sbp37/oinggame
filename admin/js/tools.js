@@ -7,6 +7,7 @@
 //  마지막으로 연 아코디언은 localStorage로 기억(선택 편의).
 // ══════════════════════════════════════════════════════════════
 import { initRewardsTab } from './rewards.js';
+import { initJellyTab } from './jelly.js';
 import { initOperationsTab, loadOperations } from './operations.js';
 import { initSecurityTab } from './security.js';
 
@@ -16,6 +17,7 @@ let opsLoaded = false;
 export function initToolsTab() {
   // 바인딩은 1회 — Firestore 조회 없음 (기존 init들은 전부 버튼 바인딩만 한다)
   initRewardsTab();
+  initJellyTab();
   initOperationsTab();
   initSecurityTab();
 
