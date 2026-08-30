@@ -6240,7 +6240,7 @@ async function updateUserStats(nickname, playTimeSeconds, score, sessionCatsArg,
       streak: 1,
       referrerSrc: sessionStorage.getItem('oeing_referrer_src') || '알수없음',
       refBy: sessionStorage.getItem('oeing_ref_by') || '',
-      jelly: 10, // 최초 랭킹 등록 보상 10개 (신규/기존 모두 최초 1회)
+      jelly: 0, // 환영 젤리는 서버(첫 정상 게임 완료 시 +10)가 지급 — 클라이언트는 젤리를 만들 수 없다
       jellyLastClaim: '',
       recentScores: [score],
       dailyGoalDate: todayStr,
@@ -13300,7 +13300,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788062401; // v4.9 — 메인·내 정보 가독성 개선
+const BUILD = 1788084030; // v4.9 — 최초등록 클라 젤리 지급 제거(서버 지급으로 이전 준비)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
