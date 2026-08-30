@@ -3280,7 +3280,7 @@ if ('serviceWorker' in navigator) {
 
         <!-- 4등 이하 -->
         <div class="rank-list" id="rankList"></div>
-        <div class="rank-empty" id="rankEmpty" style="display:none">아직 기록이 없어요<br>🐾 첫 번째 도전자가 되어보세요!</div>
+        <div class="rank-empty" id="rankEmpty" style="display:none">아직 기록이 없어요<br>🐾 첫 번째 도전자가 되어보라냥~</div>
         <button id="weeklyThanksToggle" style="display:none; margin:14px auto 4px; padding:6px 16px; background:none; border:1px solid rgba(218,152,69,0.4); border-radius:16px; color:rgba(240,216,168,0.75); font-family:inherit; font-size:12px; cursor:pointer;">🐾 함께해주신 분 ▾</button>
         <div id="weeklyThanksDisplay" class="thanks-card" style="display:none;"></div>
 
@@ -5363,16 +5363,20 @@ function getLastWeekId() {
   return kstWeekIdFrom(Date.now() - 7 * 24 * 60 * 60 * 1000);
 }
 
-// 지난주 최종 순위를 그대로 불러옴 (이미 끝난 주라 값이 안 바뀌므로 안정적인 비교 기준이 됨)
-async function loadLastWeekRanks() {
+// 지난주 최종 순위 톱3 — 이미 끝난 주라 값이 안 바뀐다.
+// 새 주가 시작돼 이번 주 랭킹이 비었을 때 빈 화면에 함께 보여준다.
+// (원래 여기 있던 loadLastWeekRanks() 는 지난주 '순위 번호'만 만들어 돌려줬는데
+//  호출하는 곳이 한 군데도 없는 죽은 코드였다. 같은 쿼리를 실제로 쓰는 이쪽으로 바꿨다.)
+async function loadLastWeekTop3() {
   try {
     const lastWeekId = getLastWeekId();
-    const q = query(collection(db, 'weekly_rankings', lastWeekId, 'scores'), orderBy('score', 'desc'), limit(MAX_RANKS));
+    const q = query(collection(db, 'weekly_rankings', lastWeekId, 'scores'), orderBy('score', 'desc'), limit(3));
     const snap = await getDocs(q);
-    const ranks = {};
-    snap.docs.forEach((d, i) => { ranks[d.id] = i + 1; });
-    return ranks;
-  } catch (e) { console.warn('지난주 순위 로드 실패:', e); return {}; }
+    return snap.docs.map((d) => ({
+      nickname: d.id,
+      score: Number((d.data() || {}).score) || 0,
+    })).filter((x) => x.score > 0);
+  } catch (e) { console.warn('지난주 순위 로드 실패:', e); return []; }
 }
 
 // 관리자가 남긴 "응원자 감사 메시지" — 랭킹(이번주) 화면 맨 아래에 표시
@@ -11502,7 +11506,11 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
   rankList.innerHTML = '';
 
   if (list.length === 0) {
+    // 문구를 매번 다시 넣는다 — 주간·친구 랭킹이 같은 #rankEmpty 를 자기 문구로
+    // 덮어쓰기 때문에, 예전처럼 최초 HTML 에만 기대면 그 화면을 거쳐 온 경우
+    // 전체 랭킹에 '이번 주엔 아직 기록이 없어요' 같은 남의 문구가 남는다.
     rankEmpty.style.display = 'block';
+    rankEmpty.innerHTML = '아직 기록이 없어요<br>🐾 첫 번째 도전자가 되어보라냥~';
   } else {
     rankEmpty.style.display = 'none';
 
@@ -11792,6 +11800,39 @@ function renderWeekSpurtBanner(show) {
   } catch {}
 }
 
+// 월요일 0시에 새 주차가 시작되면 이번 주 랭킹이 비는 게 정상인데, 유저 눈에는
+// "내 기록이 날아갔나?" 로 보인다(실제로 그런 문의가 있었다). 지난주 최종 순위를
+// 빈 화면 바로 밑에 붙여 데이터가 멀쩡하다는 걸 설명 없이 보여준다.
+//
+// 톤은 '이번 주 목표'가 아니라 '지난주 결과 발표'다 — 1위가 29만점대라 목표처럼
+// 제시하면 오히려 기가 죽는다. 그래서 왕관 축하 문구로 쓴다.
+async function appendLastWeekPodium(el, gen) {
+  try {
+    const top = await loadLastWeekTop3();
+    if (!top.length) return;
+    // 기다리는 동안 다른 랭킹으로 넘어갔거나 더 최신 렌더가 시작됐으면 붙이지 않는다.
+    if (gen !== _rankRenderGen) return;
+    if (currentRankMode !== 'week') return;
+    if (!el.isConnected || el.style.display === 'none') return;
+    const medals = ['🏆', '🥈', '🥉'];
+    const rows = top.map((x, i) => `
+      <div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:${i === 0 ? 0 : 4}px; font-size:${i === 0 ? 14 : 13}px;">
+        <span>${medals[i]}</span>
+        <span>${skinnedNickHtml(x.nickname, x.nickname)}</span>
+        <b style="color:var(--muted); font-weight:700;">${x.score.toLocaleString()}</b>
+      </div>`).join('');
+    const box = document.createElement('div');
+    box.style.cssText = 'margin-top:14px; padding-top:12px; border-top:1px solid var(--surface2);';
+    box.innerHTML = `
+      <div style="font-size:12.5px; color:var(--muted); margin-bottom:7px;">🗓️ 지난주 최종 순위</div>
+      ${rows}`;
+    el.appendChild(box);
+  } catch (e) {
+    // 지난주 표시는 부가 정보 — 실패해도 빈 화면 문구는 그대로 남는다.
+    console.warn('지난주 순위 표시 실패:', e);
+  }
+}
+
 async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
   const list = await loadWeeklyRankings();
   if (gen !== _rankRenderGen) return;
@@ -11873,7 +11914,9 @@ async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
 
   if (list.length === 0) {
     rankEmpty.style.display = 'block';
-    rankEmpty.innerHTML = '이번 주엔 아직 기록이 없어요<br>🐾 첫 번째 도전자가 되어보세요!';
+    rankEmpty.innerHTML = '이번 주엔 아직 기록이 없어요<br>🐾 첫 번째 도전자가 되어보라냥~';
+    // 지난주 결과는 네트워크를 한 번 더 타므로 문구를 먼저 띄우고 나중에 붙인다.
+    appendLastWeekPodium(rankEmpty, gen);
   } else {
     rankEmpty.style.display = 'none';
     list.forEach((entry, i) => {
@@ -13416,7 +13459,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788127900; // v4.10 — 주차 계산 KST 고정(기기 시간대 무관)
+const BUILD = 1788128600; // v4.11 — 주간 빈 화면에 지난주 최종 순위 + 냥 말투
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
