@@ -34,12 +34,26 @@ test('승급 팝업·이유 토글·접속 판정·무저장 미리보기 흐름
 
 test('내 정보 안내와 v4.9 업데이트 내역이 새 정책을 정확히 설명한다', () => {
   assert.match(src, />레벨 안내 ⓘ<\/button>/);
+  assert.match(src, /점수나 판수만 보지 않고,/);
+  assert.match(src, /플레이·기록·꾸준함으로 성장해요/);
   assert.match(src, /실제 플레이 시간<\/span><span class="val">2분마다 \+1 XP/);
   assert.match(src, /최고점수 보너스/);
   assert.match(src, /최고콤보 보너스/);
+  assert.match(src, /메인과 내 정보의 <b>버튼·카드 대비<\/b>를 높이고 안내 문구를 간결하게/);
   assert.match(src, /기존 레벨과 XP는 절대 내려가지 않아요/);
   assert.match(src, /const UPDATE_VERSION = 'v4\.9';/);
   assert.match(src, /const SEEN_KEY = 'seenUpdate_v4\.9';/);
+});
+
+test('메인·내 정보 버튼과 카드 대비를 높이고 레벨 안내 버튼은 얇게 유지한다', () => {
+  assert.match(src, /id="startRankBtn"[\s\S]{0,260}width: 92%;[\s\S]{0,260}border: 1\.5px solid rgba\(126,194,240,0\.52\)/);
+  assert.match(src, /\.review-entry-chip \{[\s\S]{0,260}border: 1px solid rgba\(246,196,83,0\.32\)/);
+  assert.match(src, /\.myinfo-chip \{[\s\S]{0,260}border: 1px solid rgba\(126,194,240,0\.34\)/);
+  assert.match(src, /\.myi-lv-info \{[\s\S]{0,500}min-height: 32px/);
+  assert.match(src, /#myInfoOverlay > \.overlay-card \{[\s\S]{0,220}border-color: rgba\(126,194,240,0\.48\)/);
+  assert.match(src, /body:not\(\.light\) \.oing-lv-pop-card \{[\s\S]{0,180}border-color: rgba\(126,194,240,0\.48\)/);
+  assert.match(src, /오늘 시간 XP/);
+  assert.doesNotMatch(src, /오늘 플레이 XP <b>.*실제 플레이 2분마다/);
 });
 
 test('공개 랭킹 레벨은 v2 버전이 맞는 데이터만 표시한다', () => {

@@ -2580,12 +2580,12 @@ body.game-active #kakaoInstallHint {
   display: none; align-items: center; justify-content: center; gap: 6px;
   margin: 12px auto 0; padding: 6px 14px; width: fit-content;
   border-radius: 999px; cursor: pointer; font-family: inherit;
-  background: rgba(24,34,51,0.55);
-  border: 1px solid rgba(246,196,83,0.13);
-  font-size: 14px; font-weight: 700; color: rgba(217,193,132,0.85);
+  background: rgba(28,43,64,0.78);
+  border: 1px solid rgba(246,196,83,0.32);
+  font-size: 14px; font-weight: 700; color: rgba(235,207,143,0.96);
 }
-.review-entry-chip .rv-chip-avg { font-weight: 800; color: rgba(234,194,117,0.9); }
-.review-entry-chip .cnt { font-weight: 600; color: var(--muted); font-size: 12px; }
+.review-entry-chip .rv-chip-avg { font-weight: 800; color: rgba(255,218,143,0.98); }
+.review-entry-chip .cnt { font-weight: 600; color: #9eb0c7; font-size: 12px; }
 body.light .review-entry-chip { background: rgba(246,196,83,0.10); color: #8a6a2a; border-color: rgba(200,150,40,0.30); }
 
 /* ── 👤 내정보 v1 — 메인의 조용한 프로필 칩 + 내정보 모달 ──
@@ -2595,15 +2595,15 @@ body.light .review-entry-chip { background: rgba(246,196,83,0.10); color: #8a6a2
   display: none; align-items: center; justify-content: center; gap: 6px;
   margin: 9px auto 0; padding: 5px 13px 5px 9px; width: fit-content;
   border-radius: 999px; cursor: pointer; font-family: inherit;
-  background: rgba(24,34,51,0.45); border: 1px solid var(--border);
-  font-size: 13px; font-weight: 700; color: var(--muted);
+  background: rgba(28,43,64,0.74); border: 1px solid rgba(126,194,240,0.34);
+  font-size: 13px; font-weight: 700; color: #a9c8e4;
 }
 .myinfo-chip .mic-avatar { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 12.5px; background: var(--surface2); flex-shrink: 0; }
 .myinfo-chip .mic-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .myinfo-chip .mic-level { display:inline-flex; align-items:center; flex-shrink:0; }
 .myinfo-chip .mic-level:empty { display:none; }
 .myinfo-chip .mic-level .oing-level-badge { margin-right:0; }
-.myinfo-chip .mic-nick { color: var(--text); opacity: 0.85; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.myinfo-chip .mic-nick { color: var(--text); opacity: 0.96; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .myinfo-chip .mic-arrow { font-size: 12px; font-weight: 800; }
 body.light .myinfo-chip { background: rgba(241,230,210,0.55); }
 .myi-profile { display: flex; align-items: center; gap: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 13px; text-align: left; }
@@ -2745,11 +2745,34 @@ body.light .mwk-note, body.light .mwk-stat-label, body.light .mwk-hero-label { c
 .myi-lv-playxp { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 5px; font-variant-numeric: tabular-nums; }
 .myi-lv-playxp b { color: var(--ivory); }
 .myi-lv-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
-.myi-lv-info { background: rgba(218,152,69,0.11); border: 1px solid rgba(234,194,117,0.48); color: var(--accent-lemon); font-size: 12px; line-height: 1; cursor: pointer; padding: 0 11px; font-family: inherit; opacity: 1; flex-shrink: 0; min-height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; white-space: nowrap; }
+.myi-lv-info { background: rgba(218,152,69,0.13); border: 1px solid rgba(234,194,117,0.54); color: var(--accent-lemon); font-size: 11.5px; line-height: 1; cursor: pointer; padding: 0 10px; font-family: inherit; opacity: 1; flex-shrink: 0; min-height: 32px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; white-space: nowrap; }
 .myi-lv-info:active { transform: scale(0.97); }
+/* 내 정보·레벨 안내: 어두운 배경과 카드 경계를 조금 더 또렷하게 */
+body:not(.light) #myInfoOverlay > .overlay-card {
+  background: linear-gradient(180deg, #17243a 0%, #121e31 100%);
+  border-color: rgba(126,194,240,0.48);
+  box-shadow: 0 18px 45px rgba(0,0,0,0.48), 0 0 22px rgba(47,126,201,0.10);
+}
+body:not(.light) #myInfoOverlay .myi-profile,
+body:not(.light) #myInfoOverlay .myi-level,
+body:not(.light) #myInfoOverlay .myi-rec,
+body:not(.light) #myInfoOverlay .myi-link {
+  background: rgba(29,47,71,0.92);
+  border-color: rgba(126,194,240,0.28);
+}
+body:not(.light) #myInfoOverlay .myi-level { border-color: rgba(126,194,240,0.38); }
+body:not(.light) #myInfoOverlay .myi-lv-bar { background: #0d1829; border-color: rgba(126,194,240,0.32); }
+body:not(.light) #myInfoOverlay .myi-edit-btn,
+body:not(.light) #myInfoOverlay .myi-link-btn { border-color: rgba(126,194,240,0.46); color: #a9dafa; }
+body:not(.light) #myInfoOverlay #myInfoCloseBtn { background: #1d3049 !important; border-color: rgba(126,194,240,0.38) !important; color: #9eb9d4 !important; }
 /* 레벨 안내 바텀시트 — 내 정보 모달 위에 살짝 얹히는 작은 시트 */
 .oing-lv-pop { position: fixed; inset: 0; z-index: 420; background: rgba(0,0,0,0.38); display: flex; align-items: flex-end; justify-content: center; }
 .oing-lv-pop-card { width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 18px 18px 0 0; padding: 18px 20px calc(16px + env(safe-area-inset-bottom, 0px)); text-align: left; box-shadow: 0 -8px 30px rgba(0,0,0,0.35); }
+body:not(.light) .oing-lv-pop-card { background: linear-gradient(180deg, #17243a, #121e31); border-color: rgba(126,194,240,0.48); }
+body:not(.light) .oing-lv-pop-card .lv-pop-fair,
+body:not(.light) .oing-lv-pop-card .lv-pop-next,
+body:not(.light) .oing-lv-pop-card .lv-pop-toggle,
+body:not(.light) .oing-lv-pop-card .c { background: rgba(29,48,73,0.92); border-color: rgba(126,194,240,0.36); }
 .oing-lv-pop-card .t { font-size: 17px; font-weight: 900; margin-bottom: 10px; }
 .lv-pop-intro { font-size: 15px; color: var(--text); opacity: 0.92; line-height: 1.65; margin-bottom: 4px; }
 .lv-pop-intro-sm { font-size: 14px; opacity: 0.75; margin-bottom: 6px; }
@@ -3132,13 +3155,15 @@ if ('serviceWorker' in navigator) {
                 <div id="dailyGoalStartLine2" style="font-size:11.5px; font-weight:500; color:rgba(122,139,163,0.72); letter-spacing:-0.2px; margin-top:1px;"></div>
               </div>
               <button class="action-btn" id="startRankBtn" style="
-                width: 88%;
+                width: 92%;
                 margin: 13px auto 0;
-                padding: 8px;
-                font-size: 14px;
-                background: var(--surface2);
-                border: 1px solid rgba(44,74,104,0.7);
-                color: rgba(126,194,240,0.82);
+                padding: 10px 12px;
+                font-size: 15px;
+                font-weight: 800;
+                background: linear-gradient(180deg, rgba(35,55,80,0.96), rgba(24,38,58,0.98));
+                border: 1.5px solid rgba(126,194,240,0.52);
+                color: rgba(167,218,250,0.98);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 14px rgba(0,0,0,0.16);
               ">랭킹 확인</button>
               <!-- ⭐ 게임 리뷰 입구 (메인) — 신규 유저 신뢰 뱃지. 랭킹탭 칩과 같은 meta 캐시 공유(추가 읽기 0) -->
               <button class="review-entry-chip" data-source="main">⭐ <span class="rv-chip-avg"></span> <span class="cnt rv-chip-cnt"></span></button>
@@ -3754,6 +3779,7 @@ if ('serviceWorker' in navigator) {
         <li>▫️ 🎉 새 계산으로 레벨이 오른 분은 접속할 때 <b>폭죽과 함께</b> 알려드려요</li>
         <li>▫️ 📖 내 정보에서 레벨과 승급 조건을 더 쉽게 확인할 수 있어요</li>
         <li>▫️ 🏷️ 모든 랭킹에서 <b>레벨·닉네임·왕관·불꽃</b>을 한 줄에 보기 좋게 정리했어요</li>
+        <li>▫️ 👀 메인과 내 정보의 <b>버튼·카드 대비</b>를 높이고 안내 문구를 간결하게 다듬었어요</li>
       </ul>
       <div style="font-size:12.5px;font-weight:800;color:#8ad7aa;line-height:1.6;margin:-1px 0 9px;">기존 레벨과 XP는 절대 내려가지 않아요.</div>
       <div style="border-top:1px solid var(--border);margin-bottom:12px;"></div>
@@ -4200,7 +4226,7 @@ if ('serviceWorker' in navigator) {
     <!-- ⭐ 오잉 레벨 — 누적 기록은 즉석 계산, 플레이 시간 XP는 서버 원본을 표시 -->
     <div class="myi-level" id="myiLevel" style="display:none;">
       <div class="myi-lv-head"><div class="myi-lv-name" id="myiLvName"></div><span class="myi-lv-delta" id="myiLvDelta" style="display:none;"></span><button class="myi-lv-info" id="myiLvInfoBtn" type="button" aria-label="레벨 시스템 안내">레벨 안내 ⓘ</button></div>
-      <div class="myi-lv-summary">플레이 시간과 최고 기록, 꾸준한 활동이 함께 반영돼요.</div>
+      <div class="myi-lv-summary">플레이·기록·꾸준함으로 성장해요.</div>
       <div class="myi-lv-bar"><div class="myi-lv-fill" id="myiLvFill"></div></div>
       <div class="myi-lv-xp"><span id="myiLvXp"></span><span id="myiLvNext"></span></div>
       <div class="myi-lv-playxp" id="myiLvPlayXp" style="display:none;"></div>
@@ -4250,7 +4276,7 @@ if ('serviceWorker' in navigator) {
 <div class="oing-lv-pop" id="oingLvPop" style="display:none;">
   <div class="oing-lv-pop-card">
     <div class="t">⭐ 오잉 레벨은 이렇게 올라요</div>
-    <div class="lv-pop-intro">판 수만 보지 않고, 실제 플레이 시간과 최고 기록, 꾸준함을 함께 보여주는 레벨이다냥!</div>
+    <div class="lv-pop-intro">점수나 판수만 보지 않고, 실제 플레이 시간과 최고 기록, 꾸준함을 함께 보여주는 레벨이다냥!</div>
 
     <div class="lv-pop-h">XP는 이렇게 쌓인다냥!</div>
     <div class="lv-pop-rows">
@@ -12483,31 +12509,31 @@ function renderMyPlayXpLine() {
   if (!el) return;
   const today = playXpTodayView(loadPlayXpMirror());
   el.innerHTML = (today >= PLAY_XP_CAP)
-    ? `⏱ 오늘 플레이 XP 완료 <b>${today} / ${PLAY_XP_CAP}</b>`
-    : `⏱ 오늘 플레이 XP <b>${today} / ${PLAY_XP_CAP}</b> · 실제 플레이 2분마다 +1`;
+    ? `⏱ 오늘 시간 XP 완료 <b>${today} / ${PLAY_XP_CAP}</b>`
+    : `⏱ 오늘 시간 XP <b>${today} / ${PLAY_XP_CAP}</b>`;
   el.style.display = '';
 }
 // 가까운 성장 목표 한 줄 — 우선순위: ① 오늘 플레이 ② 오늘 목표 ③ 가까운 판수 마일스톤
 // ④ 가까운 최장 스트릭 마일스톤 (⑤ 승급 조건은 게이트에 막힌 경우 gateMsg가 대신 안내)
 function oingNextHint(d) {
   const today = getLocalDateStr();
-  if (d.lastPlayDate !== today) return '오늘 한 판 플레이하면 +10 XP';
-  if (!(d.dailyGoalDate === today && d.dailyGoalAchievedToday)) return '오늘 목표를 달성하면 +10 XP';
+  if (d.lastPlayDate !== today) return '오늘 첫 플레이 +10 XP';
+  if (!(d.dailyGoalDate === today && d.dailyGoalAchievedToday)) return '오늘 목표 달성 +10 XP';
   const pc = d.playCount || 0;
   for (const [t, b] of OING_PLAY_MS) {
     if (pc < t) {
-      if (t - pc <= 15) return `${t}판까지 ${t - pc}판 남았어요 · 달성 시 +${b} XP`;
+      if (t - pc <= 15) return `${t}판까지 ${t - pc}판 · +${b} XP`;
       break;
     }
   }
   const mgs = Math.max((typeof d.maxGoalStreak === 'number') ? d.maxGoalStreak : 0, d.goalStreak || 0);
   for (const [t, b] of OING_STREAK_MS) {
     if (mgs < t) {
-      if (t - mgs <= 7) return `최장 연속 ${t}일까지 ${t - mgs}일 남았어요 · 달성 시 +${b} XP`;
+      if (t - mgs <= 7) return `최장 ${t}일까지 ${t - mgs}일 · +${b} XP`;
       break;
     }
   }
-  return '내일 또 한 판 플레이하면 +10 XP';
+  return '내일 첫 플레이 +10 XP';
 }
 function renderMyOingLevel(nick, d) {
   const box = document.getElementById('myiLevel');
@@ -12532,7 +12558,7 @@ function renderMyOingLevel(nick, d) {
     const pct = Math.max(0, Math.min(100, Math.round(((xp - cur) / (next - cur)) * 100)));
     if (fill) fill.style.width = pct + '%';
     set('myiLvXp', `${xp.toLocaleString()} / ${next.toLocaleString()} XP`);
-    set('myiLvNext', `다음 레벨까지 ${(next - xp).toLocaleString()} XP`);
+    set('myiLvNext', `${(next - xp).toLocaleString()} XP 남음`);
     set('myiLvHint', oingNextHint(d));
   }
   if (hintEl) hintEl.style.color = '';
@@ -12708,8 +12734,8 @@ function showOingLevelInfoPreview() {
   set('myiNick', '미리보기냥');
   set('myiLvName', 'Lv.8 · 🧶 베테랑냥');
   set('myiLvXp', '1,720 / 1,900 XP');
-  set('myiLvNext', '다음 레벨까지 180 XP');
-  set('myiLvHint', '오늘 목표를 달성하면 +10 XP');
+  set('myiLvNext', '180 XP 남음');
+  set('myiLvHint', '오늘 목표 달성 +10 XP');
   set('myiBestScore', '29,161');
   set('myiBestCombo', '×280');
   set('myiPlayCount', '128판');
@@ -12717,7 +12743,7 @@ function showOingLevelInfoPreview() {
   set('myiGoalStreak', '12일째 🔥');
   const fill = document.getElementById('myiLvFill'); if (fill) fill.style.width = '51%';
   const px = document.getElementById('myiLvPlayXp');
-  if (px) { px.innerHTML = '⏱ 오늘 플레이 XP <b>7 / 15</b> · 실제 플레이 2분마다 +1'; px.style.display = ''; }
+  if (px) { px.innerHTML = '⏱ 오늘 시간 XP <b>7 / 15</b>'; px.style.display = ''; }
   const level = document.getElementById('myiLevel'); if (level) level.style.display = '';
   const since = document.getElementById('myiSince'); if (since) { since.textContent = '함께한 지 48일째 🐾'; since.style.display = ''; }
   for (const id of ['myiEditBtn', 'myiLink', 'deleteMyRankBtn']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
@@ -13272,7 +13298,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788062201; // v4.9 — 랭킹 레벨·닉네임·왕관·불꽃 한 줄 배치
+const BUILD = 1788062401; // v4.9 — 메인·내 정보 가독성 개선
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
