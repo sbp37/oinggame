@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<title>젤리상점 v2 — 디자인 데모</title>
+<!-- ══════════════════════════════════════════════════════════════
+  젤리상점 v2 디자인 데모 (2026-08-30)
+  · 실서비스 아님 — 링크를 아는 사람만 보는 정적 데모. 서버 호출 0, 구매 0.
+  · 콘셉트: "목록"이 아니라 "입어보는 거울" — 내 랭킹 줄이 상단에 고정되고
+    아이템을 탭하면 사기 전에 그 자리에서 입혀진다.
+  · 가격·아이템 key 는 서버(shopAction) 가격표와 동일하게 유지할 것.
+  · 승인되면 index.html 젤리상점 오버레이를 이 구조로 교체한다.
+═══════════════════════════════════════════════════════════════ -->
+<style>
+:root {
+  --bg:#0b1220; --card:#121b2e; --card2:#0f1830; --border:rgba(148,163,184,0.16);
+  --ivory:#eef2f8; --muted:#8a9bb5; --gold:#fbbf24; --gold-dim:rgba(251,191,36,0.14);
+  --blue:#7ec2f0; --green:#7fe895;
+}
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; padding:0; background:var(--bg); color:var(--ivory);
+  font-family:'Pretendard','Malgun Gothic',-apple-system,sans-serif; }
+body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
+
+.demo-banner { position:sticky; top:0; z-index:60; background:var(--gold); color:#3a2b06;
+  text-align:center; font-size:11.5px; font-weight:900; padding:5px 8px; letter-spacing:-0.2px; }
+
+/* ── 점원 헤더 ── */
+.shop-head { display:flex; align-items:center; gap:12px; padding:16px 16px 10px; }
+.cat-face { font-size:40px; filter:drop-shadow(0 2px 8px rgba(251,191,36,0.3));
+  animation:catBob 3s ease-in-out infinite; }
+@keyframes catBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.cat-bubble { position:relative; background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:9px 13px; font-size:13px; line-height:1.45; color:var(--ivory);
+  font-weight:600; flex:1; min-height:20px; }
+.cat-bubble::before { content:''; position:absolute; left:-6px; top:16px; width:10px; height:10px;
+  background:var(--card); border-left:1px solid var(--border); border-bottom:1px solid var(--border);
+  transform:rotate(45deg); }
+.cat-bubble b { color:var(--gold); }
+
+/* ── 지갑 + 오늘 획득 ── */
+.wallet { margin:6px 16px 12px; background:linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.03));
+  border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:12px 14px; }
+.wallet-top { display:flex; align-items:baseline; justify-content:space-between; }
+.wallet-bal { font-size:22px; font-weight:900; color:var(--gold); letter-spacing:-0.5px; }
+.wallet-bal small { font-size:12px; color:var(--muted); font-weight:700; margin-left:4px; }
+.wallet-hint { font-size:11px; color:var(--muted); font-weight:700; }
+.earn-row { display:flex; gap:6px; margin-top:10px; }
+.earn-chip { flex:1; text-align:center; border-radius:10px; padding:6px 2px 5px;
+  background:rgba(148,163,184,0.07); border:1px solid var(--border); }
+.earn-chip.done { background:rgba(127,232,149,0.10); border-color:rgba(127,232,149,0.4); }
+.earn-chip .t { font-size:10px; color:var(--muted); font-weight:800; display:block; }
+.earn-chip .v { font-size:12px; font-weight:900; margin-top:2px; display:block; }
+.earn-chip.done .v { color:var(--green); }
+
+/* ── 거울(내 랭킹 줄 미리보기) — sticky ── */
+.mirror-wrap { position:sticky; top:26px; z-index:50; padding:8px 16px 10px;
+  background:linear-gradient(var(--bg) 82%, transparent); }
+.mirror-label { font-size:10.5px; font-weight:800; color:var(--muted); letter-spacing:0.4px;
+  margin:0 0 5px 4px; display:flex; justify-content:space-between; align-items:center; }
+.mirror-reset { background:none; border:none; color:var(--blue); font-size:10.5px; font-weight:800;
+  cursor:pointer; font-family:inherit; padding:0; }
+.rank-row { position:relative; display:flex; align-items:center; gap:10px;
+  background:var(--card); border:1.5px solid var(--frame-color, var(--border));
+  border-radius:14px; padding:13px 14px; transition:border-color 0.25s; }
+.rank-row.has-frame::before { content:''; position:absolute; inset:-1px; border-radius:inherit;
+  pointer-events:none; box-shadow:0 0 12px var(--frame-color), 0 0 4px var(--frame-color);
+  animation:glowPulse 2.2s ease-in-out infinite; }
+@keyframes glowPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+.rank-row .num { font-size:14px; font-weight:900; color:var(--muted); width:20px; }
+.rank-row .nick { font-size:16px; font-weight:900; letter-spacing:-0.3px; transition:color 0.2s; }
+.rank-row .score { margin-left:auto; font-size:14px; font-weight:800; color:var(--blue); }
+.nick.fx { background-clip:text; -webkit-background-clip:text; color:transparent;
+  background-size:300% 100%; animation:nickShine 3s linear infinite; }
+.nick.fx-rainbow { background-image:linear-gradient(90deg,#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f472b6,#f87171); }
+.nick.fx-goldshine { background-image:linear-gradient(90deg,#92600a,#fde68a,#fbbf24,#fde68a,#92600a); }
+.nick.fx-diamond { background-image:linear-gradient(90deg,#7dd3fc,#ffffff,#a5f3fc,#ffffff,#7dd3fc); }
+@keyframes nickShine { to { background-position:-300% center; } }
+
+/* ── 탭 ── */
+.tabs { display:flex; gap:6px; padding:2px 16px 10px; }
+.tab { flex:1; text-align:center; padding:9px 0; border-radius:12px; font-size:13px; font-weight:800;
+  color:var(--muted); background:var(--card2); border:1px solid var(--border); cursor:pointer; }
+.tab.on { color:#1a2338; background:var(--gold); border-color:var(--gold); }
+
+/* ── 아이템 그리드 ── */
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 8px; }
+.item { position:relative; background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+  padding:14px 10px 11px; text-align:center; cursor:pointer; transition:transform 0.12s, border-color 0.2s; }
+.item:active { transform:scale(0.96); }
+.item.trying { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
+.item .pv { height:38px; display:flex; align-items:center; justify-content:center; }
+.item .pv .dot { width:30px; height:30px; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.4) inset, 0 0 12px currentColor; }
+.item .pv .txt { font-size:17px; font-weight:900; }
+.item .pv .fchip { padding:6px 16px; border-radius:11px; font-size:13px; font-weight:900;
+  border:1.5px solid var(--frame-color); box-shadow:0 0 10px var(--frame-color); color:var(--ivory); }
+.item .nm { font-size:12.5px; font-weight:800; margin-top:8px; letter-spacing:-0.3px; }
+.item .pr { font-size:11.5px; font-weight:900; color:var(--gold); margin-top:3px; }
+.item .pr.owned { color:var(--green); }
+.badge { position:absolute; top:8px; right:8px; font-size:9.5px; font-weight:900; padding:2.5px 7px;
+  border-radius:999px; letter-spacing:0.2px; }
+.badge.eq { background:rgba(127,232,149,0.15); color:var(--green); border:1px solid rgba(127,232,149,0.45); }
+.badge.wish { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(251,191,36,0.45); }
+.sect-note { padding:2px 20px 14px; font-size:11px; color:var(--muted); font-weight:600; line-height:1.6; }
+
+/* ── 찜 진행 ── */
+.wish-card { margin:4px 16px 12px; background:var(--card); border:1px dashed rgba(251,191,36,0.5);
+  border-radius:14px; padding:12px 14px; display:none; }
+.wish-card.show { display:block; }
+.wish-head { display:flex; justify-content:space-between; font-size:12.5px; font-weight:800; }
+.wish-head .dday { color:var(--gold); }
+.wish-bar { height:8px; border-radius:999px; background:rgba(148,163,184,0.15); margin-top:8px; overflow:hidden; }
+.wish-bar i { display:block; height:100%; border-radius:999px; width:0;
+  background:linear-gradient(90deg,#f59e0b,var(--gold)); transition:width 0.5s ease; }
+.wish-sub { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:6px; }
+
+/* ── 하단 액션바 ── */
+.actionbar { position:fixed; bottom:0; left:50%; transform:translate(-50%, 110%); width:100%; max-width:430px;
+  background:rgba(13,20,36,0.97); border-top:1px solid var(--border); padding:12px 16px 20px;
+  backdrop-filter:blur(8px); transition:transform 0.25s ease; z-index:70; }
+.actionbar.show { transform:translate(-50%, 0); }
+.ab-info { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
+.ab-name { font-size:14px; font-weight:900; }
+.ab-price { font-size:13px; font-weight:900; color:var(--gold); }
+.ab-btns { display:flex; gap:8px; }
+.ab-btn { flex:1; border:none; border-radius:13px; padding:13px 0; font-size:14px; font-weight:900;
+  font-family:inherit; cursor:pointer; letter-spacing:-0.3px; }
+.ab-buy { background:var(--gold); color:#1a2338; }
+.ab-buy:disabled { background:rgba(148,163,184,0.2); color:var(--muted); }
+.ab-wish { background:var(--card); color:var(--gold); border:1.5px solid rgba(251,191,36,0.5); flex:0 0 108px; }
+.ab-eq { background:var(--green); color:#0c2413; }
+.ab-off { background:var(--card); color:var(--muted); border:1.5px solid var(--border); flex:0 0 84px; }
+
+.toast { position:fixed; top:14%; left:50%; transform:translate(-50%,-8px); z-index:90; pointer-events:none;
+  background:rgba(20,30,46,0.97); color:#fde68a; border:1.5px solid rgba(251,191,36,0.5);
+  border-radius:999px; padding:9px 18px; font-size:13px; font-weight:800; opacity:0;
+  transition:opacity 0.25s, transform 0.25s; white-space:nowrap; }
+.toast.show { opacity:1; transform:translate(-50%,0); }
+</style>
+</head>
+<body>
+<div class="demo-banner">🔍 젤리상점 v2 디자인 데모 — 실제 구매·지급 없음 (링크를 아는 사람만 볼 수 있어요)</div>
+
+<div class="shop-head">
+  <div class="cat-face">🐱</div>
+  <div class="cat-bubble" id="catSay">어서오라냥! 아이템을 누르면 <b>사기 전에 입어볼 수 있다냥</b> 👇</div>
+</div>
+
+<div class="wallet">
+  <div class="wallet-top">
+    <div class="wallet-bal">🍮 <span id="bal">47</span><small>개</small></div>
+    <div class="wallet-hint">오늘 +4 모았어요</div>
+  </div>
+  <div class="earn-row">
+    <div class="earn-chip done"><span class="t">출석</span><span class="v">+1 ✓</span></div>
+    <div class="earn-chip done"><span class="t">첫 게임</span><span class="v">+1 ✓</span></div>
+    <div class="earn-chip done"><span class="t">오늘의 목표</span><span class="v">+2 ✓</span></div>
+    <div class="earn-chip"><span class="t">연속 3일</span><span class="v">2일차</span></div>
+  </div>
+</div>
+
+<div class="mirror-wrap">
+  <div class="mirror-label"><span>↓ 내 랭킹 줄 — 누르는 대로 바로 입혀져요</span>
+    <button class="mirror-reset" id="resetBtn">↺ 원래대로</button></div>
+  <div class="rank-row" id="mirror">
+    <span class="num">4</span>
+    <span class="nick" id="mirrorNick">오잉이</span>
+    <span class="score">17,495pt</span>
+  </div>
+</div>
+
+<div class="wish-card" id="wishCard">
+  <div class="wish-head"><span id="wishName">👑 로얄 프레임 찜!</span><span class="dday" id="wishDday"></span></div>
+  <div class="wish-bar"><i id="wishBar"></i></div>
+  <div class="wish-sub" id="wishSub"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" data-tab="color">🎨 컬러</div>
+  <div class="tab" data-tab="fx">✨ 효과</div>
+  <div class="tab" data-tab="frame">🖼 프레임</div>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="sect-note" id="sectNote"></div>
+
+<div class="actionbar" id="actionbar">
+  <div class="ab-info"><span class="ab-name" id="abName"></span><span class="ab-price" id="abPrice"></span></div>
+  <div class="ab-btns" id="abBtns"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 데모 상태 (전부 가짜 — 서버 호출 0) ─────────────────────────
+// 가격·key 는 서버 shopAction 가격표와 동일해야 한다 (컬러20 / 효과 60·80·100 / 프레임 100~250)
+const CATALOG = {
+  color: [
+    { key:'gold',   nm:'골드',   price:20, c:'#fbbf24' },
+    { key:'pink',   nm:'핑크',   price:20, c:'#f472b6' },
+    { key:'mint',   nm:'민트',   price:20, c:'#34d399' },
+    { key:'purple', nm:'퍼플',   price:20, c:'#a78bfa' },
+    { key:'red',    nm:'레드',   price:20, c:'#f87171' },
+    { key:'sky',    nm:'스카이', price:20, c:'#38bdf8' },
+  ],
+  fx: [
+    { key:'rainbow',   nm:'무지개',   price:60,  cls:'fx-rainbow' },
+    { key:'goldshine', nm:'골드샤인', price:80,  cls:'fx-goldshine' },
+    { key:'diamond',   nm:'다이아',   price:100, cls:'fx-diamond' },
+  ],
+  frame: [
+    { key:'moon',   nm:'달빛',    price:100, c:'#cbd5e1' },
+    { key:'neon',   nm:'네온',    price:130, c:'#22d3ee' },
+    { key:'sakura', nm:'벚꽃',    price:160, c:'#fda4af' },
+    { key:'aurora', nm:'오로라',  price:180, c:'#5eead4' },
+    { key:'royal',  nm:'👑 로얄', price:250, c:'#e879f9' },
+  ],
+};
+const NOTES = {
+  color: '컬러와 효과는 둘 중 하나만 적용돼요 · 한번 사면 영구 소유, 무료로 껐다 켤 수 있어요',
+  fx: '닉네임이 살아 움직여요 · 컬러 대신 적용돼요',
+  frame: '내 랭킹 줄 테두리가 은은하게 빛나요 · 컬러·효과와 같이 쓸 수 있어요',
+};
+const state = {
+  bal: 47,
+  owned: { color:['gold'], fx:[], frame:[] },
+  equipped: { nick:'gold', frame:null },   // nick = 컬러 key 또는 효과 key
+  trying: { nick:'gold', frame:null },     // 거울에 입혀본 상태
+  tab: 'color',
+  selected: null,                          // {type, item}
+  wish: null,                              // {type, key}
+  dailyRate: 3,
+};
+const $ = (id) => document.getElementById(id);
+const findItem = (type, key) => CATALOG[type].find(i => i.key === key);
+const nickType = (key) => CATALOG.fx.some(i => i.key === key) ? 'fx' : 'color';
+
+// ── 거울 렌더 ──
+function renderMirror() {
+  const nick = $('mirrorNick');
+  const t = state.trying;
+  nick.className = 'nick';
+  nick.style.color = '';
+  if (t.nick) {
+    if (nickType(t.nick) === 'fx') nick.classList.add('fx', findItem('fx', t.nick).cls);
+    else nick.style.color = findItem('color', t.nick).c;
+  }
+  const m = $('mirror');
+  if (t.frame) {
+    m.classList.add('has-frame');
+    m.style.setProperty('--frame-color', findItem('frame', t.frame).c);
+  } else {
+    m.classList.remove('has-frame');
+    m.style.removeProperty('--frame-color');
+  }
+}
+
+// ── 그리드 렌더 ──
+function renderGrid() {
+  const type = state.tab;
+  $('sectNote').textContent = NOTES[type];
+  $('grid').innerHTML = CATALOG[type].map(it => {
+    const owned = state.owned[type].includes(it.key);
+    const equipped = (type === 'frame') ? state.equipped.frame === it.key : state.equipped.nick === it.key;
+    const trying = state.selected && state.selected.item.key === it.key && state.selected.type === type;
+    const wished = state.wish && state.wish.key === it.key;
+    let pv;
+    if (type === 'color') pv = `<div class="dot" style="background:${it.c}; color:${it.c};"></div>`;
+    else if (type === 'fx') pv = `<div class="txt nick fx ${it.cls}" style="font-size:17px;">오잉이</div>`;
+    else pv = `<div class="fchip" style="--frame-color:${it.c};">오잉이</div>`;
+    return `<div class="item ${trying ? 'trying' : ''}" data-key="${it.key}">
+      ${equipped ? '<span class="badge eq">장착중</span>' : wished ? '<span class="badge wish">찜</span>' : ''}
+      <div class="pv">${pv}</div>
+      <div class="nm">${it.nm}${type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ''}</div>
+      <div class="pr ${owned ? 'owned' : ''}">${owned ? '보유중 ✓' : '🍮 ' + it.price}</div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#grid .item').forEach(el => {
+    el.addEventListener('click', () => selectItem(type, el.dataset.key));
+  });
+}
+
+// ── 아이템 선택 = 입어보기 + 액션바 ──
+function selectItem(type, key) {
+  const item = findItem(type, key);
+  state.selected = { type, item };
+  if (type === 'frame') state.trying.frame = key;
+  else state.trying.nick = key;
+  renderMirror(); renderGrid(); renderActionbar();
+  const owned = state.owned[type].includes(key);
+  say(owned ? `${item.nm} — 이미 갖고 있다냥. 바로 바꿔줄까냥?`
+    : state.bal >= item.price ? `오, ${item.nm} 잘 어울린다냥! 🍮${item.price}면 데려갈 수 있다냥`
+    : `${item.nm}... 🍮${item.price - state.bal}개만 더 모으면 된다냥. 찜해둘까냥?`);
+}
+function renderActionbar() {
+  const sel = state.selected;
+  const bar = $('actionbar');
+  if (!sel) { bar.classList.remove('show'); return; }
+  const { type, item } = sel;
+  const owned = state.owned[type].includes(item.key);
+  const equipped = (type === 'frame') ? state.equipped.frame === item.key : state.equipped.nick === item.key;
+  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ' 컬러');
+  $('abPrice').textContent = owned ? '보유중' : `🍮 ${item.price} (보유 ${state.bal})`;
+  let html = '';
+  if (equipped) {
+    html = `<button class="ab-btn ab-off" id="abOff">해제</button>
+      <button class="ab-btn ab-eq" disabled style="opacity:0.6;">장착중 ✓</button>`;
+  } else if (owned) {
+    html = `<button class="ab-btn ab-eq" id="abEquip">장착하기 (무료)</button>`;
+  } else if (state.bal >= item.price) {
+    html = `<button class="ab-btn ab-wish" id="abWish">🎯 찜</button>
+      <button class="ab-btn ab-buy" id="abBuy">🍮 ${item.price}에 구매하고 장착</button>`;
+  } else {
+    html = `<button class="ab-btn ab-wish" id="abWish">🎯 찜해두기</button>
+      <button class="ab-btn ab-buy" disabled>🍮 ${item.price - state.bal}개 부족해요</button>`;
+  }
+  $('abBtns').innerHTML = html;
+  bar.classList.add('show');
+  const on = (id, fn) => { const b = $(id); if (b) b.addEventListener('click', fn); };
+  on('abBuy', () => buy(type, item));
+  on('abEquip', () => equip(type, item));
+  on('abOff', () => unequip(type));
+  on('abWish', () => wish(type, item));
+}
+function buy(type, item) {
+  state.bal -= item.price;
+  state.owned[type].push(item.key);
+  $('bal').textContent = state.bal;
+  equip(type, item);
+  toast(`구매 완료! 🍮 ${item.price} 사용 (데모라 진짜 안 나갔어요)`);
+  say(`${item.nm} 데려갔다냥! 🎉 다음부턴 무료로 껐다 켤 수 있다냥`);
+}
+function equip(type, item) {
+  if (type === 'frame') { state.equipped.frame = item.key; state.trying.frame = item.key; }
+  else { state.equipped.nick = item.key; state.trying.nick = item.key; }
+  renderMirror(); renderGrid(); renderActionbar();
+}
+function unequip(type) {
+  if (type === 'frame') { state.equipped.frame = null; state.trying.frame = null; }
+  else { state.equipped.nick = null; state.trying.nick = null; }
+  renderMirror(); renderGrid(); renderActionbar();
+  say('기본으로 되돌렸다냥');
+}
+function wish(type, item) {
+  state.wish = { type, key: item.key };
+  const need = Math.max(0, item.price - state.bal);
+  const days = Math.ceil(need / state.dailyRate);
+  $('wishCard').classList.add('show');
+  $('wishName').textContent = `🎯 ${item.nm}${type === 'frame' ? ' 프레임' : ''} 찜!`;
+  $('wishDday').textContent = need === 0 ? '지금 살 수 있어요!' : `D-${days}`;
+  $('wishSub').textContent = need === 0 ? '잔액이 충분해요 — 마음이 정해지면 눌러주세요'
+    : `🍮 ${state.bal}/${item.price} · 하루 ${state.dailyRate}개씩 모으면 ${days}일 뒤에 살 수 있어요`;
+  $('wishBar').style.width = Math.min(100, Math.round(state.bal / item.price * 100)) + '%';
+  renderGrid();
+  toast('찜 완료 — 모이는 동안 여기서 진행을 보여줘요');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── 잡동사니 ──
+let sayTimer = null;
+function say(text) {
+  const el = $('catSay');
+  el.style.opacity = '0.4';
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(() => { el.innerHTML = text; el.style.opacity = '1'; }, 120);
+}
+let toastTimer = null;
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  state.tab = t.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+  state.selected = null;
+  renderGrid(); renderActionbar();
+}));
+$('resetBtn').addEventListener('click', () => {
+  state.trying = { nick: state.equipped.nick, frame: state.equipped.frame };
+  state.selected = null;
+  renderMirror(); renderGrid(); renderActionbar();
+  say('지금 장착한 모습으로 되돌렸다냥');
+});
+renderMirror(); renderGrid();
+</script>
+</body>
+</html>
