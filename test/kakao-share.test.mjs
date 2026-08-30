@@ -3,31 +3,31 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const src = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const handlerStart = src.indexOf("document.getElementById('shareResultBtn').addEventListener");
+const handlerEnd = src.indexOf('// 닉네임 변경', handlerStart);
+const handler = src.slice(handlerStart, handlerEnd);
 
-test('카카오 점수 공유는 공식 SDK를 웹에서만 지연 로드한다', () => {
-  assert.match(src, /const KAKAO_SHARE_JS_KEY = '[a-f0-9]{32}';/);
-  assert.match(src, /https:\/\/t1\.kakaocdn\.net\/kakao_js_sdk\/2\.8\.2\/kakao\.min\.js/);
-  assert.match(src, /const KAKAO_SHARE_SDK_INTEGRITY = 'sha384-[^']+';/);
-  assert.match(src, /function loadKakaoShareSdk\(\) \{[\s\S]*?if \(IS_APP\) return Promise\.resolve\(null\);/);
-  assert.match(src, /function tryKakaoScoreShare\(finalScore, gameUrl\) \{[\s\S]*?if \(IS_APP\) return false;/);
+test('점수 공유는 카카오 SDK 로그인 대신 기기 공유창을 사용한다', () => {
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart, 'share handler not found');
+  assert.match(handler, /if \(navigator\.share\)/);
+  assert.match(handler, /await navigator\.share\(\{ title: '오잉게임', text: shareText, url: gameUrl \}\)/);
+  assert.doesNotMatch(src, /KAKAO_SHARE_JS_KEY|Kakao\.Share\.sendDefault|kakao_js_sdk/);
 });
 
-test('카카오 공유 카드는 점수·썸네일·추천 링크·도전 버튼을 담는다', () => {
-  assert.match(src, /kakao\.Share\.sendDefault\(\{/);
-  assert.match(src, /title: `오잉게임 — \$\{formattedScore\}점! 이길 수 있냥\?`/);
-  assert.match(src, /imageUrl: 'https:\/\/oinggame\.com\/share-thumbnail\.jpg'/);
-  assert.match(src, /title: '도전하기'/);
-  assert.match(src, /mobileWebUrl: gameUrl/);
-  assert.match(src, /https:\/\/oinggame\.com\/\?r=\$\{code\}/);
-});
-
-test('카카오 SDK를 못 쓰면 기존 공유 경로를 유지한다', () => {
-  assert.match(src, /const sharedWithKakao = await tryKakaoScoreShare\(score, gameUrl\);/);
-  assert.match(src, /if \(!sharedWithKakao && navigator\.share\)/);
-  assert.match(src, /else if \(!sharedWithKakao && navigator\.clipboard\)/);
+test('공유 주소는 추천코드와 새 미리보기 캐시 키를 함께 전달한다', () => {
+  assert.match(handler, /let gameUrl = 'https:\/\/oinggame\.com\/\?share=v2';/);
+  assert.match(handler, /https:\/\/oinggame\.com\/\?r=\$\{code\}&share=v2/);
+  assert.match(handler, /Number\(score \|\| 0\)\.toLocaleString\('ko-KR'\)/);
 });
 
 test('추천코드 생성 실패 시에도 기본 주소로 공유를 계속한다', () => {
-  assert.match(src, /let gameUrl = 'https:\/\/oinggame\.com\/';/);
-  assert.match(src, /try \{[\s\S]*?await getOrCreateRefCode\(myNickForShare\)[\s\S]*?\} catch \(e\) \{[\s\S]*?기본 링크로 공유/);
+  assert.match(handler, /try \{[\s\S]*?await getOrCreateRefCode\(myNickForShare\)[\s\S]*?\} catch \(e\) \{[\s\S]*?기본 링크로 공유/);
+  assert.match(handler, /else if \(navigator\.clipboard\)/);
+});
+
+test('카카오 링크 미리보기에 실제 썸네일 비율을 명시한다', () => {
+  assert.match(src, /<meta property="og:image" content="https:\/\/oinggame\.com\/share-thumbnail\.jpg">/);
+  assert.match(src, /<meta property="og:image:width" content="1200">/);
+  assert.match(src, /<meta property="og:image:height" content="630">/);
+  assert.match(src, /<meta property="og:image:type" content="image\/jpeg">/);
 });

@@ -103,6 +103,9 @@
 <meta property="og:title" content="오잉게임 🐱 자꾸 생각나는 합10 퍼즐">
 <meta property="og:description" content="친구들과 랭킹 대결! 지금 바로 도전해보라냥 🐾">
 <meta property="og:image" content="https://oinggame.com/share-thumbnail.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:url" content="https://oinggame.com/">
 <meta name="twitter:card" content="summary_large_image">
 <!-- 로딩 최적화: 폰트를 @import(CSS 파싱 후에야 순차 발견)에서 <link>(HTML 단계에서 병렬 다운로드)로.
@@ -13140,87 +13143,8 @@ document.getElementById('resultRankBtn').addEventListener('click', () => {
 });
 
 // ══════════════════════════════
-//  카톡으로 자랑하기 — 웹은 카카오 카드, 앱/실패 시 기존 공유
+//  카톡으로 자랑하기 — 기기 공유창 우선 (카카오 로그인 불필요)
 // ══════════════════════════════
-const KAKAO_SHARE_JS_KEY = '78165b247d19078e4699ecd2ba904551';
-const KAKAO_SHARE_SDK_URL = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js';
-const KAKAO_SHARE_SDK_INTEGRITY = 'sha384-zt/G7/KfaRQ9dT/QIkS0ujMtzouJqzuSJcXVQu50x0rl/+mD1dc70AeOejVbMD9E';
-let kakaoShareSdkPromise = null;
-
-function loadKakaoShareSdk() {
-  // 앱 웹뷰에는 외부 SDK를 싣지 않는다. 앱은 아래의 네이티브 공유 경로를 그대로 쓴다.
-  if (IS_APP) return Promise.resolve(null);
-
-  const initKakao = () => {
-    const kakao = window.Kakao;
-    if (!kakao) throw new Error('Kakao SDK를 불러오지 못했습니다.');
-    if (!kakao.isInitialized()) kakao.init(KAKAO_SHARE_JS_KEY);
-    return kakao;
-  };
-
-  if (window.Kakao) return Promise.resolve(initKakao());
-  if (kakaoShareSdkPromise) return kakaoShareSdkPromise;
-
-  kakaoShareSdkPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = KAKAO_SHARE_SDK_URL;
-    script.integrity = KAKAO_SHARE_SDK_INTEGRITY;
-    script.crossOrigin = 'anonymous';
-    script.dataset.oingKakaoSdk = 'true';
-    script.onload = () => {
-      try { resolve(initKakao()); }
-      catch (e) { reject(e); }
-    };
-    script.onerror = () => reject(new Error('Kakao SDK 로드 실패'));
-    document.head.appendChild(script);
-  }).catch((e) => {
-    kakaoShareSdkPromise = null;
-    throw e;
-  });
-
-  return kakaoShareSdkPromise;
-}
-
-async function tryKakaoScoreShare(finalScore, gameUrl) {
-  if (IS_APP) return false;
-
-  let kakao;
-  try {
-    kakao = await loadKakaoShareSdk();
-  } catch (e) {
-    console.warn('카카오 공유 준비 실패, 기본 공유로 전환:', e);
-    return false;
-  }
-  if (!kakao?.Share?.sendDefault) return false;
-
-  const formattedScore = Number(finalScore || 0).toLocaleString('ko-KR');
-  try {
-    await kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: `오잉게임 — ${formattedScore}점! 이길 수 있냥?`,
-        description: '2분 합10 퍼즐 · 친구 기록에 도전해보세요 🐾',
-        imageUrl: 'https://oinggame.com/share-thumbnail.jpg',
-        link: {
-          mobileWebUrl: gameUrl,
-          webUrl: gameUrl
-        }
-      },
-      buttons: [{
-        title: '도전하기',
-        link: {
-          mobileWebUrl: gameUrl,
-          webUrl: gameUrl
-        }
-      }]
-    });
-  } catch (e) {
-    // 공유창을 연 뒤 사용자가 닫은 경우 기본 공유창을 연달아 띄우지 않는다.
-    console.warn('카카오 공유창 종료:', e);
-  }
-  return true;
-}
-
 document.getElementById('shareResultBtn').addEventListener('click', async () => {
   const btn = document.getElementById('shareResultBtn');
   const originalText = btn.textContent;
@@ -13228,28 +13152,28 @@ document.getElementById('shareResultBtn').addEventListener('click', async () => 
   btn.textContent = '⏳';
 
   const myNickForShare = loadNickname();
-  let gameUrl = 'https://oinggame.com/';
+  // 공유 미리보기 캐시를 새 카드 규격으로 갱신하면서 추천코드는 그대로 전달한다.
+  let gameUrl = 'https://oinggame.com/?share=v2';
   if (myNickForShare) {
     try {
       const code = await getOrCreateRefCode(myNickForShare);
-      if (code) gameUrl = `https://oinggame.com/?r=${code}`;
+      if (code) gameUrl = `https://oinggame.com/?r=${code}&share=v2`;
       logShareClick(myNickForShare);
     } catch (e) {
       // 추천코드 서버가 잠시 불안정해도 공유 자체는 기본 주소로 계속할 수 있어야 한다.
       console.warn('추천 링크 생성 실패, 기본 링크로 공유:', e);
     }
   }
-  const shareText = `오잉게임에서 ${score}점 냈다냥! 이겨보라냥 🐱`;
+  const shareText = `오잉게임에서 ${Number(score || 0).toLocaleString('ko-KR')}점 냈다냥! 이겨보라냥 🐱`;
 
   try {
-    const sharedWithKakao = await tryKakaoScoreShare(score, gameUrl);
-    if (!sharedWithKakao && navigator.share) {
-      // 이미지 없이 텍스트+링크만 공유 — 이래야 카톡에서 링크가 눌리는 형태로 확실히 전달됨
+    if (navigator.share) {
+      // 휴대폰 공유창에서 카카오톡을 고르면 별도 카카오 로그인 없이 바로 전송할 수 있다.
       await navigator.share({ title: '오잉게임', text: shareText, url: gameUrl });
-    } else if (!sharedWithKakao && navigator.clipboard) {
+    } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(`${shareText}\n${gameUrl}`);
       alert('공유 기능이 없는 브라우저라 링크를 복사했어요! 카톡에 붙여넣기 해주세요 🐱');
-    } else if (!sharedWithKakao) {
+    } else {
       alert(`이 링크를 복사해서 보내주세요:\n${gameUrl}`);
     }
   } catch (e) {
