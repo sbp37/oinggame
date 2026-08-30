@@ -538,6 +538,12 @@ function highScoreDetailHtml(d, stats, allRows) {
 // 고득점 판 검토는 처리함(🚨 점수 검토)에서 "서버가 실제로 보류한 건"만 보면 된다.
 // ⚠️ 상세 렌더러(highScoreDetailHtml)와 헬퍼들은 처리함 상세 토글이 계속 쓰므로 유지.
 
+// ── 🚨 서버 자동 판정 알림 (game_sessions, 읽기 전용) ──
+// 대시보드는 이 컬렉션을 절대 수정/삭제하지 않는다 (규칙상 write도 Cloud Function만 가능).
+// 문서는 30일 TTL(expireAt)로 서버가 알아서 지우므로 별도 보관 로직 없음.
+// (2026-08-30 복구: 고득점 목록을 잘라낼 때 바로 아래 있던 이 상수까지 함께 지워져
+//  '점수 검토' 화면이 VERDICT_DECISIONS is not defined 로 깨졌었다.)
+const VERDICT_DECISIONS = ['pending_review', 'rejected_invalid'];
 const REASON_LABELS = {
   ELAPSED_TOO_SHORT: '30초 미만 즉시클리어',
   SCORE_OVER_OFFICIAL_CAP: '점수 상한 초과(5만+)',
