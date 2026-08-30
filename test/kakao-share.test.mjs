@@ -10,14 +10,21 @@ const handler = src.slice(handlerStart, handlerEnd);
 test('점수 공유는 카카오 SDK 로그인 대신 기기 공유창을 사용한다', () => {
   assert.ok(handlerStart >= 0 && handlerEnd > handlerStart, 'share handler not found');
   assert.match(handler, /if \(navigator\.share\)/);
-  assert.match(handler, /await navigator\.share\(\{ title: '오잉게임', text: shareText, url: gameUrl \}\)/);
+  assert.match(handler, /await navigator\.share\(\{ title: '오잉 도전장', text: shareText, url: gameUrl \}\)/);
   assert.doesNotMatch(src, /KAKAO_SHARE_JS_KEY|Kakao\.Share\.sendDefault|kakao_js_sdk/);
 });
 
 test('공유 주소는 추천코드와 새 미리보기 캐시 키를 함께 전달한다', () => {
-  assert.match(handler, /let gameUrl = 'https:\/\/oinggame\.com\/\?share=v2';/);
-  assert.match(handler, /https:\/\/oinggame\.com\/\?r=\$\{code\}&share=v2/);
+  assert.match(handler, /let gameUrl = 'https:\/\/oinggame\.com\/\?share=v3';/);
+  assert.match(handler, /https:\/\/oinggame\.com\/\?r=\$\{code\}&share=v3/);
   assert.match(handler, /Number\(score \|\| 0\)\.toLocaleString\('ko-KR'\)/);
+});
+
+test('공유 문구는 점수·2분·도전 행동을 짧게 강조한다', () => {
+  assert.match(handler, /🐱 나 \$\{Number\(score \|\| 0\)\.toLocaleString\('ko-KR'\)\}점! 2분 안에 이길 수 있냥\?/);
+  assert.match(handler, /바로 한 판 붙어보자 👇/);
+  assert.match(src, /<meta property="og:title" content="오잉 도전장 도착! 🐱">/);
+  assert.match(src, /<meta property="og:description" content="딱 2분! 숫자를 묶어 합10을 만들고 친구 점수를 넘어보라냥 🐾">/);
 });
 
 test('추천코드 생성 실패 시에도 기본 주소로 공유를 계속한다', () => {
