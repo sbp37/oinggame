@@ -1808,9 +1808,11 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .podium-rank-change.same { color: var(--muted); font-weight: 700; -webkit-text-stroke: 0; }
 .rank-nick { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing:-0.35px; }
 .rank-identity { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; }
-.rank-nick-line { width:100%; min-width:0; display:flex; align-items:center; gap:4px; white-space:nowrap; }
-.rank-nick-line .oing-level-badge { margin:0; flex-shrink:0; font-size:8.5px; padding:1px 4px; }
-.rank-identity .rank-nick { width:auto; flex:none; overflow:visible; text-overflow:clip; font-size:clamp(12.5px, 3.8vw, 15px); line-height:1.18; }
+.rank-nick-line { width:100%; min-width:0; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.rank-nick-line .oing-level-badge { margin:0; flex-shrink:0; font-size:9.5px; padding:1.5px 4.5px; }
+.rank-nick-line .oing-level-badge .olv-icon { font-size:10.5px; }
+.rank-nick-line .rank-title-count, .rank-nick-line .rank-hot { margin-left:0; flex-shrink:0; }
+.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(14.5px, 4.1vw, 16px); line-height:1.18; }
 .rank-meta { display:flex; align-items:center; gap:3px; max-width:100%; min-height:14px; overflow:hidden; white-space:nowrap; }
 .rank-meta:empty { display:none; }
 .rank-title-count { color:#DA9845; font-size:9.5px; line-height:1; font-weight:800; white-space:nowrap; flex-shrink:0; }
@@ -3751,7 +3753,7 @@ if ('serviceWorker' in navigator) {
         <li>▫️ ⏱️ 판당 플레이 XP는 <b>실제 플레이 시간</b>에 따라 쌓여요</li>
         <li>▫️ 🎉 새 계산으로 레벨이 오른 분은 접속할 때 <b>폭죽과 함께</b> 알려드려요</li>
         <li>▫️ 📖 내 정보에서 레벨과 승급 조건을 더 쉽게 확인할 수 있어요</li>
-        <li>▫️ 🏷️ 모든 랭킹에서 <b>레벨을 닉네임 바로 앞</b>에 표시하고 이름이 잘리지 않게 정리했어요</li>
+        <li>▫️ 🏷️ 모든 랭킹에서 <b>레벨·닉네임·왕관·불꽃</b>을 한 줄에 보기 좋게 정리했어요</li>
       </ul>
       <div style="font-size:12.5px;font-weight:800;color:#8ad7aa;line-height:1.6;margin:-1px 0 9px;">기존 레벨과 XP는 절대 내려가지 않아요.</div>
       <div style="border-top:1px solid var(--border);margin-bottom:12px;"></div>
@@ -11426,8 +11428,8 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
         <span class="rank-num">${rank}</span>
         ${changeHtml}
         <span class="rank-identity">
-          <span class="rank-nick-line">${oingLevelBadgeHtml(entry, isMe)}<span class="rank-nick">${skinnedNickHtml(entry.nickname, entry.nickname)}</span></span>
-          <span class="rank-meta">${titleHtml}${rankHotHtml(entry.ts)}${creatorBadgeHtml(entry.nickname)}</span>
+          <span class="rank-nick-line">${oingLevelBadgeHtml(entry, isMe)}<span class="rank-nick">${skinnedNickHtml(entry.nickname, entry.nickname)}</span>${titleHtml}${rankHotHtml(entry.ts)}</span>
+          <span class="rank-meta">${creatorBadgeHtml(entry.nickname)}</span>
         </span>
         ${meBadgeHtml}${friendBadgeHtml}
         <span class="rank-tail">${badgeHtml}${isNew ? '<span class="rank-new-badge">NEW</span>' : ''}<span class="rank-pts">${entry.score}pt${bestSubR}</span></span>
@@ -11774,8 +11776,8 @@ async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
         <span class="rank-num">${rank}</span>
         ${changeHtml}
         <span class="rank-identity">
-          <span class="rank-nick-line">${oingLevelBadgeHtml(entry, isMe)}<span class="rank-nick">${skinnedNickHtml(entry.nickname, entry.nickname)}</span></span>
-          <span class="rank-meta">${rankHotHtml(entry.ts)}${creatorBadgeHtml(entry.nickname)}</span>
+          <span class="rank-nick-line">${oingLevelBadgeHtml(entry, isMe)}<span class="rank-nick">${skinnedNickHtml(entry.nickname, entry.nickname)}</span>${rankHotHtml(entry.ts)}</span>
+          <span class="rank-meta">${creatorBadgeHtml(entry.nickname)}</span>
         </span>
         ${isMe && !isOeingOwnerDevice() ? `<span class="rank-me-badge"><img src="${MY_CAT_IMG}" alt="나"></span>` : ''}
         ${isFriend(entry.nickname) ? '<span class="rank-friend-badge" title="내 친구">🤍</span>' : ''}
@@ -13270,7 +13272,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788062001; // v4.9 — 모든 랭킹 레벨·닉네임 한 줄 배치
+const BUILD = 1788062201; // v4.9 — 랭킹 레벨·닉네임·왕관·불꽃 한 줄 배치
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

@@ -47,13 +47,15 @@ test('공개 랭킹 레벨은 v2 버전이 맞는 데이터만 표시한다', ()
   assert.match(src, /publicVersion === OING_LEVEL_VERSION/);
 });
 
-test('모든 랭킹은 레벨과 닉네임을 같은 줄에 표시하고 부가정보를 다음 줄로 분리한다', () => {
+test('모든 랭킹은 레벨·닉네임·왕관·불꽃을 같은 줄에 표시한다', () => {
   assert.doesNotMatch(src, /#panelRank:not\(\.all-mode\) \.oing-level-badge \{ display:none !important; \}/);
   assert.doesNotMatch(src, /\.ranking-panel \.oing-level-badge \{ display:none !important; \}/);
   assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{titleBadgeP\}/);
   assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{rankHotHtml\(entry\.ts\)\}/);
-  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span><\/span>[\s\S]{0,160}<span class="rank-meta">\$\{titleHtml\}/);
-  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span><\/span>[\s\S]{0,160}<span class="rank-meta">\$\{rankHotHtml\(entry\.ts\)\}/);
+  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{titleHtml\}\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
+  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
+  assert.match(src, /\.rank-identity \.rank-nick \{[^}]*font-size:clamp\(14\.5px, 4\.1vw, 16px\)/);
+  assert.match(src, /\.rank-nick-line \.oing-level-badge \{[^}]*font-size:9\.5px/);
   assert.match(src, /<span class="rank-tail">\$\{badgeHtml\}[\s\S]{0,180}<span class="rank-pts">/);
   assert.match(src, /#panelRank \.podium-nick-text \{ overflow:visible; text-overflow:clip; \}/);
 });
