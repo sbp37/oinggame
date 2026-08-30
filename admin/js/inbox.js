@@ -10,7 +10,12 @@ import { guardBtn } from './admin.js';
 import { loadVerdicts, ackAllVerdicts } from './security.js';
 import { initFeedbackUI, loadFeedback } from './operations.js';
 
-const sub = { verdicts: { inited: false, loaded: false }, feedback: { inited: false, loaded: false }, done: { inited: false, loaded: false } };
+const sub = {
+  verdicts: { inited: false, loaded: false },
+  feedback: { inited: false, loaded: false },
+  reviews:  { inited: false, loaded: false },
+  done:     { inited: false, loaded: false },
+};
 let currentSub = 'verdicts';
 
 async function openSub(name, { force = false } = {}) {
@@ -27,6 +32,9 @@ async function openSub(name, { force = false } = {}) {
     if (!st.inited) { initFeedbackUI(); st.inited = true; }
     await loadFeedback({ reset: force });
     st.loaded = true;
+  } else if (name === 'reviews') {
+    // 리뷰는 '리뷰 불러오기' 버튼을 눌렀을 때만 조회한다(서브탭 진입만으로는 조회 0).
+    st.loaded = true;
   }
 }
 
@@ -40,7 +48,7 @@ export function initInbox() {
 }
 
 export async function loadInbox({ force = false } = {}) {
-  if (force) { sub.verdicts.loaded = false; sub.feedback.loaded = false; sub.done.loaded = false; }
+  if (force) { sub.verdicts.loaded = false; sub.feedback.loaded = false; sub.reviews.loaded = false; sub.done.loaded = false; }
   await openSub(currentSub, { force });
 }
 

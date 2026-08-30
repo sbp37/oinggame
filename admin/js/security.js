@@ -8,7 +8,7 @@
 import {
   db, collection, doc, query, where, orderBy, limit,
   fetchDocs, fetchDoc, setDoc, deleteDoc, getUserDocByNick, resolveUserDocId, countQuery,
-  getWeekId, fmtNum, fmtDateTime, fmtDuration, escapeHtml, downloadJSON, humanError,
+  getWeekId, fmtNum, fmtDateTime, fmtDuration, escapeHtml, humanError,
   getTodayDateStr, cache, fns, httpsCallable, makePager,
 } from './firebase.js';
 import { setLoading, setError, setEmpty, guardBtn, resultMsg } from './admin.js';
@@ -937,48 +937,10 @@ const SUSPECT_DEEP_TOP = 20;
 // (2026-08-30) 의심 기록 수동 스캔 제거 — 판정 근거(user_stats)가 클라이언트 조작 가능이라
 // 서버 자동 판정(decide → 🚨 처리함 배지)으로 완전 대체됐다. 오탐·미탐 모두 이쪽이 정확하다.
 
-// ── 백업 — 컬렉션을 JSON 파일로 다운로드 ──
-const BACKUP_SOURCES = {
-  rankings:   () => fetchDocs(query(collection(db, 'rankings'))),
-  weekly:     () => fetchDocs(query(collection(db, 'weekly_rankings', getWeekId(), 'scores'))),
-  champions:  () => fetchDocs(query(collection(db, 'champions'))),
-  // (2026-08-30) user_stats 백업 제거 — 전체 문서 풀스캔이라 어드민 읽기 비용의 최대 항목이었다.
-};
-async function backup(kind) {
-  const rows = await BACKUP_SOURCES[kind]();
-  const clean = rows.map(({ _snap, ...rest }) => rest);
-  downloadJSON(`oing-backup-${kind}-${getTodayDateStr()}.json`, { kind, exportedAt: new Date().toISOString(), count: clean.length, docs: clean });
-  return clean.length;
-}
+// (2026-08-30) 백업(JSON 다운로드)·이번주 랭킹 초기화 제거 — 운영자 요청.
+// 실사용이 없었고, 초기화는 상시 노출될 이유가 없는 파괴적 작업이다.
+// 데이터 백업·초기화가 정말 필요하면 Firebase 콘솔에서 한다.
 
-// ── 초기화 3종 — 기존 setupAdminReset 로직/문구 그대로 + 사전 자동 백업 ──
-// (2026-08-30) 전체 랭킹 초기화 제거 — 상시 노출될 이유가 없는 파괴적 작업.
-// 정말 필요하면 Firebase 콘솔에서 수동으로 한다.
-
-async function resetWeek() {
-  const weekId = getWeekId();
-  const ok = confirm(`이번주(${weekId}) 랭킹만 초기화할까요?\n전체 랭킹은 그대로 유지됩니다.\n이 작업은 되돌릴 수 없습니다.`);
-  if (!ok) return;
-  const ok2 = confirm('마지막 확인입니다.\n이번주 랭킹이 전부 삭제되고 0부터 다시 시작됩니다.\n진행할까요?');
-  if (!ok2) return;
-  resultMsg('resetResult', '백업 다운로드 중...');
-  try {
-    await backup('weekly');
-    const weekSnap = await fetchDocs(query(collection(db, 'weekly_rankings', weekId, 'scores')));
-    for (const d of weekSnap) await deleteDoc(doc(db, 'weekly_rankings', weekId, 'scores', d.id));
-    // 주간 순위변동 비교용 스냅샷도 같이 지움
-    await deleteDoc(doc(db, 'meta', 'weeklyRankSnapshot')).catch(() => {});
-    resultMsg('resetResult', `완료! 이번주(${weekId}) 랭킹 ${weekSnap.length}개 삭제됨.`);
-  } catch (e) {
-    resultMsg('resetResult', '초기화 중 오류: ' + humanError(e), false);
-  }
-}
-
-// (2026-08-30) 왕관 기록 초기화 제거 — 같은 이유.
-
-// ── ⭐ 리뷰 관리 ──
-// 목록 조회는 어드민이 버튼을 눌렀을 때만(자동 조회 없음). 모든 변경(승인/거부/삭제/답글/확인)은
-// reviewAction 서버 함수를 호출한다 — 클라이언트는 game_reviews* 에 직접 쓸 수 없음(rules).
 function rvStars(r) { const n = Math.max(1, Math.min(5, r | 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
 
 async function callReviewAdmin(payload) {
@@ -1143,20 +1105,7 @@ export function initSecurityTab() {
     if (done) document.getElementById('abuseNick').value = '';
   }));
 
-  document.querySelectorAll('.backup-btn').forEach(btn => {
-    btn.addEventListener('click', guardBtn(btn, async () => {
-      resultMsg('backupResult', '백업 조회 중... (전체 문서를 읽으므로 필요할 때만 사용)');
-      try {
-        const n = await backup(btn.dataset.backup);
-        resultMsg('backupResult', `✅ ${btn.dataset.backup} ${fmtNum(n)}건 다운로드 완료`);
-      } catch (e) {
-        resultMsg('backupResult', humanError(e), false);
-      }
-    }));
-  });
-
-  const weekBtn = document.getElementById('resetWeekBtn');
-  weekBtn.addEventListener('click', guardBtn(weekBtn, resetWeek));
 }
+
 // (2026-07 개편) 의심 판정 UI는 처리함(inbox.js)으로 이동 — loadVerdicts/ackAllVerdicts export 사용.
 // 이 파일의 initSecurityTab은 관리(tools) 탭의 보안 도구·백업·초기화 바인딩만 담당한다.

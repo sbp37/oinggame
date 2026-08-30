@@ -7987,7 +7987,11 @@ async function _shadowStartSession() {
     uid = await ensureAnonymousAuth();
   } catch (e) { console.warn('세션 시작: 익명 인증 실패', e && (e.code || e.message)); return; }
   if (!uid) return; // 익명 인증 없으면 shadow 생략(게임/랭킹은 정상)
-  const DELAYS = [0, 400, 1200]; // 즉시 → 0.4초 → 1.2초
+  // Cloud Functions 콜드스타트는 5~10초가 걸린다. 예전 재시도(0/0.4/1.2초)는 총 1.6초라
+  // 콜드스타트를 전혀 못 넘겼고, 그 판들이 전부 '세션 없음'으로 어드민 검증 불가에 쌓였다.
+  // (2026-08-30: 2주간 193건) 총 대기를 ~10초로 늘려 콜드스타트를 실제로 넘긴다.
+  // 게임 진행은 이 함수를 기다리지 않으므로(호출부가 await 하지 않음) 체감 지연은 없다.
+  const DELAYS = [0, 800, 2500, 6000]; // 즉시 → 0.8초 → 2.5초 → 6초 (누적 ~9.3초)
   for (let i = 0; i < DELAYS.length; i++) {
     if (DELAYS[i]) await new Promise(r => setTimeout(r, DELAYS[i]));
     try {
@@ -13380,7 +13384,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788086981; // v4.9 — 젤리상점 디자인 미리보기 링크(?preview=jelly, 읽기 전용) 추가
+const BUILD = 1788089583; // v4.9 — 세션 생성 재시도 확대(콜드스타트 대응) + 어드민 2차 정리
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

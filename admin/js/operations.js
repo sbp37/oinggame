@@ -133,60 +133,9 @@ export async function loadFeedback({ reset = false } = {}) {
 // meta/weeklyThanks 문서와 게임 쪽 표시 로직은 그대로 두므로, 다시 쓰려면
 // 이 파일의 thanks 블록과 index.html 카드를 복원하면 된다.
 
-// ── 명예의전당 ──
-async function loadHall({ force = false } = {}) {
-  const el = document.getElementById('hallList');
-  setLoading(el);
-  try {
-    if (force) cache.bust('operations:hall');
-    const { champs, current } = await cache.get('operations:hall', async () => ({
-      champs: await fetchDocs(query(collection(db, 'champions'), orderBy('count', 'desc'), limit(50))),
-      current: await fetchDoc(doc(db, 'meta', 'currentChampion')).catch(() => null),
-    }));
-    const currentLine = current
-      ? `<div class="card-note" style="margin-bottom:6px;">현재 챔피언: <span class="nick">${escapeHtml(current.nickname || '-')}</span> (${fmtDateTime(current.ts)})</div>` : '';
-    if (!champs.length) { el.innerHTML = currentLine + '<div class="list-empty">왕관 기록이 없어요</div>'; return; }
-    el.innerHTML = currentLine + champs.map((c, i) => `
-      <div class="list-row">
-        <span class="main">${i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1) + '.'} <span class="nick">${escapeHtml(c.id)}</span></span>
-        <span class="sub">👑 ${fmtNum(c.count || 0)}회 · ${c.lastCrownedAt ? fmtDateTime(c.lastCrownedAt) : '-'}</span>
-      </div>`).join('');
-  } catch (e) {
-    setError(el, humanError(e));
-  }
-}
-// 명전 횟수 수동 설정 (기존과 동일한 필드)
-async function setHallCount(nick, count) {
-  await setDoc(doc(db, 'champions', nick), { count, lastCrownedAt: Date.now() }, { merge: true });
-  cache.bust('operations:hall');
-  resultMsg('hallResult', `'${escapeHtml(nick)}' 명전 횟수를 ${count}회로 설정했습니다.`);
-  await loadHall({ force: true });
-}
-// 현재 1등을 챔피언 메타정보로 동기화 (카운트는 건드리지 않음 — 기존과 동일)
-async function syncChampion() {
-  const tops = await fetchDocs(query(collection(db, 'rankings'), orderBy('score', 'desc'), limit(1)));
-  if (!tops.length) { resultMsg('hallResult', '현재 랭킹에 등록된 사람이 없습니다.', false); return; }
-  const topNick = tops[0].id;
-  await setDoc(doc(db, 'meta', 'currentChampion'), { nickname: topNick, ts: Date.now() });
-  cache.bust('operations:hall');
-  resultMsg('hallResult', `현재 챔피언을 '${escapeHtml(topNick)}'(으)로 동기화했습니다. (명전 횟수는 변경되지 않았습니다)`);
-  await loadHall({ force: true });
-}
+// (2026-08-30) 명예의전당 수동 보정·앱 버전 표시 제거 — 운영자 요청.
+// champions 컬렉션과 게임 쪽 왕관 자동 지급은 그대로다(어드민 UI만 없앰).
 
-// ── 앱 버전 ──
-async function loadVersion({ force = false } = {}) {
-  const el = document.getElementById('opVersionInfo');
-  try {
-    if (force) cache.bust('operations:version');
-    const v = await cache.get('operations:version', () => fetchDoc(doc(db, 'meta', 'appVersion')));
-    el.textContent = v ? `현재 서버 기준 빌드: ${v.build}` : '버전 정보 없음';
-  } catch (e) {
-    el.textContent = humanError(e);
-  }
-}
-
-// ── 바인딩 / 로드 ──
-// 처리함(inbox) 문의 UI 바인딩 — 더 보기 + 카드 펼치기/접기 위임
 export function initFeedbackUI() {
   const moreBtn = document.getElementById('feedbackMoreBtn');
   moreBtn.addEventListener('click', () => loadFeedback());
@@ -200,29 +149,6 @@ export function initFeedbackUI() {
 }
 
 // 관리(tools)>게임 운영 바인딩 — 함께해주신 분·명예의전당
-export function initOperationsTab() {
-  const setBtn = document.getElementById('hallSetBtn');
-  setBtn.addEventListener('click', guardBtn(setBtn, async () => {
-    const nick = document.getElementById('hallNick').value.trim();
-    const countVal = document.getElementById('hallCount').value.trim();
-    if (!nick) { resultMsg('hallResult', '닉네임을 입력하세요.', false); return; }
-    if (countVal === '' || isNaN(Number(countVal)) || Number(countVal) < 0) { resultMsg('hallResult', '올바른 횟수를 입력하세요.', false); return; }
-    try {
-      await setHallCount(nick, Math.floor(Number(countVal)));
-      document.getElementById('hallNick').value = '';
-      document.getElementById('hallCount').value = '';
-    } catch (e) { resultMsg('hallResult', humanError(e), false); }
-  }));
-  const syncBtn = document.getElementById('hallSyncBtn');
-  syncBtn.addEventListener('click', guardBtn(syncBtn, async () => {
-    try { await syncChampion(); } catch (e) { resultMsg('hallResult', humanError(e), false); }
-  }));
-}
-
-// 관리>게임 운영 아코디언을 열 때만 호출 — 문의는 처리함(inbox)이 별도 로드
-export async function loadOperations({ force = false } = {}) {
-  await Promise.allSettled([
-    loadHall({ force }),
-    loadVersion({ force }),
-  ]);
-}
+// (2026-08-30) 게임 운영 아코디언 제거로 이 파일의 탭 바인딩·로더는 사라졌다.
+// 남은 export 는 처리함(inbox)이 쓰는 문의 관련 3종뿐이다:
+//   loadFeedbackNewBadge · initFeedbackUI · loadFeedback

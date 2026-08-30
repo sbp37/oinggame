@@ -89,6 +89,7 @@
       <div class="seg" id="inboxSeg">
         <button class="seg-btn active" data-sub="verdicts">🚨 점수 검토</button>
         <button class="seg-btn" data-sub="feedback">💬 문의</button>
+        <button class="seg-btn" data-sub="reviews">📝 리뷰</button>
         <button class="seg-btn" data-sub="done">✅ 처리 완료</button>
       </div>
 
@@ -109,6 +110,18 @@
           <div class="card-head"><h3>💬 문의</h3></div>
           <div id="feedbackList" class="list"></div>
           <button id="feedbackMoreBtn" class="btn btn-ghost btn-block">이전 문의 더 보기</button>
+        </div>
+      </div>
+
+      <!-- 리뷰 (게임 운영에서 이관 — 📝 배지·오늘 할 일이 여기로 온다) -->
+      <div class="sub-panel" data-subpanel="reviews" style="display:none;">
+        <div class="card">
+          <div class="card-head">
+            <h3>⭐ 리뷰 관리</h3>
+            <button id="reviewScanBtn" class="btn btn-primary btn-sm">리뷰 불러오기</button>
+          </div>
+          <div class="card-note" style="margin-bottom:8px;">1~2점 리뷰는 자동 보류돼요 — 여기서 승인/거부합니다.</div>
+          <div id="reviewAdminResult"></div>
         </div>
       </div>
 
@@ -142,33 +155,6 @@
         <div id="usersTodayList" class="list"></div>
       </div>
 
-      <div class="card">
-        <div class="card-head"><h3>🌱 신규 유저</h3></div>
-        <div id="usersNewList" class="list"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <h3>👥 전체 유저 목록</h3>
-          <button id="usersAllBtn" class="btn btn-primary btn-sm">불러오기</button>
-        </div>
-        <div class="card-note">최근 접속·신규·점수·플레이 횟수 순으로 20명씩 봅니다. (누를 때만 조회)</div>
-      </div>
-
-      <!-- 전체 목록 (전체 보기를 눌렀을 때만 조회) -->
-      <div class="card" id="usersAllCard" style="display:none;">
-        <div class="card-head">
-          <h3>👥 전체 유저</h3>
-          <select id="userSortSel" class="sel">
-            <option value="lastPlayed">최근 접속순</option>
-            <option value="firstPlayed">신규순</option>
-            <option value="bestScore">점수순</option>
-            <option value="playCount">플레이 횟수순</option>
-          </select>
-        </div>
-        <div id="usersList" class="list"></div>
-        <button id="usersMoreBtn" class="btn btn-ghost btn-block">더 보기 (20명씩)</button>
-      </div>
     </section>
 
     <!-- ══ 📊 통계 ══ -->
@@ -317,34 +303,10 @@
         </div>
       </details>
 
-      <!-- 🎮 게임 운영 -->
-      <details class="tool-acc" id="acc-ops">
-        <summary>🎮 게임 운영</summary>
-        <div class="tool-body">
-          <div class="card">
-            <div class="card-head"><h3>👑 명예의전당</h3></div>
-            <div id="hallList" class="list"></div>
-            <div class="row" style="margin-top:10px;">
-              <input id="hallNick" type="text" placeholder="닉네임">
-              <input id="hallCount" type="number" min="0" placeholder="횟수" style="max-width:90px;">
-              <button id="hallSetBtn" class="btn btn-primary">저장</button>
-            </div>
-            <button id="hallSyncBtn" class="btn btn-ghost btn-block" style="margin-top:8px;">현재 1등을 챔피언으로 동기화</button>
-            <div id="hallResult"></div>
-          </div>
-          <div class="card">
-            <div class="card-head">
-              <h3>⭐ 리뷰 관리</h3>
-              <button id="reviewScanBtn" class="btn btn-primary btn-sm">리뷰 불러오기</button>
-            </div>
-            <div id="reviewAdminResult"></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>ℹ️ 앱 버전</h3></div>
-            <div id="opVersionInfo" class="card-note">-</div>
-          </div>
-        </div>
-      </details>
+      <!-- (2026-08-30) 🎮 게임 운영 아코디언 제거 — 운영자 요청.
+           · 명예의전당: 왕관은 자동 지급되고 수동 보정을 쓴 적이 없음
+           · 앱 버전: 정보 표시만
+           · 리뷰 관리: 실제로 쓰는 기능이라 삭제하지 않고 처리함 '📝 리뷰'로 이관 -->
 
       <!-- 🛡 보안 도구 -->
       <details class="tool-acc" id="acc-sec">
@@ -380,31 +342,10 @@
         </div>
       </details>
 
-      <!-- 🔴 백업·위험 기능 (맨 아래) -->
-      <details class="tool-acc danger-acc" id="acc-danger">
-        <summary>🔴 백업 · 위험 기능</summary>
-        <div class="tool-body">
-          <div class="card">
-            <div class="card-head"><h3>💾 백업</h3></div>
-            <div class="btn-row">
-              <button class="btn btn-ghost backup-btn" data-backup="rankings">전체 랭킹</button>
-              <button class="btn btn-ghost backup-btn" data-backup="weekly">이번주 랭킹</button>
-              <button class="btn btn-ghost backup-btn" data-backup="champions">왕관 기록</button>
-            </div>
-            <div class="card-note">JSON 파일로 다운로드됩니다. (유저 통계 백업은 전체 문서를 읽어 비용이 커 2026-08-30 제거)</div>
-            <div id="backupResult"></div>
-          </div>
-          <div class="card danger-card">
-            <div class="card-head"><h3>⚠️ 초기화</h3></div>
-            <div class="card-note" style="margin-bottom:10px;">실행 전 자동 JSON 백업 + 다단계 확인창을 거칩니다.</div>
-            <div class="btn-row">
-              <button id="resetWeekBtn" class="btn btn-danger">이번주 랭킹만 초기화</button>
-            </div>
-            <div class="card-note" style="margin-top:6px;">전체 랭킹·왕관 초기화 버튼은 2026-08-30 제거 — 상시 노출될 이유가 없는 파괴적 작업이라, 정말 필요하면 Firebase 콘솔에서.</div>
-            <div id="resetResult"></div>
-          </div>
-        </div>
-      </details>
+      <!-- (2026-08-30) 🔴 백업·위험 기능 아코디언 제거 — 운영자 요청.
+           백업(JSON 다운로드)·이번주 랭킹 초기화 모두 실사용이 없었고, 초기화는
+           상시 노출될 이유가 없는 파괴적 작업이다. 필요하면 Firebase 콘솔에서. -->
+
     </section>
 
   </main>

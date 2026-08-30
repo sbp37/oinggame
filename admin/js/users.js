@@ -10,71 +10,16 @@
 // ══════════════════════════════════════════════════════════════
 import {
   db, collection, doc, orderBy, query, limit,
-  fetchDoc, fetchDocs, deleteDoc, setDoc, makePager, getUserDocByNick, resolveUserDocId,
+  fetchDoc, fetchDocs, deleteDoc, setDoc, getUserDocByNick, resolveUserDocId,
   getWeekId, getTodayDateStr, fmtAgo, fmtDateTime, fmtDuration, fmtNum, escapeHtml,
   humanError, normalizeNickname, cache,
 } from './firebase.js';
-import { getTodaySessions, todayNewUsersList } from './stats.js';
+import { getTodaySessions } from './stats.js';
 import { setLoading, setError, setEmpty, guardBtn, resultMsg } from './admin.js';
 
-const PAGE_SIZE = 20;
-
-// 정렬 모드 → user_stats 필드 (전부 단일 필드 orderBy — 복합 인덱스 불필요)
-const SORT_FIELDS = {
-  lastPlayed:    { field: 'lastPlayed',    label: v => fmtAgo(v),                 name: '최근 플레이' },
-  firstPlayed:   { field: 'firstPlayed',   label: v => fmtDateTime(v).split(' ')[0], name: '가입' },
-  bestScore:     { field: 'bestScore',     label: v => `${fmtNum(v)}pt`,          name: '최고 점수' },
-  playCount:     { field: 'playCount',     label: v => `${fmtNum(v)}판`,          name: '플레이 수' },
-  totalPlayTime: { field: 'totalPlayTime', label: v => fmtDuration(v),            name: '누적 시간' },
-};
-
-// 정렬별 상태: { pager, rows } — 세션 내 재사용
-const listState = {};
-
-function displayName(row) { return row.nickname || row.id; }
-
-function userRowHtml(row, sortKey) {
-  const s = SORT_FIELDS[sortKey];
-  const val = row[s.field];
-  // 계정 미연동(구형 닉네임 문서) 여부는 내부 구분이라 목록에는 표시하지 않는다 — 상세 모달에서만 확인
-  return `
-    <div class="list-row clickable user-row" data-nick="${escapeHtml(displayName(row))}">
-      <span class="main"><span class="nick">${escapeHtml(displayName(row))}</span></span>
-      <span class="sub">${s.name} ${val != null ? s.label(val) : '-'} · 최고 ${fmtNum(row.bestScore || 0)}pt · ${fmtNum(row.playCount || 0)}판</span>
-    </div>`;
-}
-
-function renderList(sortKey) {
-  const el = document.getElementById('usersList');
-  const st = listState[sortKey];
-  if (!st || !st.rows.length) { setEmpty(el, '표시할 유저가 없어요'); return; }
-  el.innerHTML = st.rows.map(r => userRowHtml(r, sortKey)).join('');
-  const moreBtn = document.getElementById('usersMoreBtn');
-  moreBtn.style.display = st.pager.done ? 'none' : 'flex';
-}
-
-async function loadPage(sortKey, { reset = false } = {}) {
-  const el = document.getElementById('usersList');
-  const moreBtn = document.getElementById('usersMoreBtn');
-  if (reset || !listState[sortKey]) {
-    listState[sortKey] = {
-      pager: makePager(() => [collection(db, 'user_stats'), orderBy(SORT_FIELDS[sortKey].field, 'desc')], PAGE_SIZE),
-      rows: [],
-    };
-  }
-  const st = listState[sortKey];
-  if (!st.rows.length) setLoading(el);
-  moreBtn.disabled = true;
-  try {
-    const page = await st.pager.next();
-    st.rows.push(...page);
-    renderList(sortKey);
-  } catch (e) {
-    setError(el, humanError(e));
-  } finally {
-    moreBtn.disabled = false;
-  }
-}
+// (2026-08-30) '👥 전체 유저 목록'(정렬 4종 · 20명씩 페이저) 제거 — 운영자 요청.
+// 특정 유저는 위 검색으로 바로 찾고, 오늘 활동은 '오늘 접속'에서 본다.
+// user_stats 를 정렬·페이지로 훑던 유일한 경로라 읽기 비용도 함께 사라진다.
 
 // ── 오늘 들어온 유저 = "오늘 접속한 유저" (신규 가입과 별개 개념) ──
 // 홈이 이미 받아온 오늘 visit_sessions 캐시를 그대로 재사용 — 추가 Firestore 조회 0.
@@ -260,25 +205,9 @@ export async function deleteRankingRecord(nick, resultElId) {
 
 // ── 탭 바인딩 (조회 없음) / 로드 ──
 export function initUsersTab() {
-  document.getElementById('userSortSel').addEventListener('change', (e) => {
-    const sortKey = e.target.value;
-    if (listState[sortKey]) renderList(sortKey);   // 이미 받아온 정렬은 재조회 없이 표시
-    else loadPage(sortKey);
-  });
-  const moreBtn = document.getElementById('usersMoreBtn');
-  moreBtn.addEventListener('click', guardBtn(moreBtn, () => loadPage(document.getElementById('userSortSel').value)));
-
   // 오늘 접속 "전체 보기" — 이때만 오늘 세션 전량 조회(고유 방문자 수 포함)
   const todayAllBtn = document.getElementById('usersTodayAllBtn');
   todayAllBtn.addEventListener('click', guardBtn(todayAllBtn, () => loadTodayUsers({ full: true })));
-  // 전체 유저 "전체 보기" — 이때만 user_stats 목록 조회(20명/페이지)
-  const allBtn = document.getElementById('usersAllBtn');
-  allBtn.addEventListener('click', guardBtn(allBtn, async () => {
-    document.getElementById('usersAllCard').style.display = '';
-    const sortKey = document.getElementById('userSortSel').value;
-    if (!listState[sortKey]) await loadPage(sortKey);
-    document.getElementById('usersAllCard').scrollIntoView({ behavior: 'smooth' });
-  }));
 
   const searchBtn = document.getElementById('userSearchBtn');
   const searchInput = document.getElementById('userSearchInput');
@@ -298,32 +227,9 @@ export function initUsersTab() {
   });
 }
 
-// 신규 유저 최근 10명 (user_stats firstPlayed desc)
-async function loadNewUsers() {
-  const el = document.getElementById('usersNewList');
-  setLoading(el);
-  try {
-    const rows = await todayNewUsersList(10);
-    el.innerHTML = rows.length ? rows.map(r => `
-      <div class="list-row clickable user-row" data-nick="${escapeHtml(r.nickname || r.id)}">
-        <span class="main"><span class="nick">${escapeHtml(r.nickname || r.id)}</span></span>
-        <span class="sub">가입 ${r.firstPlayed ? fmtDateTime(r.firstPlayed).split(' ')[0] : '-'} · ${fmtNum(r.playCount || 0)}판</span>
-      </div>`).join('') : `<div class="list-empty">신규 유저가 없어요</div>`;
-  } catch (e) { setError(el, humanError(e)); }
-}
-
-// (2026-08-30) '⏱ 최근 활동' 제거 — 홈(오늘) 탭의 '🎮 최근 플레이'·'🟢 오늘 접속'과
-// 삼중 중복이었고, 혼자만 user_stats 를 10건 따로 읽었다. 전체 유저 목록은 아래
-// '전체 유저 목록 → 불러오기'에서 정렬 바꿔가며 보면 된다(누를 때만 조회).
+// (2026-08-30) '🌱 신규 유저' 제거 — 운영자 요청. 신규 수치는 통계 탭 그래프에서 본다.
 
 export async function loadUsers({ force = false } = {}) {
-  if (force) {
-    for (const k of Object.keys(listState)) delete listState[k];
-    document.getElementById('usersAllCard').style.display = 'none';
-  }
-  // 기본: 3영역 × 10명만. 전체 목록은 "전체 보기"를 눌렀을 때만 조회.
-  await Promise.allSettled([
-    loadTodayUsers({ force }),
-    loadNewUsers(),
-  ]);
+  // 오늘 접속 하나만 — 홈 캐시가 있으면 추가 조회 0.
+  await loadTodayUsers({ force });
 }

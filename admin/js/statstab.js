@@ -29,22 +29,13 @@ let currentSub = 'activity';
 
 // ── 사용자 행동: 컬렉션 정의 ──
 // 자주 보는 3개는 바로 카드로, 나머지는 그룹 아코디언 안에서 열 때만 조회.
+// (2026-08-30) 운영자 요청으로 대부분 제거 — 내 정보 열람·리뷰 버튼 클릭·업데이트로그·
+// 감사메시지·리뷰요청 팝업은 운영 판단에 쓰지 않는데 열 때마다 컬렉션을 읽었다.
+// 남긴 건 카카오톡 공유 하나 — 친구초대(젤리 보상)와 직접 이어지는 지표라 계속 본다.
 const BH_FAV = [
-  { col: 'myinfo_clicks',       label: '👤 내 정보 열람' },
   { col: 'share_clicks',        label: '📤 카카오톡 공유' },
-  { col: 'review_entry_clicks', label: '⭐ 리뷰 버튼 클릭' },
 ];
-const BH_GROUPS = [
-  { id: 'game',   label: '🎮 게임 이용',    cols: [
-    { col: 'updatelog_clicks',     label: '📜 업데이트로그 열람' },
-    { col: 'thanks_toggle_clicks', label: '🐾 감사메시지 열람' },
-  ]},
-  { id: 'review', label: '📣 리뷰 요청 반응', cols: [
-    { col: 'review_prompt_shown',  label: '📣 리뷰요청 팝업' },
-  ]},
-  // (2026-08-30) 💛 후원·상점 그룹 제거 — 입구 버튼이 전부 display:none 이라 클릭이
-  // 물리적으로 불가능(영원히 0건). 현금 상점을 다시 열면 여기 그룹으로 복원한다.
-];
+const BH_GROUPS = [];
 const DETAIL_PAGE = 20;
 const bhState = {}; // { [col]: { rows, pager, todayCount } }
 

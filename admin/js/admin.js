@@ -58,7 +58,7 @@ async function openTab(name, { force = false } = {}) {
   }
 }
 
-// ── 화면 간 이동 헬퍼 — 'inbox:verdicts' / 'stats:datause' / 'tools:acc-ops' / 'users' ──
+// ── 화면 간 이동 헬퍼 — 'inbox:verdicts' / 'inbox:reviews' / 'stats:datause' / 'users' ──
 async function gotoTarget(target) {
   const [tab, sub] = String(target || '').split(':');
   await openTab(tab);
@@ -113,7 +113,7 @@ function showApp() {
     if (el && !el._bound) { el._bound = true; el.addEventListener('click', () => gotoTarget(target)); }
   };
   bind('verdictBadge', 'inbox:verdicts');
-  bind('reviewPendingBadge', 'tools:acc-ops');
+  bind('reviewPendingBadge', 'inbox:reviews');
   bind('feedbackNewBadge', 'inbox:feedback');
 }
 

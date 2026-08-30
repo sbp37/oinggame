@@ -58,7 +58,7 @@ export function renderTasks() {
   const rows = [];
   if (verdicts > 0) rows.push({ icon: '🚨', text: `점수 검토 ${verdicts}건`, go: 'inbox:verdicts' });
   if (feedback > 0) rows.push({ icon: '💬', text: `새 문의 ${feedback}건`, go: 'inbox:feedback' });
-  if (reviews > 0) rows.push({ icon: '📝', text: `보류 리뷰 ${reviews}건`, go: 'tools:acc-ops' });
+  if (reviews > 0) rows.push({ icon: '📝', text: `보류 리뷰 ${reviews}건`, go: 'inbox:reviews' });
   el.innerHTML = rows.length
     ? rows.map(r => `<div class="list-row clickable task-row" data-go="${r.go}"><span class="main">${r.icon} ${escapeHtml(r.text)}</span><span class="sub">→</span></div>`).join('')
     : `<div class="list-row"><span class="main">✅ 지금 처리할 항목이 없어요</span></div>`;
