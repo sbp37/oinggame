@@ -7886,6 +7886,20 @@ const ENABLE_GOAL_TOTAL_COUNT = false; // v3.4: 문구가 어색하고 화면이
 const ENABLE_CLOVER_REWARD = true;
 const ENABLE_JELLY_REWARD = false;
 const ENABLE_JELLY_SHOP = false;
+// 🔍 젤리상점 디자인 미리보기 — ?preview=jelly 를 붙인 사람만 상점 화면을 볼 수 있다.
+// 상점이 정식 오픈(ENABLE_JELLY_SHOP=true)되기 전에 화면만 확인하는 용도라 "읽기 전용"이다:
+// 구매·출석 등 서버를 실제로 바꾸는 동작은 아래 jshopPreviewBlocked() 가 전부 막는다.
+// 링크를 모르는 일반 유저에게는 이 코드가 한 번도 실행되지 않는다(파라미터가 없으면 false).
+const JSHOP_PREVIEW = (() => {
+  try { return new URLSearchParams(location.search).get('preview') === 'jelly' && !window.Capacitor; }
+  catch { return false; }
+})();
+// 미리보기에서 서버를 건드리는 동작을 차단 — true 를 반환하면 호출부가 즉시 중단한다.
+function jshopPreviewBlocked() {
+  if (!JSHOP_PREVIEW) return false;
+  alert('🔍 디자인 미리보기예요.\n실제 구매·출석은 상점이 정식으로 열린 뒤에 할 수 있어요.');
+  return true;
+}
 const ENABLE_EXTRA_SHUFFLE = false;
 const ENABLE_DAILY_OING = false;
 const ENABLE_NEWBIE_AUTO_HINT = true;
@@ -13366,7 +13380,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788085250; // v4.9 — 젤리 상점 v2 배선(가격·프레임·조기닉변·토스트·선물) — ENABLE_JELLY_SHOP=false 로 전부 비노출
+const BUILD = 1788086981; // v4.9 — 젤리상점 디자인 미리보기 링크(?preview=jelly, 읽기 전용) 추가
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13831,6 +13845,7 @@ document.getElementById('jshopSupportBtn').addEventListener('click', () => {
   openDonateOverlay();
 });
 document.getElementById('jshopClaimBtn').addEventListener('click', async () => {
+  if (jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) return;
   if (guardLocalOnlyForShop()) return;
@@ -13857,6 +13872,7 @@ document.getElementById('jshopClaimBtn').addEventListener('click', async () => {
 
 // ── 젤리로 닉네임 컬러/효과 구매·장착·해제 (한번 사면 계속 소유, 무료로 껐다 켰다 가능) ──
 async function buySkinWithJelly(skinKey, price) {
+  if (jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
@@ -13919,6 +13935,7 @@ document.querySelectorAll('.jshop-effect-chip').forEach(chip => {
 });
 // ── 젤리 프레임 구매·장착·해제 (스킨과 동일 패턴 — 소유는 서버(buyFrame)만 기록) ──
 async function buyFrameWithJelly(frameKey) {
+  if (jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
@@ -13999,6 +14016,7 @@ jshopBubbleInputEl.addEventListener('input', (e) => {
   updateJshopRankPreviewBubble(e.target.value);
 });
 document.getElementById('jshopBubbleApplyBtn').addEventListener('click', async () => {
+  if (jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
@@ -14143,6 +14161,28 @@ async function maybeClaimEarlyMemberGift() {
   }
 }
 setTimeout(() => { maybeClaimEarlyMemberGift(); }, 4000);
+
+// 🔍 ?preview=jelly — 상점 정식 오픈 전, 링크를 아는 사람만 디자인을 확인하는 읽기 전용 모드.
+// 숨겨진 상점 오버레이를 강제로 띄우고, 랭킹 한마디 섹션도 함께 보여준다(오픈 시 되살릴지 판단용).
+if (JSHOP_PREVIEW) {
+  setTimeout(async () => {
+    try {
+      const banner = document.createElement('div');
+      banner.style.cssText = `
+        position:fixed; top:0; left:0; right:0; z-index:500; pointer-events:none;
+        background:rgba(251,191,36,0.95); color:#3a2b06; text-align:center;
+        padding:6px 10px; font-size:12px; font-weight:900; letter-spacing:-0.2px;
+        box-shadow:0 2px 10px rgba(0,0,0,0.35);`;
+      banner.textContent = '🔍 젤리상점 디자인 미리보기 — 구매·출석은 동작하지 않아요 (일반 유저에게는 안 보임)';
+      document.body.appendChild(banner);
+      // 숨겨둔 랭킹 한마디 섹션도 미리보기에서는 보이게(오픈 때 되살릴지 판단용)
+      document.querySelectorAll('.jshop-speech-box').forEach(el => { el.style.display = ''; });
+      await openJellyShop();
+      const card = document.querySelector('#jellyShopOverlay .jshop-card');
+      if (card) card.style.paddingTop = '26px';
+    } catch (e) { console.warn('상점 미리보기 실패:', e); }
+  }, 1500);
+}
 document.getElementById('contactBoardBtn').addEventListener('click', () => {
   closeContactOverlay();
   document.getElementById('feedbackBoardOverlay').style.display = 'flex';
