@@ -46,3 +46,10 @@ test('공개 랭킹 레벨은 v2 버전이 맞는 데이터만 표시한다', ()
   assert.match(src, /oingLevelVersion: data\.oingLevelVersion/);
   assert.match(src, /publicVersion === OING_LEVEL_VERSION/);
 });
+
+test('레거시 계정도 접속 승급을 확인하고 미리보기·앱은 운영 빌드 번호를 쓰지 않는다', () => {
+  assert.match(src, /await initAccountSystem\(\)[\s\S]{0,220}maybeCelebrateOingLevelUp\(getMyOingProfileSnapshot\(\)\.stats, null, 'login'\)/);
+  assert.match(src, /async function checkForNewVersion\(\) \{[\s\S]{0,260}if \(IS_APP\) return;/);
+  assert.match(src, /hostname === 'oinggame\.com'[\s\S]{0,180}hostname === 'www\.oinggame\.com'/);
+  assert.match(src, /BUILD > serverBuild && canPublishBuild/);
+});

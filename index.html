@@ -5010,7 +5010,12 @@ async function initAccountSystem() {
     }
   } catch (e) { console.warn('계정 시스템 초기화 실패(레거시 모드로 계속):', e); }
 }
-setTimeout(() => { initAccountSystem(); }, 0);
+// 연결된 계정은 서버 동기화 뒤, 레거시·오프라인 계정은 로컬 스냅샷으로 접속 승급을 판정한다.
+// 서버 경로와 fallback이 모두 호출돼도 pending/ack 가드가 같은 승급 팝업의 중복을 막는다.
+setTimeout(async () => {
+  try { await initAccountSystem(); } catch {}
+  try { maybeCelebrateOingLevelUp(getMyOingProfileSnapshot().stats, null, 'login'); } catch {}
+}, 0);
 // ── 앱 전용 초기화 ──
 //  module script 실행이 끝나 모든 DOM 리스너가 연결된 다음 틱에 딱 1회 실행한다.
 //  applyAppPolicy 로 상점·후원·후기·문의 DOM 을 걷어낸 뒤 광고를 초기화한다.
@@ -13265,6 +13270,11 @@ function hideNewVersionBanner() {
   if (banner) banner.style.transform = 'translate(-50%, -120%)';
 }
 async function checkForNewVersion() {
+  // 앱 번들은 웹 새로고침으로 업데이트되지 않으며, 검토용 커밋·localhost가 운영 빌드 번호를
+  // 먼저 올리면 안 된다. 운영 도메인만 아래에서 meta/appVersion 쓰기를 허용한다.
+  if (IS_APP) return;
+  const canPublishBuild = location.protocol === 'https:'
+    && (location.hostname === 'oinggame.com' || location.hostname === 'www.oinggame.com');
   // 이미 새 버전이 있는 걸 알고 있으면 서버 재조회 없이 배너만 다시 노출
   if (updateAvailable) { showNewVersionBanner(); return; }
   if (Date.now() - lastVersionCheck < 120000) return; // 2분 쓰로틀 (탭 눌러도 과도한 조회 방지)
@@ -13277,7 +13287,7 @@ async function checkForNewVersion() {
       // 서버가 더 최신 → 내가 구버전(캐시된 옛날 판) → 새로고침 안내
       updateAvailable = true;
       showNewVersionBanner();
-    } else if (BUILD > serverBuild) {
+    } else if (BUILD > serverBuild && canPublishBuild) {
       // 내가 더 최신 → 서버 기준을 내 build로 올려둠(누가 먼저 최신을 열면 자동 갱신)
       await setDoc(ref, { build: BUILD }, { merge: true });
     }
