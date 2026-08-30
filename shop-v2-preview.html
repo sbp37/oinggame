@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
-<title>젤리상점 v2 — 디자인 데모</title>
+<title>젤리샵 v3 — 합본 디자인 데모</title>
 <!-- ══════════════════════════════════════════════════════════════
-  젤리상점 v2 디자인 데모 (2026-08-30)
-  · 실서비스 아님 — 링크를 아는 사람만 보는 정적 데모. 서버 호출 0, 구매 0.
-  · 콘셉트: "목록"이 아니라 "입어보는 거울" — 내 랭킹 줄이 상단에 고정되고
-    아이템을 탭하면 사기 전에 그 자리에서 입혀진다.
-  · 가격·아이템 key 는 서버(shopAction) 가격표와 동일하게 유지할 것.
-  · 승인되면 index.html 젤리상점 오버레이를 이 구조로 교체한다.
+  젤리샵 v3 합본 데모 (2026-08-30) — 클로드 v2 + 코덱스 시안의 좋은 점만 합침
+  · 코덱스에서: 카드 상품화(이름+한줄 설명+개별 미리보기+배지), 실제 랭킹 줄
+    재현(순위변동·레벨), 신뢰 문구, 초창기 멤버 선물 배너, 보유 탭
+  · 클로드 v2에서: 시착 거울(컬러+효과+프레임 조합이 사기 전에 실시간 적용),
+    오늘 획득 체크리스트, 찜+D-day 진행바, 오잉냥이 점원 멘트
+  · 실서비스 아님 — 서버 호출 0, 실구매 0 (잔액·소유 전부 가짜, noindex)
+  · 가격·key 는 서버(shopAction) 가격표와 동일: 컬러20 / 효과 60·80·100 / 프레임 100~250
 ═══════════════════════════════════════════════════════════════ -->
 <style>
 :root {
@@ -24,90 +25,81 @@ html,body { margin:0; padding:0; background:var(--bg); color:var(--ivory);
   font-family:'Pretendard','Malgun Gothic',-apple-system,sans-serif; }
 body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
-.demo-banner { position:sticky; top:0; z-index:60; background:var(--gold); color:#3a2b06;
-  text-align:center; font-size:11.5px; font-weight:900; padding:5px 8px; letter-spacing:-0.2px; }
+.demo-banner { position:sticky; top:0; z-index:80; background:var(--gold); color:#3a2b06;
+  text-align:center; font-size:11px; font-weight:900; padding:5px 8px; letter-spacing:-0.2px; }
 
-/* ── 점원 헤더 ── */
-.shop-head { display:flex; align-items:center; gap:12px; padding:16px 16px 10px; }
-.cat-face { font-size:40px; filter:drop-shadow(0 2px 8px rgba(251,191,36,0.3));
+/* ── 페이지 헤더 (코덱스 프레임) ── */
+.page-head { display:flex; align-items:center; gap:10px; padding:12px 16px 8px; }
+.back-btn { width:36px; height:36px; border-radius:50%; border:1px solid var(--border);
+  background:var(--card); color:var(--ivory); font-size:15px; display:flex;
+  align-items:center; justify-content:center; flex:0 0 auto; }
+.head-title { line-height:1.2; }
+.head-title .sub { font-size:10.5px; color:var(--muted); font-weight:800; }
+.head-title .main { font-size:18px; font-weight:900; letter-spacing:-0.5px; }
+.head-bal { margin-left:auto; background:var(--gold-dim); border:1px solid rgba(251,191,36,0.5);
+  color:var(--gold); border-radius:999px; padding:7px 14px; font-size:14px; font-weight:900; }
+
+/* ── 점원 ── */
+.shop-head { display:flex; align-items:center; gap:12px; padding:8px 16px 10px; }
+.cat-face { font-size:36px; filter:drop-shadow(0 2px 8px rgba(251,191,36,0.3));
   animation:catBob 3s ease-in-out infinite; }
 @keyframes catBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 .cat-bubble { position:relative; background:var(--card); border:1px solid var(--border);
-  border-radius:14px; padding:9px 13px; font-size:13px; line-height:1.45; color:var(--ivory);
-  font-weight:600; flex:1; min-height:20px; }
-.cat-bubble::before { content:''; position:absolute; left:-6px; top:16px; width:10px; height:10px;
+  border-radius:14px; padding:8px 12px; font-size:12.5px; line-height:1.45;
+  font-weight:600; flex:1; min-height:18px; transition:opacity 0.15s; }
+.cat-bubble::before { content:''; position:absolute; left:-6px; top:14px; width:10px; height:10px;
   background:var(--card); border-left:1px solid var(--border); border-bottom:1px solid var(--border);
   transform:rotate(45deg); }
 .cat-bubble b { color:var(--gold); }
 
-/* ── 지갑 + 오늘 획득 ── */
-.wallet { margin:6px 16px 12px; background:linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.03));
-  border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:12px 14px; }
-.wallet-top { display:flex; align-items:baseline; justify-content:space-between; }
-.wallet-bal { font-size:22px; font-weight:900; color:var(--gold); letter-spacing:-0.5px; }
-.wallet-bal small { font-size:12px; color:var(--muted); font-weight:700; margin-left:4px; }
-.wallet-hint { font-size:11px; color:var(--muted); font-weight:700; }
-.earn-row { display:flex; gap:6px; margin-top:10px; }
+/* ── 지갑 + 오늘 획득 + 초창기 선물 ── */
+.wallet { margin:2px 16px 8px; background:linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.03));
+  border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:11px 14px; }
+.earn-row { display:flex; gap:6px; }
 .earn-chip { flex:1; text-align:center; border-radius:10px; padding:6px 2px 5px;
   background:rgba(148,163,184,0.07); border:1px solid var(--border); }
 .earn-chip.done { background:rgba(127,232,149,0.10); border-color:rgba(127,232,149,0.4); }
 .earn-chip .t { font-size:10px; color:var(--muted); font-weight:800; display:block; }
 .earn-chip .v { font-size:12px; font-weight:900; margin-top:2px; display:block; }
 .earn-chip.done .v { color:var(--green); }
+.gift-card { margin:0 16px 10px; display:flex; align-items:center; gap:10px;
+  background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.3);
+  border-radius:14px; padding:10px 14px; }
+.gift-card .ic { font-size:20px; }
+.gift-card .tt { font-size:12.5px; font-weight:900; }
+.gift-card .dd { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:1px; }
+.gift-card .amt { margin-left:auto; font-size:14px; font-weight:900; color:var(--gold); }
 
-/* ── 거울(내 랭킹 줄 미리보기) — sticky ── */
-.mirror-wrap { position:sticky; top:26px; z-index:50; padding:8px 16px 10px;
-  background:linear-gradient(var(--bg) 82%, transparent); }
-.mirror-label { font-size:10.5px; font-weight:800; color:var(--muted); letter-spacing:0.4px;
+/* ── 거울(내 랭킹 줄) — sticky, 실제 랭킹 줄 재현 ── */
+.mirror-wrap { position:sticky; top:25px; z-index:50; padding:6px 16px 10px;
+  background:linear-gradient(var(--bg) 84%, transparent); }
+.mirror-label { font-size:10.5px; font-weight:800; color:var(--muted); letter-spacing:0.3px;
   margin:0 0 5px 4px; display:flex; justify-content:space-between; align-items:center; }
 .mirror-reset { background:none; border:none; color:var(--blue); font-size:10.5px; font-weight:800;
   cursor:pointer; font-family:inherit; padding:0; }
-.rank-row { position:relative; display:flex; align-items:center; gap:10px;
+.rank-row { position:relative; display:flex; align-items:center; gap:8px;
   background:var(--card); border:1.5px solid var(--frame-color, var(--border));
-  border-radius:14px; padding:13px 14px; transition:border-color 0.25s; }
+  border-radius:14px; padding:12px 14px; transition:border-color 0.25s; }
 .rank-row.has-frame::before { content:''; position:absolute; inset:-1px; border-radius:inherit;
   pointer-events:none; box-shadow:0 0 12px var(--frame-color), 0 0 4px var(--frame-color);
   animation:glowPulse 2.2s ease-in-out infinite; }
 @keyframes glowPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
-.rank-row .num { font-size:14px; font-weight:900; color:var(--muted); width:20px; }
-.rank-row .nick { font-size:16px; font-weight:900; letter-spacing:-0.3px; transition:color 0.2s; }
-.rank-row .score { margin-left:auto; font-size:14px; font-weight:800; color:var(--blue); }
-.nick.fx { background-clip:text; -webkit-background-clip:text; color:transparent;
+.rank-row .num { font-size:15px; font-weight:900; color:var(--ivory); }
+.rank-row .delta { font-size:10px; font-weight:900; color:var(--green); }
+.rank-row .lv { font-size:9.5px; font-weight:900; color:var(--muted); border:1px solid var(--border);
+  border-radius:999px; padding:2px 7px; background:var(--card2); }
+.rank-row .nick { font-size:15.5px; font-weight:900; letter-spacing:-0.3px; transition:color 0.2s; }
+.rank-row .score { margin-left:auto; font-size:13.5px; font-weight:800; color:var(--blue); }
+.nick.fx, .card-nick.fx { background-clip:text; -webkit-background-clip:text; color:transparent !important;
   background-size:300% 100%; animation:nickShine 3s linear infinite; }
-.nick.fx-rainbow { background-image:linear-gradient(90deg,#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f472b6,#f87171); }
-.nick.fx-goldshine { background-image:linear-gradient(90deg,#92600a,#fde68a,#fbbf24,#fde68a,#92600a); }
-.nick.fx-diamond { background-image:linear-gradient(90deg,#7dd3fc,#ffffff,#a5f3fc,#ffffff,#7dd3fc); }
+.fx-rainbow { background-image:linear-gradient(90deg,#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f472b6,#f87171); }
+.fx-goldshine { background-image:linear-gradient(90deg,#92600a,#fde68a,#fbbf24,#fde68a,#92600a); }
+.fx-diamond { background-image:linear-gradient(90deg,#7dd3fc,#ffffff,#a5f3fc,#ffffff,#7dd3fc); }
 @keyframes nickShine { to { background-position:-300% center; } }
 
-/* ── 탭 ── */
-.tabs { display:flex; gap:6px; padding:2px 16px 10px; }
-.tab { flex:1; text-align:center; padding:9px 0; border-radius:12px; font-size:13px; font-weight:800;
-  color:var(--muted); background:var(--card2); border:1px solid var(--border); cursor:pointer; }
-.tab.on { color:#1a2338; background:var(--gold); border-color:var(--gold); }
-
-/* ── 아이템 그리드 ── */
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 8px; }
-.item { position:relative; background:var(--card); border:1.5px solid var(--border); border-radius:16px;
-  padding:14px 10px 11px; text-align:center; cursor:pointer; transition:transform 0.12s, border-color 0.2s; }
-.item:active { transform:scale(0.96); }
-.item.trying { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
-.item .pv { height:38px; display:flex; align-items:center; justify-content:center; }
-.item .pv .dot { width:30px; height:30px; border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.4) inset, 0 0 12px currentColor; }
-.item .pv .txt { font-size:17px; font-weight:900; }
-.item .pv .fchip { padding:6px 16px; border-radius:11px; font-size:13px; font-weight:900;
-  border:1.5px solid var(--frame-color); box-shadow:0 0 10px var(--frame-color); color:var(--ivory); }
-.item .nm { font-size:12.5px; font-weight:800; margin-top:8px; letter-spacing:-0.3px; }
-.item .pr { font-size:11.5px; font-weight:900; color:var(--gold); margin-top:3px; }
-.item .pr.owned { color:var(--green); }
-.badge { position:absolute; top:8px; right:8px; font-size:9.5px; font-weight:900; padding:2.5px 7px;
-  border-radius:999px; letter-spacing:0.2px; }
-.badge.eq { background:rgba(127,232,149,0.15); color:var(--green); border:1px solid rgba(127,232,149,0.45); }
-.badge.wish { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(251,191,36,0.45); }
-.sect-note { padding:2px 20px 14px; font-size:11px; color:var(--muted); font-weight:600; line-height:1.6; }
-
 /* ── 찜 진행 ── */
-.wish-card { margin:4px 16px 12px; background:var(--card); border:1px dashed rgba(251,191,36,0.5);
-  border-radius:14px; padding:12px 14px; display:none; }
+.wish-card { margin:0 16px 10px; background:var(--card); border:1px dashed rgba(251,191,36,0.5);
+  border-radius:14px; padding:11px 14px; display:none; }
 .wish-card.show { display:block; }
 .wish-head { display:flex; justify-content:space-between; font-size:12.5px; font-weight:800; }
 .wish-head .dday { color:var(--gold); }
@@ -115,6 +107,48 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .wish-bar i { display:block; height:100%; border-radius:999px; width:0;
   background:linear-gradient(90deg,#f59e0b,var(--gold)); transition:width 0.5s ease; }
 .wish-sub { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:6px; }
+
+/* ── 탭 ── */
+.tabs { display:flex; gap:5px; padding:2px 16px 10px; }
+.tab { flex:1; text-align:center; padding:9px 0; border-radius:12px; font-size:12.5px; font-weight:800;
+  color:var(--muted); background:var(--card2); border:1px solid var(--border); cursor:pointer; }
+.tab.on { color:#1a2338; background:var(--gold); border-color:var(--gold); }
+
+/* ── 섹션 + 카드 (코덱스 상품화) ── */
+.sect-head { display:flex; justify-content:space-between; align-items:baseline; padding:6px 20px 2px; }
+.sect-head h3 { margin:0; font-size:15px; font-weight:900; letter-spacing:-0.4px; }
+.sect-head .cnt { font-size:11px; color:var(--muted); font-weight:800; }
+.sect-fair { padding:0 20px 8px; font-size:10.5px; color:var(--muted); font-weight:700; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 14px; }
+.item { position:relative; background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+  padding:12px 11px 11px; cursor:pointer; transition:transform 0.12s, border-color 0.2s; }
+.item:active { transform:scale(0.96); }
+.item.trying { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
+.pvbox { border-radius:12px; background:var(--card2); border:1px solid var(--border);
+  height:52px; display:flex; align-items:center; justify-content:center; }
+.card-nick { font-size:17px; font-weight:900; letter-spacing:-0.3px; }
+.pv-rank { display:flex; align-items:center; gap:6px; width:88%;
+  background:var(--card2); border:1.5px solid var(--frame-color); border-radius:10px;
+  padding:7px 9px; box-shadow:0 0 9px var(--frame-color); }
+.pv-rank .n { font-size:10px; font-weight:900; }
+.pv-rank .k { font-size:11px; font-weight:900; }
+.pv-rank .s { margin-left:auto; font-size:9px; font-weight:800; color:var(--blue); }
+.item .nm { font-size:13px; font-weight:900; margin-top:9px; letter-spacing:-0.3px; }
+.item .ds { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:2px; letter-spacing:-0.2px; }
+.item .pr { margin-top:8px; text-align:center; border-radius:10px; padding:7px 0;
+  font-size:12px; font-weight:900; background:rgba(251,191,36,0.09);
+  border:1px solid rgba(251,191,36,0.3); color:var(--gold); }
+.item .pr.owned { background:rgba(127,232,149,0.08); border-color:rgba(127,232,149,0.35); color:var(--green); }
+.badge { position:absolute; top:9px; right:9px; z-index:2; font-size:9px; font-weight:900;
+  padding:2.5px 7px; border-radius:999px; letter-spacing:0.2px; }
+.badge.hot { background:rgba(244,114,182,0.16); color:#f9a8d4; border:1px solid rgba(244,114,182,0.45); }
+.badge.rec { background:rgba(126,194,240,0.14); color:var(--blue); border:1px solid rgba(126,194,240,0.45); }
+.badge.wish { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(251,191,36,0.45); }
+.empty-owned { padding:26px 20px; text-align:center; color:var(--muted); font-size:12.5px; font-weight:700; }
+
+/* ── 신뢰 문구 ── */
+.fair-foot { margin:6px 20px 14px; text-align:center; font-size:11px; color:var(--muted);
+  font-weight:700; line-height:1.7; }
 
 /* ── 하단 액션바 ── */
 .actionbar { position:fixed; bottom:0; left:50%; transform:translate(-50%, 110%); width:100%; max-width:430px;
@@ -129,19 +163,25 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   font-family:inherit; cursor:pointer; letter-spacing:-0.3px; }
 .ab-buy { background:var(--gold); color:#1a2338; }
 .ab-buy:disabled { background:rgba(148,163,184,0.2); color:var(--muted); }
-.ab-wish { background:var(--card); color:var(--gold); border:1.5px solid rgba(251,191,36,0.5); flex:0 0 108px; }
+.ab-wish { background:var(--card); color:var(--gold); border:1.5px solid rgba(251,191,36,0.5); flex:0 0 104px; }
 .ab-eq { background:var(--green); color:#0c2413; }
 .ab-off { background:var(--card); color:var(--muted); border:1.5px solid var(--border); flex:0 0 84px; }
 
-.toast { position:fixed; top:14%; left:50%; transform:translate(-50%,-8px); z-index:90; pointer-events:none;
+.toast { position:fixed; top:13%; left:50%; transform:translate(-50%,-8px); z-index:90; pointer-events:none;
   background:rgba(20,30,46,0.97); color:#fde68a; border:1.5px solid rgba(251,191,36,0.5);
-  border-radius:999px; padding:9px 18px; font-size:13px; font-weight:800; opacity:0;
+  border-radius:999px; padding:9px 18px; font-size:12.5px; font-weight:800; opacity:0;
   transition:opacity 0.25s, transform 0.25s; white-space:nowrap; }
 .toast.show { opacity:1; transform:translate(-50%,0); }
 </style>
 </head>
 <body>
-<div class="demo-banner">🔍 젤리상점 v2 디자인 데모 — 실제 구매·지급 없음 (링크를 아는 사람만 볼 수 있어요)</div>
+<div class="demo-banner">🔍 젤리샵 v3 합본 데모 — 실제 구매·지급 없음 (링크를 아는 사람만 볼 수 있어요)</div>
+
+<div class="page-head">
+  <div class="back-btn">‹</div>
+  <div class="head-title"><div class="sub">오잉게임 꾸미기방</div><div class="main">젤리샵</div></div>
+  <div class="head-bal">🍮 <span id="bal">47</span></div>
+</div>
 
 <div class="shop-head">
   <div class="cat-face">🐱</div>
@@ -149,10 +189,6 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 </div>
 
 <div class="wallet">
-  <div class="wallet-top">
-    <div class="wallet-bal">🍮 <span id="bal">47</span><small>개</small></div>
-    <div class="wallet-hint">오늘 +4 모았어요</div>
-  </div>
   <div class="earn-row">
     <div class="earn-chip done"><span class="t">출석</span><span class="v">+1 ✓</span></div>
     <div class="earn-chip done"><span class="t">첫 게임</span><span class="v">+1 ✓</span></div>
@@ -161,30 +197,40 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   </div>
 </div>
 
+<div class="gift-card">
+  <span class="ic">🎁</span>
+  <div><div class="tt">초창기 멤버 선물</div><div class="dd">일찍부터 함께해줘서 고맙다냥 — 최초 1회</div></div>
+  <span class="amt">+20 🍮</span>
+</div>
+
 <div class="mirror-wrap">
   <div class="mirror-label"><span>↓ 내 랭킹 줄 — 누르는 대로 바로 입혀져요</span>
     <button class="mirror-reset" id="resetBtn">↺ 원래대로</button></div>
   <div class="rank-row" id="mirror">
-    <span class="num">4</span>
-    <span class="nick" id="mirrorNick">오잉이</span>
-    <span class="score">17,495pt</span>
+    <span class="num">24</span><span class="delta">▲6</span>
+    <span class="lv">🏠 Lv.5</span>
+    <span class="nick" id="mirrorNick">오잉러</span>
+    <span class="score">6,865pt</span>
   </div>
 </div>
 
 <div class="wish-card" id="wishCard">
-  <div class="wish-head"><span id="wishName">👑 로얄 프레임 찜!</span><span class="dday" id="wishDday"></span></div>
+  <div class="wish-head"><span id="wishName"></span><span class="dday" id="wishDday"></span></div>
   <div class="wish-bar"><i id="wishBar"></i></div>
   <div class="wish-sub" id="wishSub"></div>
 </div>
 
 <div class="tabs">
-  <div class="tab on" data-tab="color">🎨 컬러</div>
-  <div class="tab" data-tab="fx">✨ 효과</div>
-  <div class="tab" data-tab="frame">🖼 프레임</div>
+  <div class="tab on" data-tab="all">전체</div>
+  <div class="tab" data-tab="color">글자색</div>
+  <div class="tab" data-tab="fx">효과</div>
+  <div class="tab" data-tab="frame">프레임</div>
+  <div class="tab" data-tab="owned">보유</div>
 </div>
 
-<div class="grid" id="grid"></div>
-<div class="sect-note" id="sectNote"></div>
+<div id="catalogArea"></div>
+
+<div class="fair-foot">🔒 젤리는 꾸미기에만 사용돼요 — 실력과 랭킹은 언제나 공정해요</div>
 
 <div class="actionbar" id="actionbar">
   <div class="ab-info"><span class="ab-name" id="abName"></span><span class="ab-price" id="abPrice"></span></div>
@@ -195,49 +241,49 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
 <script>
 // ── 데모 상태 (전부 가짜 — 서버 호출 0) ─────────────────────────
-// 가격·key 는 서버 shopAction 가격표와 동일해야 한다 (컬러20 / 효과 60·80·100 / 프레임 100~250)
+// key·가격은 서버 shopAction 가격표와 동일. 이름·설명은 코덱스 시안 방식(상품화).
 const CATALOG = {
   color: [
-    { key:'gold',   nm:'골드',   price:20, c:'#fbbf24' },
-    { key:'pink',   nm:'핑크',   price:20, c:'#f472b6' },
-    { key:'mint',   nm:'민트',   price:20, c:'#34d399' },
-    { key:'purple', nm:'퍼플',   price:20, c:'#a78bfa' },
-    { key:'red',    nm:'레드',   price:20, c:'#f87171' },
-    { key:'sky',    nm:'스카이', price:20, c:'#38bdf8' },
+    { key:'gold',   nm:'금빛',   ds:'랭킹에 어울리는 금빛', price:20, c:'#fbbf24' },
+    { key:'pink',   nm:'장미',   ds:'생기 있는 분홍빛',     price:20, c:'#f472b6' },
+    { key:'mint',   nm:'민트',   ds:'산뜻한 민트빛',        price:20, c:'#34d399' },
+    { key:'purple', nm:'라일락', ds:'은은한 보랏빛',        price:20, c:'#a78bfa' },
+    { key:'red',    nm:'루비',   ds:'선명하게 붉은빛',      price:20, c:'#f87171' },
+    { key:'sky',    nm:'하늘',   ds:'맑은 하늘빛',          price:20, c:'#38bdf8' },
   ],
   fx: [
-    { key:'rainbow',   nm:'무지개',   price:60,  cls:'fx-rainbow' },
-    { key:'goldshine', nm:'골드샤인', price:80,  cls:'fx-goldshine' },
-    { key:'diamond',   nm:'다이아',   price:100, cls:'fx-diamond' },
+    { key:'rainbow',   nm:'무지개',   ds:'글자에 무지개빛이 흐름',  price:60,  cls:'fx-rainbow', badge:'hot' },
+    { key:'goldshine', nm:'골드샤인', ds:'금빛이 물결치며 반짝임',  price:80,  cls:'fx-goldshine' },
+    { key:'diamond',   nm:'다이아',   ds:'보석빛이 시리게 빛남',    price:100, cls:'fx-diamond' },
   ],
   frame: [
-    { key:'moon',   nm:'달빛',    price:100, c:'#cbd5e1' },
-    { key:'neon',   nm:'네온',    price:130, c:'#22d3ee' },
-    { key:'sakura', nm:'벚꽃',    price:160, c:'#fda4af' },
-    { key:'aurora', nm:'오로라',  price:180, c:'#5eead4' },
-    { key:'royal',  nm:'👑 로얄', price:250, c:'#e879f9' },
+    { key:'moon',   nm:'달빛',    ds:'차분하게 빛나는 은빛 테두리', price:100, c:'#cbd5e1' },
+    { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:130, c:'#22d3ee' },
+    { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:160, c:'#fda4af' },
+    { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:180, c:'#5eead4' },
+    { key:'royal',  nm:'👑 로얄', ds:'최고를 위한 보랏빛 왕관',     price:250, c:'#e879f9', badge:'rec' },
   ],
 };
-const NOTES = {
-  color: '컬러와 효과는 둘 중 하나만 적용돼요 · 한번 사면 영구 소유, 무료로 껐다 켤 수 있어요',
-  fx: '닉네임이 살아 움직여요 · 컬러 대신 적용돼요',
-  frame: '내 랭킹 줄 테두리가 은은하게 빛나요 · 컬러·효과와 같이 쓸 수 있어요',
+const SECT = {
+  color: { title:'닉네임 글자색', fair:'게임 점수에는 영향을 주지 않아요' },
+  fx:    { title:'닉네임 효과',   fair:'닉네임이 살아 움직여요 · 글자색 대신 적용돼요' },
+  frame: { title:'랭킹 프레임',   fair:'내 랭킹 줄 테두리가 은은하게 빛나요 · 글자색·효과와 같이 써요' },
 };
 const state = {
   bal: 47,
   owned: { color:['gold'], fx:[], frame:[] },
-  equipped: { nick:'gold', frame:null },   // nick = 컬러 key 또는 효과 key
-  trying: { nick:'gold', frame:null },     // 거울에 입혀본 상태
-  tab: 'color',
-  selected: null,                          // {type, item}
-  wish: null,                              // {type, key}
+  equipped: { nick:'gold', frame:null },
+  trying: { nick:'gold', frame:null },
+  tab: 'all',
+  selected: null,
+  wish: null,
   dailyRate: 3,
 };
 const $ = (id) => document.getElementById(id);
 const findItem = (type, key) => CATALOG[type].find(i => i.key === key);
 const nickType = (key) => CATALOG.fx.some(i => i.key === key) ? 'fx' : 'color';
 
-// ── 거울 렌더 ──
+// ── 거울 ──
 function renderMirror() {
   const nick = $('mirrorNick');
   const t = state.trying;
@@ -257,38 +303,60 @@ function renderMirror() {
   }
 }
 
-// ── 그리드 렌더 ──
-function renderGrid() {
-  const type = state.tab;
-  $('sectNote').textContent = NOTES[type];
-  $('grid').innerHTML = CATALOG[type].map(it => {
-    const owned = state.owned[type].includes(it.key);
-    const equipped = (type === 'frame') ? state.equipped.frame === it.key : state.equipped.nick === it.key;
-    const trying = state.selected && state.selected.item.key === it.key && state.selected.type === type;
-    const wished = state.wish && state.wish.key === it.key;
-    let pv;
-    if (type === 'color') pv = `<div class="dot" style="background:${it.c}; color:${it.c};"></div>`;
-    else if (type === 'fx') pv = `<div class="txt nick fx ${it.cls}" style="font-size:17px;">오잉이</div>`;
-    else pv = `<div class="fchip" style="--frame-color:${it.c};">오잉이</div>`;
-    return `<div class="item ${trying ? 'trying' : ''}" data-key="${it.key}">
-      ${equipped ? '<span class="badge eq">장착중</span>' : wished ? '<span class="badge wish">찜</span>' : ''}
-      <div class="pv">${pv}</div>
-      <div class="nm">${it.nm}${type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ''}</div>
-      <div class="pr ${owned ? 'owned' : ''}">${owned ? '보유중 ✓' : '🍮 ' + it.price}</div>
-    </div>`;
-  }).join('');
-  document.querySelectorAll('#grid .item').forEach(el => {
-    el.addEventListener('click', () => selectItem(type, el.dataset.key));
+// ── 카드 ──
+function cardHtml(type, it) {
+  const owned = state.owned[type].includes(it.key);
+  const equipped = (type === 'frame') ? state.equipped.frame === it.key : state.equipped.nick === it.key;
+  const trying = state.selected && state.selected.item.key === it.key && state.selected.type === type;
+  const wished = state.wish && state.wish.key === it.key;
+  let pv;
+  if (type === 'color') pv = `<span class="card-nick" style="color:${it.c};">오잉러</span>`;
+  else if (type === 'fx') pv = `<span class="card-nick fx ${it.cls}">오잉러</span>`;
+  else pv = `<span class="pv-rank" style="--frame-color:${it.c};"><span class="n">24</span><span class="k">오잉러</span><span class="s">6,865pt</span></span>`;
+  const badge = equipped ? '' : wished ? '<span class="badge wish">🎯 찜</span>'
+    : it.badge === 'hot' ? '<span class="badge hot">인기</span>'
+    : it.badge === 'rec' ? '<span class="badge rec">추천</span>' : '';
+  return `<div class="item ${trying ? 'trying' : ''}" data-type="${type}" data-key="${it.key}">
+    ${badge}
+    <div class="pvbox">${pv}</div>
+    <div class="nm">${it.nm}</div>
+    <div class="ds">${it.ds}</div>
+    <div class="pr ${owned ? 'owned' : ''}">${equipped ? '✓ 착용 중' : owned ? '보유중 · 무료 장착' : '🍮 ' + it.price}</div>
+  </div>`;
+}
+function sectionHtml(type, items) {
+  const s = SECT[type];
+  return `<div class="sect-head"><h3>${s.title}</h3><span class="cnt">${items.length}개</span></div>
+    <div class="sect-fair">${s.fair}</div>
+    <div class="grid">${items.map(it => cardHtml(type, it)).join('')}</div>`;
+}
+function renderCatalog() {
+  const area = $('catalogArea');
+  const tab = state.tab;
+  if (tab === 'all') {
+    area.innerHTML = ['color', 'fx', 'frame'].map(t => sectionHtml(t, CATALOG[t])).join('');
+  } else if (tab === 'owned') {
+    const parts = ['color', 'fx', 'frame']
+      .map(t => ({ t, items: CATALOG[t].filter(i => state.owned[t].includes(i.key)) }))
+      .filter(x => x.items.length);
+    area.innerHTML = parts.length
+      ? parts.map(x => sectionHtml(x.t, x.items)).join('')
+      : `<div class="empty-owned">아직 보유한 아이템이 없어요<br>마음에 드는 걸 입어보고 데려와 보라냥 🐾</div>`;
+  } else {
+    area.innerHTML = sectionHtml(tab, CATALOG[tab]);
+  }
+  area.querySelectorAll('.item').forEach(el => {
+    el.addEventListener('click', () => selectItem(el.dataset.type, el.dataset.key));
   });
 }
 
-// ── 아이템 선택 = 입어보기 + 액션바 ──
+// ── 선택 = 시착 + 액션바 ──
 function selectItem(type, key) {
   const item = findItem(type, key);
   state.selected = { type, item };
   if (type === 'frame') state.trying.frame = key;
   else state.trying.nick = key;
-  renderMirror(); renderGrid(); renderActionbar();
+  renderMirror(); renderCatalog(); renderActionbar();
   const owned = state.owned[type].includes(key);
   say(owned ? `${item.nm} — 이미 갖고 있다냥. 바로 바꿔줄까냥?`
     : state.bal >= item.price ? `오, ${item.nm} 잘 어울린다냥! 🍮${item.price}면 데려갈 수 있다냥`
@@ -301,17 +369,17 @@ function renderActionbar() {
   const { type, item } = sel;
   const owned = state.owned[type].includes(item.key);
   const equipped = (type === 'frame') ? state.equipped.frame === item.key : state.equipped.nick === item.key;
-  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ' 컬러');
+  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ' 글자색');
   $('abPrice').textContent = owned ? '보유중' : `🍮 ${item.price} (보유 ${state.bal})`;
   let html = '';
   if (equipped) {
     html = `<button class="ab-btn ab-off" id="abOff">해제</button>
-      <button class="ab-btn ab-eq" disabled style="opacity:0.6;">장착중 ✓</button>`;
+      <button class="ab-btn ab-eq" disabled style="opacity:0.6;">착용 중 ✓</button>`;
   } else if (owned) {
     html = `<button class="ab-btn ab-eq" id="abEquip">장착하기 (무료)</button>`;
   } else if (state.bal >= item.price) {
     html = `<button class="ab-btn ab-wish" id="abWish">🎯 찜</button>
-      <button class="ab-btn ab-buy" id="abBuy">🍮 ${item.price}에 구매하고 장착</button>`;
+      <button class="ab-btn ab-buy" id="abBuy">🍮 ${item.price} · 구매하고 장착</button>`;
   } else {
     html = `<button class="ab-btn ab-wish" id="abWish">🎯 찜해두기</button>
       <button class="ab-btn ab-buy" disabled>🍮 ${item.price - state.bal}개 부족해요</button>`;
@@ -335,12 +403,12 @@ function buy(type, item) {
 function equip(type, item) {
   if (type === 'frame') { state.equipped.frame = item.key; state.trying.frame = item.key; }
   else { state.equipped.nick = item.key; state.trying.nick = item.key; }
-  renderMirror(); renderGrid(); renderActionbar();
+  renderMirror(); renderCatalog(); renderActionbar();
 }
 function unequip(type) {
   if (type === 'frame') { state.equipped.frame = null; state.trying.frame = null; }
   else { state.equipped.nick = null; state.trying.nick = null; }
-  renderMirror(); renderGrid(); renderActionbar();
+  renderMirror(); renderCatalog(); renderActionbar();
   say('기본으로 되돌렸다냥');
 }
 function wish(type, item) {
@@ -348,12 +416,12 @@ function wish(type, item) {
   const need = Math.max(0, item.price - state.bal);
   const days = Math.ceil(need / state.dailyRate);
   $('wishCard').classList.add('show');
-  $('wishName').textContent = `🎯 ${item.nm}${type === 'frame' ? ' 프레임' : ''} 찜!`;
+  $('wishName').textContent = `🎯 ${item.nm}${type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ''} 찜!`;
   $('wishDday').textContent = need === 0 ? '지금 살 수 있어요!' : `D-${days}`;
   $('wishSub').textContent = need === 0 ? '잔액이 충분해요 — 마음이 정해지면 눌러주세요'
     : `🍮 ${state.bal}/${item.price} · 하루 ${state.dailyRate}개씩 모으면 ${days}일 뒤에 살 수 있어요`;
   $('wishBar').style.width = Math.min(100, Math.round(state.bal / item.price * 100)) + '%';
-  renderGrid();
+  renderCatalog();
   toast('찜 완료 — 모이는 동안 여기서 진행을 보여줘요');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -377,15 +445,15 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   state.tab = t.dataset.tab;
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
   state.selected = null;
-  renderGrid(); renderActionbar();
+  renderCatalog(); renderActionbar();
 }));
 $('resetBtn').addEventListener('click', () => {
   state.trying = { nick: state.equipped.nick, frame: state.equipped.frame };
   state.selected = null;
-  renderMirror(); renderGrid(); renderActionbar();
+  renderMirror(); renderCatalog(); renderActionbar();
   say('지금 장착한 모습으로 되돌렸다냥');
 });
-renderMirror(); renderGrid();
+renderMirror(); renderCatalog();
 </script>
 </body>
 </html>
