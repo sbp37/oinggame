@@ -98,10 +98,9 @@
 
 <!-- 카톡 등 SNS 공유 시 링크 미리보기 썸네일 -->
 <meta property="og:type" content="website">
-<!-- 링크 미리보기 — 썸네일 이미지가 이미 "2분 안에 나 이길 수 있겠냥? · 합 10 퍼즐"을 말하고 있어
-     제목·설명은 겹치지 않는 다른 후킹 문구로 (중복 노출 방지, 오너 확정) -->
-<meta property="og:title" content="오잉게임 🐱 자꾸 생각나는 합10 퍼즐">
-<meta property="og:description" content="친구들과 랭킹 대결! 지금 바로 도전해보라냥 🐾">
+<!-- 링크 미리보기 — 점수 도전장, 짧은 플레이 시간, 합10 규칙을 순서대로 보여준다. -->
+<meta property="og:title" content="오잉 도전장 도착! 🐱">
+<meta property="og:description" content="딱 2분! 숫자를 묶어 합10을 만들고 친구 점수를 넘어보라냥 🐾">
 <meta property="og:image" content="https://oinggame.com/share-thumbnail.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -13153,23 +13152,23 @@ document.getElementById('shareResultBtn').addEventListener('click', async () => 
 
   const myNickForShare = loadNickname();
   // 공유 미리보기 캐시를 새 카드 규격으로 갱신하면서 추천코드는 그대로 전달한다.
-  let gameUrl = 'https://oinggame.com/?share=v2';
+  let gameUrl = 'https://oinggame.com/?share=v3';
   if (myNickForShare) {
     try {
       const code = await getOrCreateRefCode(myNickForShare);
-      if (code) gameUrl = `https://oinggame.com/?r=${code}&share=v2`;
+      if (code) gameUrl = `https://oinggame.com/?r=${code}&share=v3`;
       logShareClick(myNickForShare);
     } catch (e) {
       // 추천코드 서버가 잠시 불안정해도 공유 자체는 기본 주소로 계속할 수 있어야 한다.
       console.warn('추천 링크 생성 실패, 기본 링크로 공유:', e);
     }
   }
-  const shareText = `오잉게임에서 ${Number(score || 0).toLocaleString('ko-KR')}점 냈다냥! 이겨보라냥 🐱`;
+  const shareText = `🐱 나 ${Number(score || 0).toLocaleString('ko-KR')}점! 2분 안에 이길 수 있냥?\n바로 한 판 붙어보자 👇`;
 
   try {
     if (navigator.share) {
       // 휴대폰 공유창에서 카카오톡을 고르면 별도 카카오 로그인 없이 바로 전송할 수 있다.
-      await navigator.share({ title: '오잉게임', text: shareText, url: gameUrl });
+      await navigator.share({ title: '오잉 도전장', text: shareText, url: gameUrl });
     } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(`${shareText}\n${gameUrl}`);
       alert('공유 기능이 없는 브라우저라 링크를 복사했어요! 카톡에 붙여넣기 해주세요 🐱');
