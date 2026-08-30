@@ -47,13 +47,15 @@ test('공개 랭킹 레벨은 v2 버전이 맞는 데이터만 표시한다', ()
   assert.match(src, /publicVersion === OING_LEVEL_VERSION/);
 });
 
-test('전체 랭킹은 닉네임과 레벨·역대 왕관을 분리하고 다른 랭킹에서는 레벨을 숨긴다', () => {
-  assert.match(src, /#panelRank:not\(\.all-mode\) \.oing-level-badge \{ display:none !important; \}/);
+test('모든 랭킹은 레벨과 닉네임을 같은 줄에 표시하고 부가정보를 다음 줄로 분리한다', () => {
+  assert.doesNotMatch(src, /#panelRank:not\(\.all-mode\) \.oing-level-badge \{ display:none !important; \}/);
   assert.doesNotMatch(src, /\.ranking-panel \.oing-level-badge \{ display:none !important; \}/);
-  assert.match(src, /currentRankMode === 'all' \? `<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{titleBadgeP\}/);
-  assert.match(src, /<span class="rank-identity">[\s\S]{0,220}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>[\s\S]{0,220}<span class="rank-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{titleHtml\}/);
+  assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{titleBadgeP\}/);
+  assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{rankHotHtml\(entry\.ts\)\}/);
+  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span><\/span>[\s\S]{0,160}<span class="rank-meta">\$\{titleHtml\}/);
+  assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span><\/span>[\s\S]{0,160}<span class="rank-meta">\$\{rankHotHtml\(entry\.ts\)\}/);
   assert.match(src, /<span class="rank-tail">\$\{badgeHtml\}[\s\S]{0,180}<span class="rank-pts">/);
-  assert.match(src, /#panelRank\.all-mode \.podium-nick-text \{ overflow:visible; text-overflow:clip; \}/);
+  assert.match(src, /#panelRank \.podium-nick-text \{ overflow:visible; text-overflow:clip; \}/);
 });
 
 test('레거시 계정도 접속 승급을 확인하고 미리보기·앱은 운영 빌드 번호를 쓰지 않는다', () => {
