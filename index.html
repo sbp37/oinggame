@@ -2061,6 +2061,12 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .frame-purple { --frame-color:#a78bfa; }
 .frame-red { --frame-color:#f87171; }
 .frame-sky { --frame-color:#38bdf8; }
+/* 젤리 전용 프레임 (상점 v2) — key는 현금 프레임(gold 등)과 절대 겹치지 않음 */
+.frame-moon { --frame-color:#cbd5e1; }
+.frame-neon { --frame-color:#22d3ee; }
+.frame-sakura { --frame-color:#fda4af; }
+.frame-aurora { --frame-color:#5eead4; }
+.frame-royal { --frame-color:#e879f9; }
 .skin-swatch.frame-swatch { border-width:2px; }
 
 .skin-swatch {
@@ -3371,7 +3377,7 @@ if ('serviceWorker' in navigator) {
       <div class="small">오잉냥이가 운영하는</div>
       <h1>젤리상점 <span class="heart">♥</span></h1>
     </div>
-    <div class="jshop-desc">🍮 출석 체크로 젤리를 모아<br>닉네임과 말풍선을 꾸밀 수 있다냥! 😺</div>
+    <div class="jshop-desc">🍮 게임하고 출석하면 젤리가 모여요<br>모은 젤리로 닉네임과 랭킹을 꾸민다냥! 😺</div>
 
     <div class="jshop-top-pill-row">
       <div class="jshop-balance-chip"><span class="lbl">🍮</span> <span class="num" id="jshopBalanceText">내 젤리 0개</span></div>
@@ -3387,7 +3393,7 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">🎨</span><span class="name">닉네임 컬러</span><span class="price">🍮 15개</span></div>
+      <div class="jshop-section-head"><span class="icon">🎨</span><span class="name">닉네임 컬러</span><span class="price">🍮 20개</span></div>
       <div class="jshop-dot-row">
         <div class="jshop-color-dot" style="background:#fbbf24;" data-skin="gold"></div>
         <div class="jshop-color-dot" style="background:#f472b6;" data-skin="pink"></div>
@@ -3399,19 +3405,46 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">✨</span><span class="name">움직이는 효과</span><span class="price">🍮 20개</span></div>
+      <div class="jshop-section-head"><span class="icon">✨</span><span class="name">움직이는 효과</span><span class="price">🍮 60~100개</span></div>
       <div class="jshop-effect-row">
-        <div class="jshop-effect-chip" data-skin="rainbow" style="animation:jshopRainbow 2.5s linear infinite;">가나다</div>
-        <div class="jshop-effect-chip" data-skin="goldshine" style="color:#fbbf24; animation:jshopPulse 1.6s ease-in-out infinite;">가나다</div>
-        <div class="jshop-effect-chip" data-skin="diamond" style="color:#e0e7ff; text-shadow:0 0 8px rgba(224,231,255,0.9);">가나다</div>
+        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="rainbow" style="animation:jshopRainbow 2.5s linear infinite;">가나다</div><div class="jshop-item-price">🍮 60</div></div>
+        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="goldshine" style="color:#fbbf24; animation:jshopPulse 1.6s ease-in-out infinite;">가나다</div><div class="jshop-item-price">🍮 80</div></div>
+        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="diamond" style="color:#e0e7ff; text-shadow:0 0 8px rgba(224,231,255,0.9);">가나다</div><div class="jshop-item-price">🍮 100</div></div>
       </div>
     </div>
     <style>
       @keyframes jshopRainbow { 0%{color:#fbbf24} 25%{color:#f472b6} 50%{color:#60a5fa} 75%{color:#34d399} 100%{color:#fbbf24} }
       @keyframes jshopPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      .jshop-effect-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+      .jshop-item-price { font-size:11px; font-weight:800; color:var(--muted); }
+      .jshop-frame-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+      .jshop-frame-chip { display:flex; flex-direction:column; align-items:center; gap:2px;
+        padding:7px 10px; border-radius:12px; cursor:pointer; min-width:64px;
+        border:1.5px solid var(--frame-color, var(--border));
+        box-shadow:0 0 8px var(--frame-color, transparent);
+        background:rgba(20,30,46,0.35); }
+      .jshop-frame-chip .fname { font-size:11.5px; font-weight:800; color:var(--ivory); }
+      .jshop-frame-chip .fprice { font-size:10.5px; font-weight:800; color:var(--muted); }
+      .jshop-frame-chip.owned .fprice::after { content:' · 보유'; color:#7fe895; }
+      .jshop-frame-chip.picked { outline:2px solid #7fe895; outline-offset:1px; }
+      body.light .jshop-frame-chip { background:rgba(255,255,255,0.55); }
     </style>
 
-    <div class="jshop-section speech-box jshop-speech-box">
+    <div class="jshop-section">
+      <div class="jshop-section-head"><span class="icon">🖼️</span><span class="name">랭킹 프레임</span><span class="price">🍮 100~250개</span></div>
+      <div class="jshop-frame-row">
+        <div class="jshop-frame-chip frame-moon" data-frame="moon"><span class="fname">달빛</span><span class="fprice">🍮 100</span></div>
+        <div class="jshop-frame-chip frame-neon" data-frame="neon"><span class="fname">네온</span><span class="fprice">🍮 130</span></div>
+        <div class="jshop-frame-chip frame-sakura" data-frame="sakura"><span class="fname">벚꽃</span><span class="fprice">🍮 160</span></div>
+        <div class="jshop-frame-chip frame-aurora" data-frame="aurora"><span class="fname">오로라</span><span class="fprice">🍮 180</span></div>
+        <div class="jshop-frame-chip frame-royal" data-frame="royal"><span class="fname">👑 로얄</span><span class="fprice">🍮 250</span></div>
+      </div>
+      <div class="jshop-speech-free-note" style="margin-top:8px;">✓ 내 랭킹 줄 테두리가 은은하게 빛나요 · 한번 사면 영구 소유</div>
+    </div>
+
+    <!-- 랭킹 한마디 — 2026-08-30 젤리 개편에서 범위 제외(랭킹 공간 부족, 운영 결정).
+         서버(buyBubble)는 그대로 살아 있어 아래 display:none 한 줄만 지우면 원복된다. -->
+    <div class="jshop-section speech-box jshop-speech-box" style="display:none;">
       <div class="jshop-section-head" style="margin-bottom:10px;"><span class="icon">💬</span><span class="name">랭킹 한마디</span><span class="price" id="jshopBubblePrice">🍮 20개</span></div>
       <div class="jshop-speech-input-row">
         <input class="jshop-speech-input" id="jshopBubbleInput" placeholder="예: 오늘은1등" maxlength="5">
@@ -3424,7 +3457,15 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
 
-    <div class="jshop-notice-text">✨ 프레임 등 더 다양한 꾸미기가 앞으로 계속 추가될 예정이에요!</div>
+    <div class="jshop-section">
+      <div class="jshop-section-head"><span class="icon">🍮</span><span class="name">젤리 모으는 법</span></div>
+      <div class="jshop-speech-free-note" style="text-align:left; line-height:1.9;">
+        · 출석 체크 <b>+1</b> &nbsp;· 하루 첫 게임 완료 <b>+1</b><br>
+        · 오늘의 목표 달성 <b>+2</b><br>
+        · 3일 연속 플레이 <b>+2</b> &nbsp;· 7일 연속마다 <b>+5</b>
+      </div>
+    </div>
+    <div class="jshop-notice-text">✨ 더 다양한 꾸미기가 앞으로 계속 추가될 예정이에요!</div>
 
     <!-- 서포터팩(990원 현금) — 닫아둠. 젤리샵은 랭킹의 '+ 말풍선' 탭으로도
          열리므로, 유료 결제 경로를 완전히 막으려면 이 박스도 함께 숨긴다.
@@ -7038,9 +7079,9 @@ function loadPendingRename() { try { return JSON.parse(localStorage.getItem(PEND
 function clearPendingRename() { try { localStorage.removeItem(PENDING_RENAME_KEY); } catch {} }
 
 // 서버 함수 호출 래퍼. action 없음 = rename 수행.
-async function callRenameNickname(oldNick, newNick, pin, requestId) {
+async function callRenameNickname(oldNick, newNick, pin, requestId, extra = {}) {
   const fn = httpsCallable(fns, 'renameNickname');
-  const res = await fn({ oldNickname: oldNick, newNickname: newNick, pin: pin || '', requestId });
+  const res = await fn({ oldNickname: oldNick, newNickname: newNick, pin: pin || '', requestId, ...extra });
   return (res && res.data) || {};
 }
 
@@ -8027,6 +8068,14 @@ async function _shadowSubmitSession(nickname) {
       if (data && data.playXp
           && data.levelVersion === OING_LEVEL_VERSION
           && data.levelContract === OING_LEVEL_CONTRACT) updatePlayXpMirror(data.playXp);
+    } catch {}
+    // 🍮 서버가 이번 판에 지급한 젤리 — 상점 오픈(ENABLE_JELLY_SHOP) 전에는 표시하지 않음
+    //   (지급 자체는 서버에서 이미 쌓이고 있고, 오픈 때부터 보여준다)
+    try {
+      if (ENABLE_JELLY_SHOP && data && data.jelly && data.jelly.total > 0) {
+        showJellyGrantToast(data.jelly);
+        updateJellyDisplay(data.jelly.balance);
+      }
     } catch {}
     return data;
   } catch (e) {
@@ -13159,8 +13208,23 @@ document.getElementById('nickChangeBtn').addEventListener('click', async () => {
     const requestId = newRenameRequestId();
     savePendingRename(oldNick, nick, requestId);
     try {
-      const res = await callRenameNickname(oldNick, nick, '', requestId); // UID 경로 — PIN 불요
+      let res;
+      try {
+        res = await callRenameNickname(oldNick, nick, '', requestId); // UID 경로 — PIN 불요
+      } catch (e1) {
+        // 쿨다운이면 젤리 조기 변경 제안 — 동의(payWithJelly) 없이는 서버가 절대 과금하지 않음
+        const r1 = e1 && e1.details && e1.details.reason;
+        const price = e1 && e1.details && e1.details.earlyPrice;
+        const daysLeft = (e1 && e1.details && e1.details.daysLeft) || '';
+        if (r1 === 'cooldown' && price
+            && confirm(`무료 변경까지 ${daysLeft}일 남았어요.\n🍮 젤리 ${price}개를 쓰고 지금 바로 바꿀까요?`)) {
+          res = await callRenameNickname(oldNick, nick, '', requestId, { payWithJelly: true });
+        } else {
+          throw e1;
+        }
+      }
       if (res && res.ok) {
+        if (typeof res.jelly === 'number') { try { updateJellyDisplay(res.jelly); } catch {} }
         saveNickname(nick);
         migrateLocalKeysForRename(oldNick, nick);   // 목표 스트릭 등 닉네임 키 로컬 표시 데이터 이관
         clearPendingRename();
@@ -13182,6 +13246,8 @@ document.getElementById('nickChangeBtn').addEventListener('click', async () => {
       if (reason === 'name-taken') msg = '이미 사용 중이거나 기록이 남아 있는 닉네임이에요.';
       else if (reason === 'cooldown') msg = '닉네임은 7일에 한 번 바꿀 수 있어요.' + (e.details && e.details.daysLeft ? ' ' + e.details.daysLeft + '일 뒤에 가능해요.' : '');
       else if (reason === 'rename-disabled') msg = '지금은 닉네임 변경을 할 수 없어요. 잠시 후 다시 시도해주세요.';
+      else if (reason === 'no-jelly') msg = `젤리가 부족해요! (보유 ${e.details.balance}개 / 필요 ${e.details.price}개)`;
+      else if (reason === 'early-limit') msg = '조기 닉네임 변경은 하루에 한 번만 할 수 있어요.';
       else if (code === 'functions/permission-denied' || code === 'permission-denied') msg = '본인 계정만 변경할 수 있어요.';
       else if (code === 'functions/invalid-argument' || code === 'invalid-argument') msg = '닉네임이 올바르지 않아요.';
       alert(msg);
@@ -13300,7 +13366,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788084030; // v4.9 — 최초등록 클라 젤리 지급 제거(서버 지급으로 이전 준비)
+const BUILD = 1788085250; // v4.9 — 젤리 상점 v2 배선(가격·프레임·조기닉변·토스트·선물) — ENABLE_JELLY_SHOP=false 로 전부 비노출
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13442,8 +13508,16 @@ function skinClassFor(key) {
   const s = SKIN_CATALOG.find(x => x.key === key);
   return s ? s.cls : '';
 }
+// 젤리 전용 프레임 카탈로그 — 서버 shopAction(JELLY_FRAME_PRICES)과 가격·key 동일해야 함
+const JELLY_FRAME_CATALOG = [
+  { key:'moon',   name:'달빛 프레임',   price:100, cls:'frame-moon' },
+  { key:'neon',   name:'네온 프레임',   price:130, cls:'frame-neon' },
+  { key:'sakura', name:'벚꽃 프레임',   price:160, cls:'frame-sakura' },
+  { key:'aurora', name:'오로라 프레임', price:180, cls:'frame-aurora' },
+  { key:'royal',  name:'로얄 프레임',   price:250, cls:'frame-royal' },
+];
 function frameClassFor(key) {
-  const f = FRAME_CATALOG.find(x => x.key === key);
+  const f = FRAME_CATALOG.find(x => x.key === key) || JELLY_FRAME_CATALOG.find(x => x.key === key);
   return f ? f.cls : '';
 }
 
@@ -13658,6 +13732,12 @@ async function loadJellyBalance() {
   const nick = loadNickname();
   if (!nick) { updateJellyDisplay(0); return; }
   try {
+    // 잔액 단일 원본은 jelly_wallet/{uid}(서버 전용 쓰기). 지갑이 아직 없으면(서버가
+    // 첫 지급/구매 때 생성) 옛 user_stats.jelly 를 보여준다 — 지갑 생성 시 같은 값이 흡수됨.
+    if (isUidLinked() && MY_UID) {
+      const wSnap = await getDoc(doc(db, 'jelly_wallet', MY_UID));
+      if (wSnap.exists()) { updateJellyDisplay(wSnap.data().balance || 0); return; }
+    }
     const { data } = await getMyDoc('user_stats');
     updateJellyDisplay(data ? (data.jelly || 0) : 0);
   } catch (e) { console.warn('젤리 잔액 로드 실패:', e); }
@@ -13710,8 +13790,17 @@ async function updateClaimBtnState() {
   const nick = loadNickname();
   if (!nick) { btn.disabled = true; btn.textContent = '🎁 닉네임 등록 후 가능'; return; }
   try {
-    const { data } = await getMyDoc('user_stats');
-    const lastClaim = data ? (data.jellyLastClaim || '') : '';
+    let lastClaim = '';
+    if (isUidLinked() && MY_UID) {
+      try {
+        const wSnap = await getDoc(doc(db, 'jelly_wallet', MY_UID));
+        if (wSnap.exists()) lastClaim = wSnap.data().lastDailyClaim || '';
+      } catch {}
+    }
+    if (!lastClaim) {
+      const { data } = await getMyDoc('user_stats');
+      lastClaim = data ? (data.jellyLastClaim || '') : '';
+    }
     if (lastClaim === getTodayDateStr()) {
       btn.disabled = true;
       btn.textContent = '✅ 오늘은 받았어요';
@@ -13821,16 +13910,67 @@ async function buySkinWithJelly(skinKey, price) {
     alert('오류가 발생했어요. 다시 시도해주세요.');
   }
 }
+const JELLY_EFFECT_PRICES = { rainbow: 60, goldshine: 80, diamond: 100 }; // 서버 가격표와 동일
 document.querySelectorAll('.jshop-color-dot').forEach(dot => {
-  dot.addEventListener('click', () => buySkinWithJelly(dot.dataset.skin, 15));
+  dot.addEventListener('click', () => buySkinWithJelly(dot.dataset.skin, 20));
 });
 document.querySelectorAll('.jshop-effect-chip').forEach(chip => {
-  chip.addEventListener('click', () => buySkinWithJelly(chip.dataset.skin, 20));
+  chip.addEventListener('click', () => buySkinWithJelly(chip.dataset.skin, JELLY_EFFECT_PRICES[chip.dataset.skin] || 60));
+});
+// ── 젤리 프레임 구매·장착·해제 (스킨과 동일 패턴 — 소유는 서버(buyFrame)만 기록) ──
+async function buyFrameWithJelly(frameKey) {
+  const nick = loadNickname();
+  if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
+  if (guardLocalOnlyForShop()) return;
+  const item = JELLY_FRAME_CATALOG.find(x => x.key === frameKey);
+  if (!item) return;
+  try {
+    const { ref: skinRef, data: skinDocData } = await getMyDoc('nickname_skins');
+    const existing = skinDocData || {};
+    const owned = existing.ownedFrames || [];
+    const isActive = existing.frame === frameKey;
+    const isOwned = owned.includes(frameKey);
+    if (isActive) {
+      if (!confirm('이 프레임을 끄고 기본으로 되돌릴까요?')) return;
+      await setDoc(skinRef, withOwnerFields({ ...existing, frame: null }), { merge: true });
+      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
+      skinsCache[nick].frame = null;
+      renderRanking(); refreshShopOwnershipUI();
+      return;
+    }
+    if (isOwned) {
+      await setDoc(skinRef, withOwnerFields({ ...existing, frame: frameKey }), { merge: true });
+      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
+      skinsCache[nick].frame = frameKey;
+      renderRanking(); refreshShopOwnershipUI();
+      return;
+    }
+    if (!requireLinkedForShop()) return;
+    if (!confirm(`🍮 ${item.price}개로 ${item.name}을 구매하고 적용할까요?`)) return;
+    let purchase;
+    try {
+      purchase = await callShopAction('buyFrame', { frameKey });
+    } catch (e2) {
+      alert(parseShopError(e2).msg);
+      return;
+    }
+    updateJellyDisplay(purchase.jelly);
+    if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
+    skinsCache[nick].frame = frameKey;
+    alert('구매하고 바로 적용했다냥! 🎉 다음부턴 이 프레임은 무료로 껐다 켤 수 있어요.');
+    renderRanking(); refreshShopOwnershipUI();
+  } catch (e) {
+    console.warn('프레임 구매 실패:', e);
+    alert('오류가 발생했어요. 다시 시도해주세요.');
+  }
+}
+document.querySelectorAll('.jshop-frame-chip').forEach(chip => {
+  chip.addEventListener('click', () => buyFrameWithJelly(chip.dataset.frame));
 });
 // 상점 열 때 내가 산 것/지금 장착 중인 것 표시
 async function refreshShopOwnershipUI() {
   const nick = loadNickname();
-  document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip').forEach(el => {
+  document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip, .jshop-frame-chip').forEach(el => {
     el.classList.remove('picked', 'owned');
   });
   if (!nick) return;
@@ -13838,10 +13978,16 @@ async function refreshShopOwnershipUI() {
     const { data: skinDocData } = await getMyDoc('nickname_skins');
     const data = skinDocData || {};
     const owned = data.ownedSkins || [];
+    const ownedFrames = data.ownedFrames || [];
     document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip').forEach(el => {
       const key = el.dataset.skin;
       if (owned.includes(key)) el.classList.add('owned');
       if (data.skin === key) el.classList.add('picked');
+    });
+    document.querySelectorAll('.jshop-frame-chip').forEach(el => {
+      const key = el.dataset.frame;
+      if (ownedFrames.includes(key)) el.classList.add('owned');
+      if (data.frame === key) el.classList.add('picked');
     });
   } catch (e) { console.warn('보유 아이템 확인 실패:', e); }
 }
@@ -13939,6 +14085,64 @@ function showSkinAppliedToast() {
   setTimeout(() => { t.style.opacity = '0'; }, 2000);
   setTimeout(() => t.remove(), 2400);
 }
+
+// 🍮 게임 종료 젤리 지급 토스트 — 서버(submitScore)가 확정 지급한 것만 표시
+function showJellyGrantToast(jelly) {
+  const names = { welcome: '환영 선물', firstGame: '오늘 첫 게임', goal: '오늘의 목표 달성', streak: '연속 플레이' };
+  const parts = [];
+  for (const k of Object.keys(jelly.granted || {})) {
+    parts.push(`${names[k] || k} +${jelly.granted[k]}`);
+  }
+  document.querySelectorAll('.jelly-grant-toast').forEach(el => el.remove());
+  const t = document.createElement('div');
+  t.className = 'jelly-grant-toast';
+  t.style.cssText = `
+    position:fixed; top:20%; left:50%; transform:translate(-50%,-8px);
+    z-index:420; pointer-events:none; text-align:center;
+    background:rgba(20,30,46,0.96); color:#fde68a;
+    border:1.5px solid rgba(251,191,36,0.5); border-radius:16px;
+    padding:10px 18px; font-size:13.5px; font-weight:800; letter-spacing:-0.2px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.5); opacity:0; transition:opacity 0.3s ease, transform 0.3s ease;`;
+  t.innerHTML = `🍮 젤리 +${jelly.total}<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin-top:2px;">${parts.join(' · ')}</div>`;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translate(-50%,0)'; });
+  setTimeout(() => { t.style.opacity = '0'; }, 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// 🎁 초창기 멤버 선물 — 상점 오픈 후, 대상 계정에 1회 지급 팝업 (판별·지급은 전부 서버)
+async function maybeClaimEarlyMemberGift() {
+  if (!ENABLE_JELLY_SHOP || IS_APP) return;
+  try {
+    if (localStorage.getItem('oeing_early_gift_v1')) return;
+    if (!isUidLinked()) return;
+    const res = await callShopAction('claimEarlyMember');
+    localStorage.setItem('oeing_early_gift_v1', '1');
+    if (res && res.granted) {
+      updateJellyDisplay(res.jelly);
+      const wrap = document.createElement('div');
+      wrap.className = 'overlay';
+      wrap.style.cssText = 'display:flex; z-index:430;';
+      wrap.innerHTML = `
+        <div style="background:var(--surface); border:1.5px solid rgba(251,191,36,0.5); border-radius:20px;
+             padding:26px 22px; max-width:300px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+          <div style="font-size:34px;">🎁</div>
+          <div style="font-size:16px; font-weight:900; color:var(--ivory); margin-top:8px;">초기 멤버 선물이 도착했어요!</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:8px; line-height:1.6;">
+            오잉게임을 일찍부터 함께해줘서 고맙다냥.<br><b style="color:#fde68a;">🍮 젤리 20개</b>를 선물로 드렸어요!</div>
+          <button style="margin-top:14px; padding:10px 26px; border-radius:999px; border:none;
+               background:#fbbf24; color:#3a2b06; font-family:inherit; font-size:14px; font-weight:900; cursor:pointer;"
+               onclick="this.closest('.overlay').remove()">고마워! 🐾</button>
+        </div>`;
+      document.body.appendChild(wrap);
+    }
+  } catch (e) {
+    // not-early-member(신규 계정) 등 — 다시 묻지 않음
+    const r = e && e.details && e.details.reason;
+    if (r === 'not-early-member') { try { localStorage.setItem('oeing_early_gift_v1', '1'); } catch {} }
+  }
+}
+setTimeout(() => { maybeClaimEarlyMemberGift(); }, 4000);
 document.getElementById('contactBoardBtn').addEventListener('click', () => {
   closeContactOverlay();
   document.getElementById('feedbackBoardOverlay').style.display = 'flex';
