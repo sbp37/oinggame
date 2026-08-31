@@ -117,10 +117,15 @@ test('독립 커스텀 미리보기는 기본 URL에서 실제 결제를 차단�
     '명시적 운영 모드가 아니면 결제를 막아야 함');
   assert.doesNotMatch(custom, /data-frame-key="crown"/,
     '황금왕관은 젤리 전용이므로 유료 신규 선택지에 있으면 안 됨');
-  assert.doesNotMatch(custom, /data-cat-key="mint"[^}]*scaleX\(/,
-    '민트냥만 가로로 늘려 비율을 찌그러뜨리면 안 됨');
-  assert.match(custom, /data-cat-key="mint"[^}]*scale\(1\.08\)/,
-    '민트냥은 다른 고양이와 같은 비율로만 크기를 보정해야 함');
+  // 예전엔 민트냥만 CSS 로 위치를 보정했다(원본 자산이 17px 아래로 치우쳐 있었다).
+  // 지금은 여섯 종 모두 알파 기준으로 정중앙에 맞춘 -c 자산을 쓰므로 보정이 필요 없고,
+  // 오히려 보정이 남아 있으면 그 한 마리만 어긋난다.
+  assert.doesNotMatch(custom, /data-cat-key="[a-z-]+"\s*img\{[^}]*transform:/,
+    '고양이별 위치·크기 보정이 남아 있으면 안 됨 — 자산이 이미 정중앙임');
+  for (const asset of ['img-03-c', 'img-04-c', 'img-05-c', 'cat-cheese-c', 'cat-pink-c', 'cat-mint-v3-c']) {
+    assert.match(custom, new RegExp(`/assets/${asset}\\.png`),
+      `${asset} — 정중앙 정렬된 자산을 써야 고양이가 칸 안에서 안 튄다`);
+  }
   assert.match(src, /주문해줘서 고맙다냥!/,
     '결제 복귀 후 주문 접수 성공 화면에 감사 문구가 보여야 함');
 });

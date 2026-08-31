@@ -1542,7 +1542,6 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .arrow-up   { font-size: 13px; color: #ef4444; font-weight: 900; }
 .arrow-down { font-size: 13px; color: #3b82f6; font-weight: 900; }
 .arrow-same { font-size: 13px; color: #3a5a7a; }
-.rank-new-badge { font-size: 11px; font-weight: 700; background: var(--accent-pink); color: white; padding: 1px 5px; border-radius: 4px; margin-left: 3px; vertical-align: middle; }
 
 /* 4등 이하 목록 */
 .rank-list { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
@@ -1566,6 +1565,11 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 /* 변동 칸 30→25px. 가장 넓은 표시인 '▲12' 가 23.4px 라 25px 로도 잘리지 않는다.
    (순위 숫자 칸 23px 은 3자리 '500' 이 22.1px 이라 더 줄일 수 없어 그대로 둔다.) */
 .rank-change { font-size: 12.5px; font-weight: 800; min-width: 25px; max-width: 25px; text-align: center; flex-shrink: 0; letter-spacing:-0.5px; }
+/* NEW 는 순위변동 칸(25px) 안에 들어가야 닉네임 자리를 뺏지 않는다. 예전엔 인라인 스타일
+   10px + 좌우 4px 패딩이라 칸을 넘겨 닉이 잘렸다(운영 보고: "고..." 로 잘림). */
+.rank-change.is-new { display: inline-flex; align-items: center; justify-content: center; }
+.rank-change-new { font-size: 8.5px; font-weight: 800; background: #0ea5e9; color: #fff;
+  padding: 1px 3px; border-radius: 3px; line-height: 1.25; letter-spacing: 0; }
 .rank-change.up { color: var(--accent-green-light); text-shadow: none; }
 .rank-change.down { color: var(--accent-orange); text-shadow: none; }
 .rank-change.same { color: var(--muted); font-size: 13px; }
@@ -1608,7 +1612,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-meta:empty { display:none; }
 .rank-title-count { color:#DA9845; font-size:9.5px; line-height:1; font-weight:800; white-space:nowrap; flex-shrink:0; }
 .rank-tail { min-width:72px; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:2px; }
-.rank-tail .rank-badge, .rank-tail .rank-new-badge, .rank-tail .rank-pts { margin:0; }
+.rank-tail .rank-badge, .rank-tail .rank-pts { margin:0; }
 .rank-tail .rank-pts { line-height:1.1; }
 .oing-level-badge {
   display:inline-flex; align-items:center; gap:3px; max-width:66px; margin-right:5px;
@@ -11226,11 +11230,11 @@ async function showMyRankCardIfBelowCut(myNick, isWeek) {
 //   그대로면 NEW를 계속 보여주고, 오르거나 내리면(diff !== 0) 그 즉시 ▲▼로 자연스럽게 넘어간다.
 function rankChangeHtml(prevRank, currentRank, podium, showDrop, isTodayNew) {
   const cls = podium ? 'podium-rank-change' : 'rank-change';
-  if (prevRank == null) return `<span class="rank-change" style="display:inline-flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;background:#0ea5e9;color:white;padding:1px 4px;border-radius:4px;">NEW</span></span>`;
+  if (prevRank == null) return `<span class="rank-change is-new"><span class="rank-change-new">NEW</span></span>`;
   const diff = prevRank - currentRank;
   if (diff > 0) return `<span class="${cls} up">▲${diff}</span>`;
   if (diff < 0 && showDrop) return `<span class="${cls} down">▼${Math.abs(diff)}</span>`;
-  if (diff === 0 && isTodayNew) return `<span class="rank-change" style="display:inline-flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;background:#0ea5e9;color:white;padding:1px 4px;border-radius:4px;">NEW</span></span>`;
+  if (diff === 0 && isTodayNew) return `<span class="rank-change is-new"><span class="rank-change-new">NEW</span></span>`;
   return `<span class="${cls} same">－</span>`;
 }
 // 🔥 최근 신기록 표시 — 순위 변동이 드문 게임이라(누적 최고점), 각 유저 점수의 ts(최고점 낸 시각)로
@@ -11672,7 +11676,7 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
           <span class="rank-meta">${creatorBadgeHtml(entry.nickname)}</span>
         </span>
         ${meBadgeHtml}${friendBadgeHtml}
-        <span class="rank-tail">${badgeHtml}${isNew ? '<span class="rank-new-badge">NEW</span>' : ''}<span class="rank-pts">${entry.score}pt${bestSubR}</span></span>
+        <span class="rank-tail">${badgeHtml}<span class="rank-pts">${entry.score}pt${bestSubR}</span></span>
       `;
       // 100등까지만 먼저 보이고 나머지는 '더보기'로 펼침(전체·친구 공통)
       if (rank > RANK_PREVIEW_COUNT) row.classList.add('rank-extra-hidden');
@@ -12058,7 +12062,6 @@ async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
         ${isMe ? `<span class="rank-me-badge"><img src="${MY_CAT_IMG}" alt="나"></span>` : ''}
         ${isFriend(entry.nickname) ? '<span class="rank-friend-badge" title="내 친구">🤍</span>' : ''}
         ${isTop3 ? '<span class="rank-badge rank-badge-top3">🥇 TOP3</span>' : (isTop10 ? '<span class="rank-badge rank-badge-top10"><img class="rank-badge-flame-img" src="data:image/webp;base64,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" alt="">Top10</span>' : (isTop30 ? '<span class="rank-badge rank-badge-top30">✨ Top30</span>' : ''))}
-        ${isNew ? '<span class="rank-new-badge">NEW</span>' : ''}
         <span class="rank-pts">${entry.score}pt</span>
       `;
       // 주간도 100등까지만 먼저 보이고 나머지는 '더보기'로 펼침
@@ -13692,7 +13695,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788183900; // v4.23 — 주문 발송 아이템 표시 + 업데이트 배너는 큰 변경만
+const BUILD = 1788184200; // v4.24 — 배달 팝업 문구 + 랭킹 NEW 중복 제거 + 커스텀샵 좁은화면
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14999,16 +15002,20 @@ async function checkSkinNotification() {
       const deliveryBtn = document.getElementById('skinNotifyCloseBtn');
       const isCustomOrder = d.deliveryKind === 'custom-order';
       if (titleEl) titleEl.textContent = isCustomOrder
-        ? `${myNick}님, 주문한 꾸미기가 도착했어요!`
+        ? `${myNick}님, 주문한 상품이 도착했어요!`
         : `${myNick}님, 고양이 스킨이 도착했어요!`;
-      if (subtitleEl) subtitleEl.textContent = isCustomOrder
-        ? '기다리던 꾸미기를 배달 왔다냥 💝'
-        : '새로운 친구가 찾아왔다냥 🐾';
+      // 주문 도착은 부제를 비운다 — 제목과 아래 메시지가 같은 말을 세 번 하게 돼 장황했다.
+      if (subtitleEl) {
+        subtitleEl.textContent = isCustomOrder ? '' : '새로운 친구가 찾아왔다냥 🐾';
+        subtitleEl.style.display = isCustomOrder ? 'none' : '';
+      }
       if (deliveryBtn) deliveryBtn.textContent = isCustomOrder ? '내 꾸미기 확인하기' : '새 스킨 확인하기';
       const noteEl = document.getElementById('skinNotifyNote');
       const skinNote = (typeof d.skinNote === 'string') ? d.skinNote.trim() : '';
       if (noteEl) {
-        if (skinNote) { noteEl.textContent = skinNote; noteEl.style.display = ''; }
+        // '… 도착했다냥!' 뒤는 줄을 바꿔 두 문장이 한 줄에 뭉치지 않게 한다.
+        // 서버가 만든 문구를 그대로 쓰되 표시만 나눈다(옛 문서도 똑같이 예뻐진다).
+        if (skinNote) { noteEl.textContent = skinNote.replace(/!\s+/, '!\n'); noteEl.style.display = ''; }
         else { noteEl.textContent = ''; noteEl.style.display = 'none'; } // 메시지 없으면 빈 영역 숨김
       }
       const overlay = document.getElementById('skinNotifyOverlay');
