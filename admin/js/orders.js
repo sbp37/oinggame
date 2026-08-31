@@ -44,11 +44,11 @@ function renderOrders(docs) {
         : `꾸미기 세트 · ${d.effectName || '-'} + ${d.frameName || '-'}`;
     return `<article class="custom-order-item" data-order-id="${escapeHtml(snap.id)}">
       <div class="custom-order-top">
-        <span class="custom-order-user">${escapeHtml(d.nickname || '(닉네임 없음)')}</span>
+        <span class="custom-order-user">${escapeHtml(d.nickname || '(닉네임 연결 전)')}</span>
         <span class="custom-order-status ${status}">${STATUS_LABEL[status] || status}</span>
       </div>
       <div class="custom-order-choice">${escapeHtml(detail)}</div>
-      <div class="custom-order-meta">${Number(d.price || 0).toLocaleString()}원 · ${escapeHtml(formatTime(d.createdAt))}<br>주문번호 ${escapeHtml(snap.id)}</div>
+      <div class="custom-order-meta">${Number(d.price || 0).toLocaleString()}원 · ${escapeHtml(formatTime(d.createdAt))}<br>UID ${escapeHtml(d.uid || '-')}<br>주문번호 ${escapeHtml(snap.id)}</div>
       ${status === 'pending' ? `<div class="custom-order-actions">
         <button class="btn btn-primary btn-sm" data-order-action="fulfill">입금 확인·발송</button>
         <button class="btn btn-ghost btn-sm" data-order-action="cancel">취소</button>

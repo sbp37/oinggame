@@ -440,7 +440,7 @@ button.online-chip.more { cursor: pointer; font-family: inherit; font-size: 12.5
 .custom-order-status.fulfilled { color:#a9efd0; border-color:rgba(101,210,160,.42); }
 .custom-order-status.cancelled { color:#efaaaa; border-color:rgba(220,110,110,.4); }
 .custom-order-choice { margin-top:7px; font-size:13.5px; font-weight:800; color:var(--text); }
-.custom-order-meta { margin-top:4px; font-size:11.5px; line-height:1.5; color:var(--muted); }
+.custom-order-meta { margin-top:4px; font-size:11.5px; line-height:1.5; color:var(--muted); overflow-wrap:anywhere; }
 .custom-order-actions { display:flex; gap:7px; margin-top:10px; }
 .custom-order-actions .btn { flex:1; }
 .economy-list { display:flex; flex-direction:column; gap:7px; }

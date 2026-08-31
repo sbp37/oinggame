@@ -3446,7 +3446,7 @@ if ('serviceWorker' in navigator) {
 <!-- 카카오페이 QR 복귀 후 주문 접수 안내 — 입금 확인과 혼동하지 않게 '접수'만 알린다 -->
 <div id="customOrderReturnOverlay" class="overlay" style="display:none;">
   <div class="overlay-card" style="max-width:310px; text-align:center;">
-    <div style="font-size:44px; margin-bottom:6px;">📦</div>
+    <div id="customOrderReturnEmoji" style="font-size:44px; margin-bottom:6px;">📦</div>
     <div class="overlay-title" style="font-size:18px;" id="customOrderReturnTitle">주문을 접수하는 중이에요</div>
     <div id="customOrderReturnMessage" style="font-size:14px; color:var(--muted); margin-top:8px; line-height:1.65;">잠시만 기다려달라냥 🐾</div>
     <button id="customOrderReturnBtn" class="action-btn" style="width:100%; margin-top:16px;" disabled>확인 중…</button>
@@ -4678,6 +4678,7 @@ async function handleCustomOrderReturn() {
   const title = document.getElementById('customOrderReturnTitle');
   const message = document.getElementById('customOrderReturnMessage');
   const button = document.getElementById('customOrderReturnBtn');
+  const emoji = document.getElementById('customOrderReturnEmoji');
   if (!overlay || !title || !message || !button) return;
   let order = null;
   try { order = JSON.parse(localStorage.getItem(CUSTOM_ORDER_PENDING_KEY) || 'null'); } catch {}
@@ -4698,12 +4699,14 @@ async function handleCustomOrderReturn() {
   try {
     const result = await callShopAction('submitCustomOrder', order);
     try { localStorage.removeItem(CUSTOM_ORDER_PENDING_KEY); } catch {}
-    title.textContent = '주문 요청이 전송됐어요!';
+    if (emoji) emoji.textContent = '💝';
+    title.textContent = '주문해줘서 고맙다냥!';
     message.textContent = `${result.label || order.label || '선택한 꾸미기'}\n입금 확인 후 예쁘게 포장해서 배달간다냥~ 💝`;
     button.disabled = false;
     button.textContent = '알겠다냥';
     button.onclick = () => { overlay.style.display = 'none'; clearCustomOrderReturnParam(); };
   } catch (e) {
+    if (emoji) emoji.textContent = '📦';
     title.textContent = '주문 접수가 아직 안 됐어요';
     message.textContent = `${(e && e.message) ? e.message : '네트워크 연결을 확인해주세요.'}\n주문 정보는 이 기기에 안전하게 남아 있어요.`;
     button.disabled = false;
@@ -5696,8 +5699,8 @@ function rebuildHomeTicker() {
   };
   const first = makeGroup(false);
   track.append(first, makeGroup(true));
-  // 픽셀 길이에 비례해 속도를 일정하게 유지한다(약 34px/s).
-  const duration = Math.max(16, first.scrollWidth / 34);
+  // 문구가 여러 개여도 너무 느리게 느껴지지 않도록 약 46px/s로 흘린다.
+  const duration = Math.max(13, first.scrollWidth / 46);
   track.style.setProperty('--ticker-duration', duration.toFixed(1) + 's');
   void track.offsetWidth;
   track.classList.add('is-ready');

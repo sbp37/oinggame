@@ -19,3 +19,8 @@ test('전광판의 주간 문구는 현재 주차 데이터라는 계약을 명�
   assert.match(source, /weekly_rankings\/\{현재 weekId\}/);
   assert.match(source, /이번 주 1위/);
 });
+
+test('전광판은 긴 주간 문구도 답답하지 않은 속도로 흐른다', () => {
+  assert.match(source, /first\.scrollWidth\s*\/\s*46/);
+  assert.match(source, /Math\.max\(13,/);
+});

@@ -96,6 +96,12 @@ test('독립 커스텀 미리보기는 기본 URL에서 실제 결제를 차단�
     '명시적 운영 모드가 아니면 결제를 막아야 함');
   assert.doesNotMatch(custom, /data-frame-key="crown"/,
     '황금왕관은 젤리 전용이므로 유료 신규 선택지에 있으면 안 됨');
+  assert.doesNotMatch(custom, /data-cat-key="mint"[^}]*scaleX\(/,
+    '민트냥만 가로로 늘려 비율을 찌그러뜨리면 안 됨');
+  assert.match(custom, /data-cat-key="mint"[^}]*scale\(1\.08\)/,
+    '민트냥은 다른 고양이와 같은 비율로만 크기를 보정해야 함');
+  assert.match(src, /주문해줘서 고맙다냥!/,
+    '결제 복귀 후 주문 접수 성공 화면에 감사 문구가 보여야 함');
 });
 
 test('젤리샵의 커스텀샵 링크는 미리보기 안전 모드를 유지한다', () => {
