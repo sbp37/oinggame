@@ -26,12 +26,29 @@ function isHiddenById(id) {
 test('예전 스킨샵 자리의 젤리 입구는 초기 깜빡임 없이 JS 게이트로만 열린다', () => {
   assert.ok(isHiddenById('supportTopBtn'), '초기 마크업은 숨겨 앱·로딩 중 노출을 막아야 함');
   assert.match(src, /const ENABLE_JELLY_SHOP = true;/, '웹 젤리샵 오픈 플래그가 켜져야 함');
-  assert.match(src, /if \(ENABLE_JELLY_SHOP && !IS_APP\)[\s\S]{0,220}supportTopBtn[\s\S]{0,120}inline-flex/,
+  assert.match(src, /function syncJellyShopEntry\(\)[\s\S]{0,260}supportTopBtn[\s\S]{0,180}inline-flex/,
     '웹에서만 예전 스킨샵 자리의 버튼을 표시해야 함');
-  assert.match(src, /supportTopBtn'\)\.addEventListener\('click', openJellyShop\)/,
+  assert.match(src, /window\.addEventListener\('pageshow',[\s\S]{0,220}syncJellyShopEntry\(\)/,
+    '결제·상점에서 뒤로 돌아온 BFCache 화면도 젤리 입구를 다시 표시해야 함');
+  assert.match(src, /supportTopBtn'\)\.addEventListener\('click', async \(\) =>[\s\S]{0,700}support_topbtn_clicks/,
+    '상단 젤리 잔액 클릭은 사용자 행동 원장에 남아야 함');
+  assert.match(src, /supportTopBtn'\)\.addEventListener\('click',[\s\S]{0,900}openJellyShop\(\)/,
     '상단 젤리 잔액을 누르면 젤리샵으로 가야 함');
   assert.match(src, /if \(isUidLinked\(\)\)[\s\S]{0,4200}await loadJellyBalance\(\)[\s\S]{0,220}return;/,
     '이미 연결된 기존 유저도 인증 뒤 서버 지갑 잔액으로 다시 확정해야 함');
+});
+
+test('내 정보에서 본인 젤리 잔액과 선물 출처를 분리해 보여준다', () => {
+  assert.match(src, /id="myiJellyBalance"/, '내 정보에 젤리 잔액 영역이 있어야 함');
+  assert.match(src, /id="myiJellyHistory"/, '내 정보에 젤리 내역 영역이 있어야 함');
+  assert.match(src, /where\('uid', '==', MY_UID\)/,
+    '젤리 원장은 로그인한 본인 UID로만 조회해야 함');
+  assert.match(src, /welcome: '🎁 기본 선물'/,
+    '환영 10개는 기본 선물로 표시해야 함');
+  assert.match(src, /earlyMember: '🎁 기존 멤버 선물'/,
+    '기존 멤버 20개는 별도 선물로 표시해야 함');
+  assert.match(src, /seededAmount[\s\S]{0,220}기본 선물/,
+    '원장 도입 전 기본 10개도 지갑 seed에서 복원해 표시해야 함');
 });
 
 test('젤리샵 안 서포터팩(990원) 박스가 숨겨져 있다', () => {

@@ -60,6 +60,9 @@ for (const sb of ['activity','referrer','behavior','datause']) {
   const b = p.locator(`[data-sub="${sb}"]`).first();
   if (await b.count()) { await b.click(); await p.waitForTimeout(500); clicked.push('stats:'+sb); }
 }
+if (!(await p.content()).includes('support_topbtn_clicks')) {
+  errs.push('젤리 잔액 버튼 사용자 행동 카드가 없음');
+}
 await p.locator('.tab-btn[data-tab="tools"]').click(); await p.waitForTimeout(400);
 for (const acc of ['acc-send','acc-jelly','acc-sec']) {
   const a = p.locator('#'+acc);

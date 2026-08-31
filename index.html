@@ -2481,6 +2481,18 @@ body.light .myinfo-chip { background: rgba(241,230,210,0.55); }
 .myi-rec .v.gold { color: var(--accent-lemon); }
 .myi-rec .v.blue { color: var(--blue-light); }
 .myi-privacy { text-align: center; font-size: 11px; color: var(--muted); margin-top: 8px; opacity: 0.85; }
+.myi-jelly { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; text-align: left; }
+.myi-jelly-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 13px; }
+.myi-jelly-head .t { font-size:13px; font-weight:850; color:var(--muted); }
+.myi-jelly-head .v { color:#f3cf91; font-size:18px; font-weight:950; font-variant-numeric:tabular-nums; }
+.myi-jelly-list { border-top:1px solid var(--border); padding:2px 12px 7px; }
+.myi-jelly-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 2px; border-bottom:1px solid rgba(126,194,240,0.12); }
+.myi-jelly-row:last-child { border-bottom:0; }
+.myi-jelly-row .name { min-width:0; color:var(--text); font-size:12.5px; font-weight:800; line-height:1.35; }
+.myi-jelly-row .when { display:block; color:var(--muted); font-size:10.5px; font-weight:650; margin-top:2px; }
+.myi-jelly-row .amount { flex:0 0 auto; color:#8de4b2; font-size:13px; font-weight:950; }
+.myi-jelly-row .amount.minus { color:#f2a6a6; }
+.myi-jelly-empty { padding:11px 2px 6px; color:var(--muted); font-size:12px; text-align:center; }
 .myi-link { margin-top: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .myi-link-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 13px; cursor: pointer; }
 .myi-link-head .t { font-size: 13px; font-weight: 800; }
@@ -4143,6 +4155,11 @@ if ('serviceWorker' in navigator) {
       <div class="myi-rec"><div class="k">🎮 총 플레이</div><div class="v" id="myiPlayCount">—</div></div>
       <div class="myi-rec"><div class="k">🐱 만난 고양이</div><div class="v" id="myiTotalCats">—</div></div>
       <div class="myi-rec wide"><div class="k">⚡ 오늘 목표 연속 달성</div><div class="v gold" id="myiGoalStreak">—</div></div>
+    </div>
+    <div class="myi-sec" id="myiJellyTitle">🍮 내 젤리</div>
+    <div class="myi-jelly" id="myiJellyBox">
+      <div class="myi-jelly-head"><span class="t">현재 보유</span><span class="v" id="myiJellyBalance">—</span></div>
+      <div class="myi-jelly-list" id="myiJellyHistory"><div class="myi-jelly-empty">내역을 불러오는 중…</div></div>
     </div>
     <div class="myi-privacy">🔒 이 기록은 나에게만 보여요</div>
     <div class="myi-link" id="myiLink" style="display:none;">
@@ -7942,10 +7959,22 @@ const ENABLE_CLOVER_REWARD = true;
 const ENABLE_JELLY_REWARD = false;
 const ENABLE_JELLY_SHOP = true;
 // 예전 스킨샵 자리 하나만 젤리 잔액 입구로 사용한다. 중복 상점 버튼은 계속 숨긴다.
-if (ENABLE_JELLY_SHOP && !IS_APP) {
+function syncJellyShopEntry() {
   const jellyEntry = document.getElementById('supportTopBtn');
-  if (jellyEntry) jellyEntry.style.display = 'inline-flex';
+  if (jellyEntry) jellyEntry.style.display = ENABLE_JELLY_SHOP && !IS_APP ? 'inline-flex' : 'none';
 }
+syncJellyShopEntry();
+// 카카오페이·독립 상점에서 뒤로 돌아올 때 브라우저가 BFCache 화면을 복원하면
+// module script는 다시 실행되지 않는다. 복귀 시 입구 표시와 서버 잔액을 다시 맞춘다.
+window.addEventListener('pageshow', () => {
+  syncJellyShopEntry();
+  if (ENABLE_JELLY_SHOP && !IS_APP) loadJellyBalance().catch(() => {});
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  syncJellyShopEntry();
+  if (ENABLE_JELLY_SHOP && !IS_APP) loadJellyBalance().catch(() => {});
+});
 // 🔍 젤리상점 디자인 미리보기 — ?preview=jelly 를 붙인 사람만 상점 화면을 볼 수 있다.
 // 상점이 정식 오픈(ENABLE_JELLY_SHOP=true)되기 전에 화면만 확인하는 용도라 "읽기 전용"이다:
 // 구매·출석 등 서버를 실제로 바꾸는 동작은 아래 jshopPreviewBlocked() 가 전부 막는다.
@@ -12948,6 +12977,92 @@ function showOingLevelInfoPreview() {
   renderOingLevelPopupContent(8, 1720, { lv: 8, blockedBy: null });
   const ov = document.getElementById('myInfoOverlay'); if (ov) ov.style.display = 'flex';
 }
+
+const MY_JELLY_LABELS = Object.freeze({
+  welcome: '🎁 기본 선물',
+  earlyMember: '🎁 기존 멤버 선물',
+  firstGame: '🎮 오늘 첫 게임',
+  goal: '🎯 오늘 목표 달성',
+  streak: '🔥 연속 플레이 보너스',
+  friendReferral: '💌 친구초대 보너스',
+  buySkin: '🎨 닉네임 꾸미기 구매',
+  buyFrame: '🖼 랭킹 테두리 구매',
+  buyBubble: '💬 말풍선 구매',
+  renameEarly: '✏️ 닉네임 조기 변경',
+  admin: '🛠 운영자 조정',
+  restore: '🔗 계정 젤리 합산',
+});
+function myJellyWhen(ts) {
+  if (!(typeof ts === 'number' && ts > 0)) return '';
+  try {
+    return new Date(ts).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  } catch { return ''; }
+}
+function expandMyJellyHistory(wallet, logs) {
+  const rows = [];
+  // 예전 최초등록 10개는 원장 도입 전 값이라 jelly_log가 없다. 지갑에 서버가
+  // 흡수하면서 남긴 seededAmount를 한 줄로 복원해, 선물 출처가 사라지지 않게 한다.
+  const seeded = Number(wallet && wallet.seededAmount) || 0;
+  if (seeded > 0) rows.push({ label:'🎁 기본 선물', amount:seeded, ts:Number(wallet.createdAt) || 0 });
+  for (const log of logs) {
+    const ts = Number(log.ts) || 0;
+    if (log.source === 'submitScore' && log.grants && typeof log.grants === 'object') {
+      for (const [key, raw] of Object.entries(log.grants)) {
+        const amount = Number(raw) || 0;
+        if (amount) rows.push({ label:MY_JELLY_LABELS[key] || key, amount, ts });
+      }
+      continue;
+    }
+    const amount = Number(log.amount) || 0;
+    if (!amount) continue;
+    let label = MY_JELLY_LABELS[log.source] || (amount > 0 ? '🍮 젤리 지급' : '🍮 젤리 사용');
+    if (log.source === 'earlyMember') label = '🎁 기존 멤버 선물';
+    if (log.source === 'friendReferral') label = '💌 친구초대 보너스';
+    if (log.reason) label += ` · ${String(log.reason).slice(0, 30)}`;
+    rows.push({ label, amount, ts });
+  }
+  return rows.sort((a, b) => b.ts - a.ts).slice(0, 12);
+}
+async function loadMyJellyHistory() {
+  const box = document.getElementById('myiJellyBox');
+  const title = document.getElementById('myiJellyTitle');
+  const balanceEl = document.getElementById('myiJellyBalance');
+  const historyEl = document.getElementById('myiJellyHistory');
+  if (!box || !historyEl || !balanceEl) return;
+  if (IS_APP || !ENABLE_JELLY_SHOP) {
+    box.style.display = 'none';
+    if (title) title.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+  if (title) title.style.display = '';
+  balanceEl.textContent = '…';
+  historyEl.innerHTML = '<div class="myi-jelly-empty">내역을 불러오는 중…</div>';
+  if (!isUidLinked() || !MY_UID) {
+    balanceEl.textContent = '연결 후 확인';
+    historyEl.innerHTML = '<div class="myi-jelly-empty">닉네임 계정을 연결하면 받은 내역이 보여요.</div>';
+    return;
+  }
+  try {
+    const [walletSnap, logsSnap] = await Promise.all([
+      getDoc(doc(db, 'jelly_wallet', MY_UID)),
+      getDocs(query(collection(db, 'jelly_log'), where('uid', '==', MY_UID), limit(50))),
+    ]);
+    const wallet = walletSnap.exists() ? walletSnap.data() : {};
+    const logs = logsSnap.docs.map(d => d.data() || {});
+    balanceEl.textContent = `🍮 ${(Number(wallet.balance) || 0).toLocaleString()}개`;
+    const rows = expandMyJellyHistory(wallet, logs);
+    historyEl.innerHTML = rows.length ? rows.map(row => {
+      const amount = Number(row.amount) || 0;
+      const sign = amount > 0 ? `+${amount}` : String(amount);
+      const when = myJellyWhen(row.ts);
+      return `<div class="myi-jelly-row"><span class="name">${escapeHtml(row.label)}${when ? `<span class="when">${escapeHtml(when)}</span>` : ''}</span><span class="amount${amount < 0 ? ' minus' : ''}">🍮 ${sign}</span></div>`;
+    }).join('') : '<div class="myi-jelly-empty">아직 젤리 내역이 없어요.</div>';
+  } catch (e) {
+    balanceEl.textContent = '확인 실패';
+    historyEl.innerHTML = '<div class="myi-jelly-empty">잠시 후 다시 열어주세요.</div>';
+  }
+}
 // 실제 서비스 주소에서는 강제 미리보기를 허용하지 않는다. 검토용 커밋 링크에서만
 // 승급 팝업 → 내 정보 → 레벨 안내까지 한 번에 눌러볼 수 있고 로컬 진행값은 쓰지 않는다.
 (function setupOingLevelPreview() {
@@ -13025,6 +13140,7 @@ function openMyInfoOverlay() {
   set('myiPlayCount', okNum(d.playCount) ? d.playCount.toLocaleString() + '판' : '—');
   set('myiTotalCats', okNum(d.totalCats) ? d.totalCats.toLocaleString() + '마리' : '—');
   set('myiGoalStreak', okNum(d.goalStreak) ? d.goalStreak + '일째 🔥' : '—');
+  loadMyJellyHistory().catch(() => {});
   // 연결 정보 — 닉네임 + 저장된 PIN이 있을 때만, 접힌 상태로 조용히 노출
   const linkBox = document.getElementById('myiLink');
   const pin = loadMyPin();
@@ -13997,7 +14113,22 @@ async function updateClaimBtnState() {
 }
 
 document.getElementById('jellyShopBtn').addEventListener('click', openJellyShop);
-document.getElementById('supportTopBtn').addEventListener('click', openJellyShop);
+document.getElementById('supportTopBtn').addEventListener('click', async () => {
+  const nickname = loadNickname() || '익명';
+  // 이동 전에 기록을 시작한다. Firestore 응답이 느려도 입구가 굼떠 보이지 않도록
+  // 최대 450ms만 기다리고 상점으로 이동한다(로컬 큐에 들어간 쓰기는 계속 동기화됨).
+  try {
+    await Promise.race([
+      addDoc(collection(db, 'support_topbtn_clicks'), {
+        nickname,
+        ts: Date.now(),
+        date: getTodayDateStr(),
+      }),
+      new Promise(resolve => setTimeout(resolve, 450)),
+    ]);
+  } catch (e) { console.warn('젤리 잔액 버튼 클릭 로그 실패:', e); }
+  openJellyShop();
+});
 document.getElementById('jellyBalanceBtn').addEventListener('click', openJellyShop);
 document.getElementById('jshopCloseBtn').addEventListener('click', () => {
   document.getElementById('jellyShopOverlay').style.display = 'none';
@@ -14247,7 +14378,7 @@ function showSkinAppliedToast() {
 
 // 🍮 게임 종료 젤리 지급 토스트 — 서버(submitScore)가 확정 지급한 것만 표시
 function showJellyGrantToast(jelly) {
-  const names = { welcome: '환영 선물', firstGame: '오늘 첫 게임', goal: '오늘의 목표 달성', streak: '연속 플레이' };
+  const names = { welcome: '환영 선물', firstGame: '오늘 첫 게임', goal: '오늘의 목표 달성', streak: '연속 플레이', earlyMember: '기존 멤버 선물' };
   const parts = [];
   for (const k of Object.keys(jelly.granted || {})) {
     parts.push(`${names[k] || k} +${jelly.granted[k]}`);
@@ -14269,21 +14400,52 @@ function showJellyGrantToast(jelly) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// 기존 회원 감사 젤리 — 상점 오픈 후 서버가 대상 계정에 1회 조용히 합산한다.
+function showEarlyMemberGiftPopup(amount) {
+  if (document.getElementById('earlyMemberGiftPopup')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'earlyMemberGiftPopup';
+  overlay.className = 'overlay';
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '520';
+  overlay.innerHTML = `
+    <div class="overlay-card" role="dialog" aria-modal="true" aria-label="기존 멤버 선물" style="max-width:350px;text-align:center;padding:24px 20px 18px;">
+      <div style="font-size:42px;line-height:1;margin-bottom:10px;">🎁</div>
+      <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:7px;">함께해줘서 고맙다냥!</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.55;color:var(--muted);">기존 멤버 선물로<br><b style="font-size:19px;color:#f3cf91;">🍮 젤리 +${Number(amount) || 20}개</b>를 드렸어요.</div>
+      <button type="button" class="action-btn" style="margin-top:18px;width:100%;">선물 받기</button>
+    </div>`;
+  const close = () => overlay.remove();
+  overlay.querySelector('button').addEventListener('click', close);
+  overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
+  document.body.appendChild(overlay);
+}
+
+// 기존 회원 감사 젤리 — 상점 오픈 후 서버가 대상 계정에 1회 합산하고 안내 팝업을 보여준다.
 async function maybeClaimEarlyMemberGift() {
   if (!ENABLE_JELLY_SHOP || IS_APP) return;
   try {
-    if (localStorage.getItem('oeing_early_gift_v1')) return;
+    // v2는 조용히 지급됐던 기존 수령자에게도 안내 팝업을 딱 한 번 보여주기 위한 확인 키다.
+    if (localStorage.getItem('oeing_early_gift_check_v2')) return;
     if (!isUidLinked()) return;
     const res = await callShopAction('claimEarlyMember');
     localStorage.setItem('oeing_early_gift_v1', '1');
-    if (res && res.granted) {
+    localStorage.setItem('oeing_early_gift_check_v2', '1');
+    if (res && (res.granted || res.alreadyClaimed)) {
       updateJellyDisplay(res.jelly);
+      if (!localStorage.getItem('oeing_early_gift_notice_v1')) {
+        localStorage.setItem('oeing_early_gift_notice_v1', '1');
+        showEarlyMemberGiftPopup(res.granted || 20);
+      }
     }
   } catch (e) {
     // not-early-member(신규 계정) 등 — 다시 묻지 않음
     const r = e && e.details && e.details.reason;
-    if (r === 'not-early-member') { try { localStorage.setItem('oeing_early_gift_v1', '1'); } catch {} }
+    if (r === 'not-early-member') {
+      try {
+        localStorage.setItem('oeing_early_gift_v1', '1');
+        localStorage.setItem('oeing_early_gift_check_v2', '1');
+      } catch {}
+    }
   }
 }
 setTimeout(() => { maybeClaimEarlyMemberGift(); }, 4000);

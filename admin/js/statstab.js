@@ -31,9 +31,10 @@ let currentSub = 'activity';
 // 자주 보는 3개는 바로 카드로, 나머지는 그룹 아코디언 안에서 열 때만 조회.
 // (2026-08-30) 운영자 요청으로 대부분 제거 — 내 정보 열람·리뷰 버튼 클릭·업데이트로그·
 // 감사메시지·리뷰요청 팝업은 운영 판단에 쓰지 않는데 열 때마다 컬렉션을 읽었다.
-// 남긴 건 카카오톡 공유 하나 — 친구초대(젤리 보상)와 직접 이어지는 지표라 계속 본다.
+// 남긴 건 카카오톡 공유와 젤리 잔액 버튼 — 친구초대/젤리샵 운영에 직접 이어지는 지표다.
 const BH_FAV = [
   { col: 'share_clicks',        label: '📤 카카오톡 공유' },
+  { col: 'support_topbtn_clicks', label: '🍮 젤리 잔액 버튼' },
 ];
 const BH_GROUPS = [];
 const DETAIL_PAGE = 20;
@@ -73,7 +74,9 @@ async function bhLoadRecent(col, { withCount = false } = {}) {
     const jobs = [fetchDocs(query(collection(db, col), orderBy('ts', 'desc'), limit(12)))];
     if (withCount) jobs.push(countQuery(collection(db, col), where('date', '==', getTodayDateStr())).catch(() => null));
     const [raw, todayCount] = await Promise.all(jobs);
-    const rows = raw.filter(r => !isCreatorNick(r.nickname)).slice(0, 5);
+    // 젤리 입구는 운영자 본인의 실제 복귀/진입 테스트도 확인할 수 있어야 하므로 포함한다.
+    const includeCreator = col === 'support_topbtn_clicks';
+    const rows = raw.filter(r => includeCreator || !isCreatorNick(r.nickname)).slice(0, 5);
     bhState[col].rows = rows;
     bhState[col].todayCount = withCount ? todayCount : null;
     if (metaEl && withCount) metaEl.textContent = todayCount != null ? `오늘 ${fmtNum(todayCount)}회` : '';
@@ -99,7 +102,8 @@ async function bhLoadMore(col, btn) {
       st.rows = []; // 첫 20건이 최근 5건을 포함하므로 목록을 교체
     }
     const page = await st.pager.next();
-    st.rows.push(...page.filter(r => !isCreatorNick(r.nickname))); // 제작자 제외
+    const includeCreator = col === 'support_topbtn_clicks';
+    st.rows.push(...page.filter(r => includeCreator || !isCreatorNick(r.nickname)));
     listEl.innerHTML = st.rows.length ? st.rows.map(r => bhRowHtml(col, r)).join('')
       : '<div class="list-empty">아직 기록이 없어요</div>';
     btn.textContent = '더 보기 (20건씩)';

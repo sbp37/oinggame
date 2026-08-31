@@ -235,6 +235,13 @@ async function loadGlobalLog() {
   try {
     const rows = await fetchDocs(query(collection(db, 'jelly_log'), orderBy('ts', 'desc'), limit(30)));
     if (!rows.length) { setEmpty(el, '아직 기록이 없어요 — 유저가 게임을 완료하면 지급 기록이 쌓여요.'); return; }
+    // 서버 원장은 UID가 진실이라 대부분 닉네임 문자열을 중복 저장하지 않는다.
+    // 전체 목록에서는 각 UID의 users 문서를 한 번씩만 읽어 이름을 붙여, 서로 다른
+    // 유저의 지급이 한 사람에게 반복 지급된 것처럼 보이지 않게 한다.
+    const uids = [...new Set(rows.map(row => row.uid).filter(Boolean))];
+    const users = await Promise.all(uids.map(uid => fetchDoc(doc(db, 'users', uid)).catch(() => null)));
+    const nickByUid = new Map(uids.map((uid, index) => [uid, users[index] && users[index].nickname ? users[index].nickname : '']));
+    rows.forEach(row => { if (!row.nickname && row.uid) row.nickname = nickByUid.get(row.uid) || `UID ${String(row.uid).slice(0, 6)}…`; });
     el.innerHTML = rows.map(r => logRowHtml(r, { withNick: true })).join('');
   } catch (e) { setError(el, humanError(e)); }
 }
