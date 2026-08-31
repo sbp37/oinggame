@@ -11275,7 +11275,7 @@ async function loadSkinsCache() {
     const snap = await getDocs(collection(db, 'nickname_skins'));
     Object.keys(skinsCache).forEach(k => delete skinsCache[k]);
     Object.keys(skinsByUid).forEach(k => delete skinsByUid[k]);
-    const fromUidDoc = {};
+    Object.keys(skinsFromUidDoc).forEach(k => delete skinsFromUidDoc[k]);
     snap.forEach(d => {
       const v = d.data();
       const isUidKeyed = !!v.nickname; // 게임이 직접 쓴 UID 문서에는 nickname 필드가 붙는다
@@ -11286,21 +11286,35 @@ async function loadSkinsCache() {
       // 이 처리가 없으면 젤리샵에서 산 아이템이 랭킹에 전혀 안 보였다(2026-08-31 실사용 보고).
       if (v.uid) skinsByUid[v.uid] = info;
       if (!v.uid && !v.nickname) skinsByUid[d.id] = info; // uid 필드 없는 옛 uid 키 문서 방어
-      if (fromUidDoc[key] && !isUidKeyed) return; // UID 문서가 있으면 레거시 문서가 못 덮음
+      if (skinsFromUidDoc[key] && !isUidKeyed) return; // UID 문서가 있으면 레거시 문서가 못 덮음
       skinsCache[key] = info;
-      if (isUidKeyed) fromUidDoc[key] = true;
+      if (isUidKeyed) skinsFromUidDoc[key] = true;
     });
     _skinsCacheTs = Date.now();
   } catch (e) { console.warn('스킨 로드 실패:', e); }
 }
 // 랭킹 행에 실려온 uid 로 "닉네임을 모르는 스킨 문서"를 닉네임에 연결한다.
 // nickname 필드가 있는 문서(게임이 직접 쓴 것)가 이미 있으면 그것을 우선한다.
+//
+// 예전엔 "캐시에 그 닉이 없을 때만" 이어붙였는데(!skinsCache[nick]), 옛 닉네임 문서가
+// 하나라도 있으면 값이 전부 null 이어도 자리를 차지해 UID 문서가 영영 못 들어갔다.
+// 실사례(고목맴미): nickname_skins/고목맴미 에 cat·쪽지만 있는 옛 문서가 있었고,
+// 주문 발송이 만든 nickname_skins/{uid} 의 무지개+네온이 그 빈 값에 막혀 랭킹에
+// 안 보였다(서버에는 정상 저장돼 있었다). '자리 있음'이 아니라 '어디서 온 값인가'로
+// 판단하고, 빈 칸은 옛 문서 값으로 채워 쪽지·말풍선을 잃지 않게 합친다.
 function linkSkinsByUid(rows) {
   if (!Array.isArray(rows)) return;
   for (const row of rows) {
     if (!row || !row.uid || !row.nickname) continue;
     const info = skinsByUid[row.uid];
-    if (info && !skinsCache[row.nickname]) skinsCache[row.nickname] = info;
+    if (!info) continue;
+    if (skinsFromUidDoc[row.nickname]) continue; // 닉네임이 박힌 UID 문서가 이미 이겼다
+    const prev = skinsCache[row.nickname];
+    skinsCache[row.nickname] = prev ? {
+      skin: info.skin || prev.skin || null,
+      frame: info.frame || prev.frame || null,
+      bubble: info.bubble || prev.bubble || null,
+    } : info;
   }
 }
 function skinnedNickHtml(nickname, plainText) {
@@ -13678,7 +13692,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788183300; // v4.22 — 계정 자동 연결 상시화 + 초기 멤버 선물 누락 해소
+const BUILD = 1788183600; // v4.23 — 옛 닉네임 문서가 주문 발송 아이템을 가리던 문제
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13839,6 +13853,8 @@ let skinPickedFrame = null;
 const skinsCache = {}; // nickname -> { skin, frame, bubble } (랭킹 표시용 캐시)
 const skinsByUid = {};  // uid -> 같은 값. 닉네임 필드가 없는 문서(젤리샵·서버 구매)를 담아뒀다가
                         // 랭킹 행의 uid 로 위 캐시에 이어붙인다(linkSkinsByUid).
+const skinsFromUidDoc = {}; // nickname -> true. 그 닉의 캐시 값이 "nickname 필드가 박힌 UID 문서"에서
+                        // 왔는지. 여기 없으면 레거시 닉네임 문서에서 온 값이라 UID 문서에 밀린다.
 
 function skinClassFor(key) {
   const s = SKIN_CATALOG.find(x => x.key === key);
