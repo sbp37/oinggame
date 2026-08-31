@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
 <title>젤리샵 v3 — 합본 디자인 데모</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,14 +27,14 @@
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { margin:0; padding:0; background:var(--bg); color:var(--ivory);
   font-family:'Pretendard','Malgun Gothic',-apple-system,sans-serif; }
-body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
+body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 
 .demo-banner { position:sticky; top:0; z-index:80; background:#173c5d; color:#dff4ff;
   text-align:center; font-size:12.5px; font-weight:900; padding:6px 8px; letter-spacing:-0.2px; }
 
 /* ── 페이지 헤더 (코덱스 프레임) ── */
 .page-head { display:flex; align-items:center; gap:10px; padding:12px 16px 8px; }
-.back-btn { width:36px; height:36px; border-radius:50%; border:1px solid var(--border);
+.back-btn { width:40px; height:40px; border-radius:13px; border:1px solid var(--border);
   background:var(--card); color:var(--ivory); font-size:15px; display:flex;
   align-items:center; justify-content:center; flex:0 0 auto; }
 .head-title { line-height:1.2; }
@@ -56,21 +57,14 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   font-size:15px; line-height:1.35; font-weight:400; flex:1; min-height:18px; transition:opacity 0.15s; }
 .cat-bubble b { color:var(--blue); }
 
-/* 오늘 받을 젤리는 상단에서 바로 확인 */
-.today-rewards { margin:0 16px 8px; display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
-.today-reward { min-width:0; padding:10px 10px 9px; text-align:left; border:1px solid var(--border);
-  border-radius:13px; background:linear-gradient(180deg,rgba(19,45,73,.98),rgba(11,29,51,.98)); }
-.today-reward .reward-top,.today-reward .reward-sub { display:flex; align-items:center; justify-content:space-between; gap:6px; }
-.today-reward .reward-head { display:flex; align-items:center; min-width:0; gap:5px; }
-.today-reward .ico { display:block; font-size:16px; line-height:1; }
-.today-reward .name { display:block; min-width:0; color:#eaf3ff; font-size:13px; line-height:1.2; font-weight:850; white-space:nowrap; }
-.today-reward .value { display:inline-flex; flex-shrink:0; align-items:center; padding:3px 7px; border-radius:999px;
-  color:var(--green); background:rgba(127,224,174,.10); border:1px solid rgba(127,224,174,.24); font-size:12px; font-weight:950; }
-.today-reward.pending .value { color:var(--blue); background:rgba(73,175,228,.10); border-color:rgba(126,205,240,.26); }
-.today-reward .reward-sub { margin-top:8px; padding-top:7px; border-top:1px solid rgba(126,205,240,.12);
-  color:#c0d1e4; font-size:12px; line-height:1.25; font-weight:800; }
-.today-reward .reward-sub b { flex-shrink:0; color:var(--green); font-size:12px; font-weight:950; }
-.today-reward.pending .reward-sub b { color:var(--jelly); }
+/* 오늘 받을 젤리는 짧은 상태줄로 확인하고, 상세 규칙은 하단에서 펼쳐 봐요. */
+.today-rewards { margin:0 16px 9px; min-height:48px; padding:7px 10px; display:flex; align-items:center;
+  justify-content:space-between; gap:7px; border:1px solid var(--border); border-radius:13px;
+  background:linear-gradient(180deg,rgba(19,45,73,.98),rgba(11,29,51,.98)); }
+.today-reward { min-width:0; display:flex; align-items:center; gap:4px; color:#dfeafa;
+  font-size:12px; line-height:1.25; font-weight:850; white-space:nowrap; }
+.today-reward b { color:var(--green); font-size:12px; font-weight:950; }
+.today-reward.pending b { color:var(--jelly); }
 
 /* ── 젤리 획득 안내: 상품 뒤에서 필요할 때만 펼침 ── */
 .earn-details { margin:2px 16px 14px; background:var(--card); border:1px solid var(--border);
@@ -98,18 +92,20 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   background:rgba(73,175,228,.08); }
 .earn-line.invite b { color:var(--blue); }
 
-/* ── 거울(내 랭킹 줄) — sticky, 실제 랭킹 줄 재현 ── */
-.mirror-wrap { position:sticky; top:28px; z-index:50; margin-bottom:10px; padding:10px 16px 18px;
-  background:rgba(7,20,38,.98); border-bottom:1px solid rgba(126,205,240,.22);
-  box-shadow:0 14px 20px rgba(3,10,21,.36); backdrop-filter:blur(10px); }
-.mirror-wrap.podium-active { position:relative; top:auto; z-index:1; box-shadow:none; backdrop-filter:none; }
+/* ── 거울 + 메뉴가 한 덩어리로 따라와요. 말풍선·보상·찜은 고정하지 않아요. ── */
+.shop-sticky { position:sticky; top:28px; z-index:50; margin-bottom:10px; padding:7px 0 8px;
+  background:rgba(7,20,38,.98); border-bottom:1px solid rgba(126,205,240,.20);
+  box-shadow:0 12px 18px rgba(3,10,21,.32); backdrop-filter:blur(10px); }
+.shop-sticky.podium-active { position:relative; top:auto; z-index:1; box-shadow:none; backdrop-filter:none; }
+.mirror-wrap { position:static; margin:0; padding:0 16px 7px; background:transparent; border:0; box-shadow:none; }
 .mirror-label { font-size:13px; font-weight:800; color:#c0d1e4; letter-spacing:0.1px;
   margin:0 0 9px 2px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.mirror-reset { background:none; border:none; color:var(--blue); font-size:13px; font-weight:800;
-  cursor:pointer; font-family:inherit; padding:0; }
+.mirror-reset { width:44px; height:44px; display:grid; place-items:center; flex:0 0 44px;
+  background:var(--card2); border:1px solid var(--border); border-radius:10px; color:var(--blue);
+  font-size:15px; font-weight:900; cursor:pointer; font-family:inherit; padding:0; }
 .mirror-tools { display:flex; gap:4px; margin-left:auto; }
 .mirror-mode { border:1px solid var(--border); color:var(--muted); background:var(--card2); border-radius:8px;
-  padding:6px 9px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+  min-height:44px; padding:0 9px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; }
 .mirror-mode.on { color:#e8f7ff; border-color:rgba(126,205,240,.65); background:var(--blue-dim); }
 
 /* 실제 랭킹 행 구조와 같은 배치: 순위·변동·레벨·닉·Top배지·점수 */
@@ -158,7 +154,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .podium-avatar { width:49px; height:49px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center;
   border-radius:50%; background:#182b47; border:2px solid rgba(255,255,255,.34); overflow:hidden; }
 .podium-avatar img { width:86%; height:86%; object-fit:contain; }
-.podium-preview.has-frame .podium-avatar { border-color:var(--frame-color); box-shadow:0 0 11px var(--frame-color); }
+.podium-preview.has-frame .podium-person.preview-me .podium-avatar { border-color:var(--frame-color); box-shadow:0 0 11px var(--frame-color); }
 .podium-person.first .podium-avatar { width:59px; height:59px; }
 .podium-rank-label { display:inline-flex; align-items:center; gap:3px; min-height:23px; padding:3px 9px; border-radius:999px;
   color:#152030; font-size:11px; font-weight:950; background:linear-gradient(135deg,#aab8c9,#eef3f8); }
@@ -180,6 +176,11 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   border-radius:3px 3px 9px 9px; background:linear-gradient(180deg,rgba(96,118,150,.6),rgba(18,28,44,.95)); }
 .podium-note { display:none; margin:8px 2px 0; text-align:center; color:#bdcde0; font-size:12.5px; line-height:1.45; font-weight:700; }
 .podium-note.show { display:block; }
+.podium-position-tools { display:none; justify-content:center; gap:6px; margin:9px 0 2px; }
+.podium-position-tools.show { display:flex; }
+.podium-position { min-width:54px; min-height:40px; border:1px solid var(--border); border-radius:10px;
+  background:var(--card2); color:var(--muted); font-family:inherit; font-size:12px; font-weight:900; }
+.podium-position.on { color:#061524; background:var(--blue); border-color:var(--blue); }
 
 .nick.fx, .card-nick.fx, .rank-nick.fx, .podium-demo-nick.fx { background-clip:text; -webkit-background-clip:text;
   -webkit-text-fill-color:transparent; color:transparent !important;
@@ -204,9 +205,11 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .wish-sub { font-size:12.5px; line-height:1.45; color:#bdcde0; font-weight:700; margin-top:6px; }
 
 /* ── 탭 ── */
-.tabs { display:flex; gap:5px; padding:0 16px 14px; }
-.tab { flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:13.5px; font-weight:850;
-  color:var(--muted); background:var(--card2); border:1px solid var(--border); cursor:pointer; }
+.tabs { display:flex; gap:2px; margin:0 16px; padding:4px; border:1px solid var(--border);
+  border-radius:13px; background:var(--card2); }
+.tab { flex:1; min-width:0; min-height:44px; text-align:center; padding:0 4px; border-radius:10px;
+  font-family:inherit; font-size:13.5px; font-weight:850; color:var(--muted);
+  background:transparent; border:0; cursor:pointer; }
 .tab.on { color:#061524; background:var(--blue); border-color:var(--blue); }
 
 /* ── 섹션 + 카드 (코덱스 상품화) ── */
@@ -215,11 +218,11 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .sect-head .cnt { font-size:13px; color:#bdcde0; font-weight:800; }
 .sect-fair { padding:2px 20px 10px; font-size:13px; line-height:1.45; color:#bdcde0; font-weight:700; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 14px; }
-.item { position:relative; background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+.item { position:relative; background:var(--card); border:1px solid rgba(126,205,240,.18); border-radius:16px;
   padding:12px 11px 11px; cursor:pointer; transition:transform 0.12s, border-color 0.2s; }
 .item:active { transform:scale(0.96); }
 .item.trying { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-dim); }
-.pvbox { border-radius:12px; background:var(--card2); border:1px solid var(--border);
+.pvbox { border-radius:12px; background:var(--card2); border:1px solid transparent;
   height:52px; display:flex; align-items:center; justify-content:center; }
 .card-nick { font-size:19px; font-weight:900; letter-spacing:-0.3px; }
 .pv-rank { display:flex; align-items:center; gap:6px; width:88%;
@@ -262,14 +265,14 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
 /* ── 하단 액션바 ── */
 .actionbar { position:fixed; bottom:0; left:50%; transform:translate(-50%, 110%); width:100%; max-width:430px;
-  background:rgba(13,20,36,0.97); border-top:1px solid var(--border); padding:12px 16px 20px;
+  background:rgba(13,20,36,0.97); border-top:1px solid var(--border); padding:9px 16px calc(10px + env(safe-area-inset-bottom));
   backdrop-filter:blur(8px); transition:transform 0.25s ease; z-index:70; }
 .actionbar.show { transform:translate(-50%, 0); }
-.ab-info { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
+.ab-info { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
 .ab-name { font-size:15px; font-weight:900; }
 .ab-price { font-size:14.5px; font-weight:900; color:var(--jelly); }
 .ab-btns { display:flex; gap:8px; }
-.ab-btn { flex:1; border:none; border-radius:13px; padding:13px 0; font-size:15px; font-weight:900;
+.ab-btn { flex:1; min-height:48px; border:none; border-radius:13px; padding:10px 0; font-size:15px; font-weight:900;
   font-family:inherit; cursor:pointer; letter-spacing:-0.3px; }
 .ab-buy { background:linear-gradient(135deg,#62c4f2,#3aa7df); color:#061524; }
 .ab-buy:disabled { background:rgba(148,163,184,0.2); color:var(--muted); }
@@ -293,8 +296,11 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   .rank-row .rank-change { min-width:26px; }
   .rank-tail { gap:4px; }
   .rank-pts { font-size:14.5px; }
-  .tabs { gap:4px; padding-left:12px; padding-right:12px; }
-  .tab { min-width:0; padding:9px 0; font-size:13px; white-space:nowrap; }
+  .today-rewards { margin-left:12px; margin-right:12px; padding-left:8px; padding-right:8px; gap:4px; }
+  .today-reward { font-size:11.5px; }
+  .today-reward b { font-size:11.5px; }
+  .tabs { margin-left:12px; margin-right:12px; }
+  .tab { font-size:13px; white-space:nowrap; }
   .grid { gap:8px; padding-left:12px; padding-right:12px; }
   .item { padding:10px 9px; }
 }
@@ -314,23 +320,19 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   <div class="cat-bubble" id="catSay">눌러서 <b>내 랭킹에 먼저 입혀보라냥</b></div>
 </div>
 
-<div class="today-rewards" aria-label="오늘 받을 젤리">
-  <div class="today-reward done">
-    <div class="reward-top"><span class="reward-head"><span class="ico">🎮</span><span class="name">첫 게임(출석)</span></span><span class="value">✓ +1</span></div>
-    <div class="reward-sub"><span>🔥 3일 연속</span><b>보너스 +2 ✓</b></div>
-  </div>
-  <div class="today-reward pending">
-    <div class="reward-top"><span class="reward-head"><span class="ico">🎯</span><span class="name">오늘 목표</span></span><span class="value">도전 중</span></div>
-    <div class="reward-sub"><span>달성하면</span><b>+2</b></div>
-  </div>
+<div class="today-rewards" aria-label="첫 게임으로 1젤리, 3일 연속 보너스로 2젤리를 받았고 오늘 목표는 도전 중이에요">
+  <span class="today-reward">🎮 첫 게임 <b>✓ +1</b></span>
+  <span class="today-reward">🔥 3일 연속 <b>✓ +2</b></span>
+  <span class="today-reward pending">🎯 목표 <b>도전 중 · +2</b></span>
 </div>
 
+<div class="shop-sticky" id="shopSticky">
 <div class="mirror-wrap">
   <div class="mirror-label"><span id="mirrorLabel">내 실제 랭킹에서 미리보기</span>
     <span class="mirror-tools">
       <button class="mirror-mode on" data-view="row">내 순위</button>
       <button class="mirror-mode" data-view="podium">1·2·3위</button>
-      <button class="mirror-reset" id="resetBtn">↺</button>
+      <button class="mirror-reset" id="resetBtn" aria-label="미리보기 초기화">↺</button>
     </span></div>
   <div class="rank-row" id="mirror">
     <span class="rank-num" id="mirrorRank">24</span><span class="rank-change" id="mirrorDelta">▲6</span>
@@ -345,21 +347,26 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
     </div>
     <div class="podium-floor"></div>
   </div>
-  <div class="podium-note" id="podiumNote">1·2·3위는 사각 테두리 대신 프로필 원형에 작게 표시해요.</div>
+  <div class="podium-position-tools" id="podiumPositionTools" aria-label="내가 올라갈 시상대 위치">
+    <button class="podium-position on" data-position="1">1위</button>
+    <button class="podium-position" data-position="2">2위</button>
+    <button class="podium-position" data-position="3">3위</button>
+  </div>
+  <div class="podium-note" id="podiumNote">내가 1위라면 프레임은 프로필 원형에 작게 표시돼요.</div>
+</div>
+
+<div class="tabs" role="tablist" aria-label="젤리샵 상품 종류">
+  <button type="button" class="tab on" role="tab" aria-selected="true" data-tab="all">전체</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" data-tab="nick">닉네임</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" data-tab="frame">프레임</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" data-tab="owned">보유</button>
+</div>
 </div>
 
 <div class="wish-card" id="wishCard">
   <div class="wish-head"><span id="wishName"></span><span class="dday" id="wishDday"></span></div>
   <div class="wish-bar"><i id="wishBar"></i></div>
   <div class="wish-sub" id="wishSub"></div>
-</div>
-
-<div class="tabs">
-  <div class="tab on" data-tab="all">전체</div>
-  <div class="tab" data-tab="color">글자색</div>
-  <div class="tab" data-tab="fx">효과</div>
-  <div class="tab" data-tab="frame">프레임</div>
-  <div class="tab" data-tab="owned">보유</div>
 </div>
 
 <div id="catalogArea"></div>
@@ -370,14 +377,14 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
     <div class="earn-line"><span>🎮 오늘 첫 게임 <small>첫 게임이 곧 출석이에요</small></span><b>+1</b></div>
     <div class="earn-line"><span>🎯 오늘 목표 달성</span><b>+2</b></div>
     <div class="earn-line"><span>📅 연속 플레이 <small>3일·7일째 보너스</small></span><b>+2 / +5</b></div>
-    <div class="earn-line invite"><span>💌 친구 초대 <small>초대 링크로 친구가 처음 플레이하면 둘 다 받아요</small></span><b>보너스</b></div>
+    <div class="earn-line invite"><span>💌 친구 초대 <small>초대 링크 보상은 안전하게 준비하고 있어요</small></span><b>준비 중</b></div>
   </div>
 </details>
 
 <div class="fair-foot">🔒 젤리는 꾸미기에만 사용돼요 — 실력과 랭킹은 언제나 공정해요</div>
-<a class="custom-link" id="customShopLink" href="custom-shop-preview.html">
+<a class="custom-link" id="customShopLink" href="custom-shop-preview.html?preview=1">
   <span class="custom-link-icon">✨</span>
-  <span class="custom-link-copy"><b>기다리지 않고 바로 꾸미고 싶다면?</b><small>커스텀 세트 1,990원 · 고양이 스킨 990원</small></span>
+  <span class="custom-link-copy"><b>젤리를 모으지 않고 꾸미고 싶나요?</b><small>닉네임 효과+테두리 1,990원 · 고양이 스킨 990원</small></span>
   <span class="custom-link-arrow">›</span>
 </a>
 <div class="coming-note">🐾 새로운 글자 효과와 테두리, 고양이 꾸미기 아이템도<br>계속 추가될 예정이다냥~</div>
@@ -391,34 +398,33 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
 <script>
 // ── 데모 상태: 실구매·지급 0. 내 랭킹만 Firestore에서 읽기 ──
-// 가격과 previewOnly 아이템은 최종 선택용 후보. 오픈 전 서버 shopAction 가격표와 함께 확정해야 함.
+// 미리보기에서는 잔액과 구매를 브라우저 안에서만 흉내 내며 실제 데이터는 바꾸지 않아요.
 const CATALOG = {
   color: [
-    { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:30, c:'#ff9e91' },
-    { key:'lemon',  nm:'레몬',   ds:'밝고 산뜻한 노란빛', price:30, c:'#ffd866', previewOnly:true },
-    { key:'mint',   nm:'민트',   ds:'맑고 산뜻한 민트', price:30, c:'#69dfb8' },
-    { key:'purple', nm:'라일락', ds:'포근한 라일락 빛', price:30, c:'#b69cff' },
-    { key:'sky',    nm:'하늘',   ds:'맑은 구름 하늘빛', price:30, c:'#73c7ff' },
-    { key:'apricot',nm:'살구',   ds:'따뜻하고 귀여운 살구빛', price:30, c:'#ffb36b', previewOnly:true },
+    { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:20, c:'#ff9e91' },
+    { key:'lemon',  nm:'레몬',   ds:'밝고 산뜻한 노란빛', price:20, c:'#ffd866' },
+    { key:'mint',   nm:'민트',   ds:'맑고 산뜻한 민트', price:20, c:'#69dfb8' },
+    { key:'purple', nm:'라일락', ds:'포근한 라일락 빛', price:20, c:'#b69cff' },
+    { key:'sky',    nm:'하늘',   ds:'맑은 구름 하늘빛', price:20, c:'#73c7ff' },
+    { key:'apricot',nm:'살구',   ds:'따뜻하고 귀여운 살구빛', price:20, c:'#ffb36b' },
   ],
   fx: [
-    { key:'bluewave',  nm:'블루웨이브', ds:'맑은 푸른빛이 천천히 흐름', price:80, cls:'fx-bluewave', previewOnly:true },
-    { key:'auroraglow',nm:'오로라빛',   ds:'민트와 보랏빛이 은은하게 흐름', price:80, cls:'fx-auroraglow', previewOnly:true },
-    { key:'cherry',    nm:'벚꽃비',     ds:'분홍빛이 부드럽게 흐름', price:80, cls:'fx-cherry', previewOnly:true },
+    { key:'bluewave',  nm:'블루웨이브', ds:'맑은 푸른빛이 천천히 흐름', price:80, cls:'fx-bluewave' },
+    { key:'auroraglow',nm:'오로라빛',   ds:'민트와 보랏빛이 은은하게 흐름', price:80, cls:'fx-auroraglow' },
+    { key:'cherry',    nm:'벚꽃비',     ds:'분홍빛이 부드럽게 흐름', price:80, cls:'fx-cherry' },
     { key:'goldshine', nm:'골드샤인',   ds:'따뜻한 금빛이 물결치며 흐름', price:80, cls:'fx-goldshine' },
   ],
   frame: [
     { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:110, c:'#22d3ee' },
     { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:140, c:'#fda4af' },
     { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:160, c:'#5eead4' },
-    { key:'paw',    nm:'발바닥',  ds:'포근한 고양이 살구빛 테두리', price:190, c:'#e5a06d', previewOnly:true },
+    { key:'paw',    nm:'발바닥',  ds:'포근한 고양이 살구빛 테두리', price:190, c:'#e5a06d' },
     { key:'royal',  nm:'로얄',    ds:'차분하게 빛나는 보랏빛 테두리', price:220, c:'#a88cff' },
-    { key:'crown',  nm:'황금왕관',ds:'오래 모아 갖는 황금 테두리',  price:280, c:'#f1c75b', previewOnly:true },
+    { key:'crown',  nm:'황금왕관',ds:'오래 모아 갖는 황금 테두리',  price:280, c:'#f1c75b' },
   ],
 };
 const SECT = {
-  color: { title:'닉네임 글자색', fair:'게임 점수에는 영향을 주지 않아요' },
-  fx:    { title:'닉네임 효과',   fair:'닉네임이 살아 움직여요 · 글자색 대신 적용돼요' },
+  nick:  { title:'닉네임 꾸미기', fair:'단색과 움직이는 효과 중 하나를 골라요 · 게임 점수에는 영향이 없어요' },
   frame: { title:'랭킹 프레임',   fair:'내 랭킹 줄 테두리가 은은하게 빛나요 · 글자색·효과와 같이 써요' },
 };
 const state = {
@@ -429,8 +435,8 @@ const state = {
   tab: 'all',
   selected: null,
   wish: null,
-  dailyRate: 3,
   view: 'row',
+  podiumPosition: 1,
   profile: { nickname:'오잉러', rank:24, previousRank:30, level:5, score:6865, ts:0, titles:0 },
   top3: [
     { nickname:'제이1', score:291561, level:11 },
@@ -480,32 +486,52 @@ function applyProfile() {
   const customParams = new URLSearchParams({
     nickname:p.nickname || '오잉러', rank:p.rank || 24, previousRank:p.previousRank || p.rank || 24,
     score:Number(p.score) || 0, level:p.level || 1, titles:p.titles || 0,
-    hot:p.ts && Date.now() - p.ts < 6 * 60 * 60 * 1000 ? '1' : '0'
+    hot:p.ts && Date.now() - p.ts < 6 * 60 * 60 * 1000 ? '1' : '0', preview:'1'
   });
   const customLink = $('customShopLink');
   if (customLink) customLink.href = `custom-shop-preview.html?${customParams}`;
+  renderPodiumPreview();
   renderMirror();
 }
 function applyPodiumProfile() {
+  renderPodiumPreview();
+  renderMirror();
+}
+function renderPodiumPreview() {
   const order = [state.top3[1], state.top3[0], state.top3[2]];
   document.querySelectorAll('.podium-person').forEach((el, idx) => {
-    const entry = order[idx] || {};
+    const position = Number(el.dataset.podium) || 1;
+    const isMe = position === state.podiumPosition;
+    const entry = isMe ? state.profile : (order[idx] || {});
     const level = Math.max(1, Number(entry.oingLevel || entry.level) || 1);
+    el.classList.toggle('preview-me', isMe);
     el.querySelector('.podium-demo-nick').textContent = entry.nickname || '—';
     el.querySelector('.podium-score').textContent = `${Number(entry.score || 0).toLocaleString()}pt`;
     el.querySelector('.podium-level').textContent = `${levelIcon(level)} Lv.${level}`;
   });
-  renderMirror();
+  $('podiumNote').textContent = `내가 ${state.podiumPosition}위라면 프레임은 프로필 원형에 작게 표시돼요.`;
+  document.querySelectorAll('.podium-position').forEach(button => {
+    button.classList.toggle('on', Number(button.dataset.position) === state.podiumPosition);
+  });
 }
 function setMirrorView(view) {
   state.view = view;
   const podium = view === 'podium';
-  document.querySelector('.mirror-wrap').classList.toggle('podium-active', podium);
+  $('shopSticky').classList.toggle('podium-active', podium);
   $('mirror').style.display = podium ? 'none' : 'flex';
   $('podiumPreview').classList.toggle('show', podium);
+  $('podiumPositionTools').classList.toggle('show', podium);
   $('podiumNote').classList.toggle('show', podium);
-  $('mirrorLabel').textContent = podium ? '1·2·3위에서 프레임이 보이는 방식' : '내 실제 랭킹에서 미리보기';
+  $('mirrorLabel').textContent = podium ? '내가 시상대에 올라가면 이렇게 보여요' : '내 실제 랭킹에서 미리보기';
   document.querySelectorAll('.mirror-mode').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  renderPodiumPreview();
+  renderMirror();
+  if (podium) {
+    requestAnimationFrame(() => window.scrollTo({
+      top: Math.max(0, $('shopSticky').offsetTop - 28),
+      behavior: 'smooth',
+    }));
+  }
 }
 async function loadLiveProfile() {
   let nickname = '';
@@ -561,6 +587,7 @@ async function loadLiveProfile() {
 function renderMirror() {
   const nick = $('mirrorNick');
   const podiumNicks = [...document.querySelectorAll('.podium-demo-nick')];
+  const myPodiumNick = document.querySelector('.podium-person.preview-me .podium-demo-nick');
   const t = state.trying;
   [nick, ...podiumNicks].forEach(el => {
     el.className = el === nick ? 'rank-nick' : 'podium-demo-nick';
@@ -569,10 +596,10 @@ function renderMirror() {
   if (t.nick) {
     if (nickType(t.nick) === 'fx') {
       const cls = findItem('fx', t.nick).cls;
-      [nick, ...podiumNicks].forEach(el => el.classList.add('fx', cls));
+      [nick, myPodiumNick].filter(Boolean).forEach(el => el.classList.add('fx', cls));
     } else {
       const color = findItem('color', t.nick).c;
-      [nick, ...podiumNicks].forEach(el => { el.style.color = color; });
+      [nick, myPodiumNick].filter(Boolean).forEach(el => { el.style.color = color; });
     }
   }
   const m = $('mirror');
@@ -615,17 +642,30 @@ function sectionHtml(type, items) {
     <div class="sect-fair">${s.fair}</div>
     <div class="grid">${items.map(it => cardHtml(type, it)).join('')}</div>`;
 }
+function nicknameEntries(ownedOnly = false) {
+  return ['color', 'fx'].flatMap(type => CATALOG[type]
+    .filter(item => !ownedOnly || state.owned[type].includes(item.key))
+    .map(item => ({ type, item })));
+}
+function nicknameSectionHtml(entries) {
+  const s = SECT.nick;
+  return `<div class="sect-head"><h3>${s.title}</h3><span class="cnt">${entries.length}개</span></div>
+    <div class="sect-fair">${s.fair}</div>
+    <div class="grid">${entries.map(({ type, item }) => cardHtml(type, item)).join('')}</div>`;
+}
 function renderCatalog() {
   const area = $('catalogArea');
   const tab = state.tab;
   if (tab === 'all') {
-    area.innerHTML = ['color', 'fx', 'frame'].map(t => sectionHtml(t, CATALOG[t])).join('');
+    area.innerHTML = nicknameSectionHtml(nicknameEntries()) + sectionHtml('frame', CATALOG.frame);
+  } else if (tab === 'nick') {
+    area.innerHTML = nicknameSectionHtml(nicknameEntries());
   } else if (tab === 'owned') {
-    const parts = ['color', 'fx', 'frame']
-      .map(t => ({ t, items: CATALOG[t].filter(i => state.owned[t].includes(i.key)) }))
-      .filter(x => x.items.length);
+    const nickOwned = nicknameEntries(true);
+    const frameOwned = CATALOG.frame.filter(item => state.owned.frame.includes(item.key));
+    const parts = [nickOwned.length ? nicknameSectionHtml(nickOwned) : '', frameOwned.length ? sectionHtml('frame', frameOwned) : ''].filter(Boolean);
     area.innerHTML = parts.length
-      ? parts.map(x => sectionHtml(x.t, x.items)).join('')
+      ? parts.join('')
       : `<div class="empty-owned">아직 보유한 아이템이 없어요<br>마음에 드는 걸 입어보고 데려와 보라냥 🐾</div>`;
   } else {
     area.innerHTML = sectionHtml(tab, CATALOG[tab]);
@@ -654,7 +694,7 @@ function renderActionbar() {
   const { type, item } = sel;
   const owned = state.owned[type].includes(item.key);
   const equipped = (type === 'frame') ? state.equipped.frame === item.key : state.equipped.nick === item.key;
-  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ' 글자색');
+  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : ' 닉네임');
   $('abPrice').textContent = owned ? '보유중' : `🍮 ${item.price} (보유 ${state.bal})`;
   let html = '';
   if (equipped) {
@@ -699,12 +739,11 @@ function unequip(type) {
 function wish(type, item) {
   state.wish = { type, key: item.key };
   const need = Math.max(0, item.price - state.bal);
-  const days = Math.ceil(need / state.dailyRate);
   $('wishCard').classList.add('show');
-  $('wishName').textContent = `🎯 ${item.nm}${type === 'frame' ? ' 프레임' : type === 'fx' ? ' 효과' : ''} 찜!`;
-  $('wishDday').textContent = need === 0 ? '지금 살 수 있어요!' : `D-${days}`;
+  $('wishName').textContent = `🎯 ${item.nm}${type === 'frame' ? ' 프레임' : ' 닉네임'} 찜!`;
+  $('wishDday').textContent = need === 0 ? '지금 살 수 있어요!' : `🍮 ${need}개 남음`;
   $('wishSub').textContent = need === 0 ? '잔액이 충분해요 — 마음이 정해지면 눌러주세요'
-    : `🍮 ${state.bal}/${item.price} · 하루 ${state.dailyRate}개씩 모으면 ${days}일 뒤에 살 수 있어요`;
+    : `🍮 ${state.bal}/${item.price} · 첫 게임, 오늘 목표, 연속 보너스로 차곡차곡 모아보세요`;
   $('wishBar').style.width = Math.min(100, Math.round(state.bal / item.price * 100)) + '%';
   renderCatalog();
   toast('찜 완료 — 모이는 동안 여기서 진행을 보여줘요');
@@ -728,11 +767,20 @@ function toast(text) {
 }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   state.tab = t.dataset.tab;
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+  document.querySelectorAll('.tab').forEach(x => {
+    const selected = x === t;
+    x.classList.toggle('on', selected);
+    x.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
   state.selected = null;
   renderCatalog(); renderActionbar();
 }));
 document.querySelectorAll('.mirror-mode').forEach(b => b.addEventListener('click', () => setMirrorView(b.dataset.view)));
+document.querySelectorAll('.podium-position').forEach(button => button.addEventListener('click', () => {
+  state.podiumPosition = Number(button.dataset.position) || 1;
+  renderPodiumPreview();
+  renderMirror();
+}));
 $('resetBtn').addEventListener('click', () => {
   state.trying = { nick: state.equipped.nick, frame: state.equipped.frame };
   state.selected = null;
