@@ -4600,17 +4600,13 @@ function parseShopError(e) {
     const pr = (typeof details.price === 'number') ? details.price : '?';
     return { reason: 'no-jelly', msg: `젤리가 부족해요! (보유 ${b}개 / 필요 ${pr}개)` };
   }
-  if (details.reason === 'not-linked') return { reason: 'not-linked', msg: '계정 확인이 아직 안 됐어요. 점수를 한 번 등록하면 자동으로 연결돼요!' };
+  if (details.reason === 'not-linked') return { reason: 'not-linked', msg: '계정 확인이 아직 안 됐어요. 잠시 뒤 다시 해보거나, 👤 내 정보 → 연결 정보 보기에서 연결해 주세요!' };
   if (details.reason === 'already-claimed') return { reason: 'already-claimed', msg: '오늘은 이미 받았어요!' };
   return { reason: 'error', msg: '오류가 발생했어요. 잠시 후 다시 시도해주세요.' };
 }
-function requireLinkedForShop() {
-  if (!isUidLinked()) {
-    alert('계정 확인이 아직 안 됐어요. 점수를 한 번 등록하면 자동으로 연결돼요!');
-    return false;
-  }
-  return true;
-}
+// (requireLinkedForShop 제거 — 부르는 곳이 한 군데도 없는 죽은 코드였다.
+//  안내 문구도 사실과 달랐다 — 점수를 등록하면 연결된다고 했지만 점수 제출은 계정
+//  연결을 만들지 않는다. 실제 연결 경로는 autoAdoptLegacy 다.)
 
 // ── Cloud Function 호출 ──
 async function callAccountFn(action, nickname, pin) {
@@ -4645,6 +4641,30 @@ async function adoptLegacyIfEligible() {
   } catch (e) { /* no-history 등 조건 미달 — 조용히 실패, 기존 흐름으로 폴백 */ }
   return false;
 }
+
+// 자동입양을 접속할 때마다 한 번 시도한다.
+//
+// 예전엔 '내 정보 → 연결 정보 보기'와 '리뷰 쓰기' 두 곳에서만 시도했다. 그 두 곳을
+// 한 번도 안 들른 옛 유저는 매일 게임을 해도 영영 미연결로 남는다(실사례: 사이다 —
+// 2026-07-05부터 매일 하는데 users/{uid}·user_stats/{uid} 가 아예 없었다).
+// 미연결이면 데이터가 uid 문서와 닉네임 문서로 갈라져 실제 손해가 생긴다:
+//  · 젤리샵에서 산 스킨은 nickname_skins/{uid} 로 가는데 rankings/{닉} 엔 uid 가 없어
+//    랭킹에서 매칭이 안 된다 → 돈 주고 산 아이템이 랭킹에 안 보인다(linkSkinsByUid).
+//  · 친구초대 보상·닉네임 소유 확인이 필요한 기능도 전부 막힌다.
+// 자동입양이 성공하면 서버가 rankings/{닉}.uid 와 users/{uid} 를 채우고 레거시
+// user_stats·nickname_skins 를 uid 문서로 복사해 이 갈라짐을 한 번에 없앤다.
+//
+// 비용은 사실상 0이다 — 이미 연결됐거나 앱이면 즉시 종료하고, 아니어도
+// adoptLegacyIfEligible 이 공개 read 1회(nickname_lookup)로 '예약+무주인'인지 먼저
+// 확인해 아닐 때는 서버 호출조차 하지 않는다. 소유권 판정은 서버가 3중 조건
+// (예약+무주인 / PIN secret 없음 / 이 uid 가 그 닉으로 제출한 game_sessions 존재)으로
+// 최종 판단하므로 남의 닉을 가져올 수는 없다.
+async function autoAdoptLegacy() {
+  if (IS_APP || !MY_UID || isUidLinked() || !loadNickname()) return false;
+  try { return await adoptLegacyIfEligible(); } catch { return false; }
+}
+setTimeout(() => { autoAdoptLegacy(); }, 3000);
+
 function parseAccountFnError(e) {
   const code = (e && e.code) || '';
   const details = (e && e.details) || {};
@@ -13624,7 +13644,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788182400; // v4.20 — 레거시 계정도 초기 멤버 선물 수령
+const BUILD = 1788182700; // v4.21 — 미연결 레거시 계정 자동 연결
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14036,6 +14056,10 @@ async function loadJellyBalance() {
 async function openJellyShop() {
   if (IS_APP) return; // 앱: 인앱 재화 판매는 Play 결제 정책 위반 — 진입 자체를 막는다
   if (!ENABLE_JELLY_SHOP) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
+  // 미연결 레거시 계정이면 들어가기 전에 자동 연결부터 끝낸다. 연결 없이 사면
+  // 산 아이템이 랭킹에 안 붙는다(rankings/{닉} 에 uid 가 없어 매칭 실패) — 돈이
+  // 오가는 화면이라 여기서만큼은 시작 시도(3초)를 못 탄 경우까지 한 번 더 챙긴다.
+  await autoAdoptLegacy();
   // 젤리샵의 실제 화면은 독립 모바일 페이지 하나뿐이다. 예전 인게임 오버레이는
   // 서버 가격표와 어긋난 채 죽은 코드로 남아 있어 2026-08-31 검수에서 제거했다.
   location.href = 'shop-v2-preview.html?live=1';

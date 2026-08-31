@@ -161,3 +161,34 @@ test('⑦ 초기 멤버 선물 요청은 계정 연결이 아니라 uid 만 요�
     '계정 연결(isUidLinked) 조건이 다시 들어오면 레거시 초기 멤버가 또 못 받습니다');
   assert.match(body, /callShopAction\('claimEarlyMember'\)/);
 });
+
+// ══════════════════════════════════════════════════════════════
+//  세 번째 사고 — 미연결 레거시 계정이 스스로 연결될 기회가 없었다
+// ══════════════════════════════════════════════════════════════
+// 자동입양(adoptLegacyIfEligible)은 있었지만 '내 정보 → 연결 정보 보기'와 '리뷰 쓰기'
+// 두 곳에서만 불렸다. 둘 다 안 들른 유저는 매일 게임을 해도 영영 미연결로 남고,
+// 그 상태로 젤리샵에서 스킨을 사면 rankings/{닉} 에 uid 가 없어 랭킹에서 매칭이
+// 안 된다(linkSkinsByUid 는 row.uid 를 요구한다) → 산 아이템이 안 보인다.
+test('⑧ 자동 연결을 접속할 때와 젤리샵 진입 때 시도한다', () => {
+  const game = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+  assert.match(game, /async function autoAdoptLegacy\(\)/, 'autoAdoptLegacy 가 있어야 합니다');
+  assert.match(game, /setTimeout\(\(\) => \{ autoAdoptLegacy\(\); \}, \d+\);/,
+    '접속 시 한 번은 자동으로 시도해야 합니다');
+
+  // 돈이 오가는 진입점 — 사기 전에 연결을 끝내야 산 아이템이 랭킹에 붙는다.
+  const shop = game.slice(game.indexOf('async function openJellyShop('));
+  const body = shop.slice(0, shop.indexOf('\n}'));
+  assert.match(body, /await autoAdoptLegacy\(\)/, '젤리샵 진입 전에도 시도해야 합니다');
+  assert.ok(body.indexOf('await autoAdoptLegacy()') < body.indexOf("location.href"),
+    '페이지를 떠나기 전에 연결을 끝내야 합니다');
+
+  // 이미 연결됐거나 앱이면 서버를 부르지 않는다(비용 0).
+  const auto = game.slice(game.indexOf('async function autoAdoptLegacy('));
+  const autoBody = auto.slice(0, auto.indexOf('\n}'));
+  assert.match(autoBody, /IS_APP \|\| !MY_UID \|\| isUidLinked\(\) \|\| !loadNickname\(\)/);
+
+  // 사실과 다른 옛 안내("점수를 한 번 등록하면 자동으로 연결돼요")는 남아 있으면 안 된다 —
+  // 점수 제출은 계정 연결을 만들지 않는다.
+  assert.doesNotMatch(game, /점수를 한 번 등록하면 자동으로 연결돼요/);
+});
