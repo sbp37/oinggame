@@ -11178,12 +11178,10 @@ function logBehavior(colName, payload) {
   } catch (e) { return Promise.resolve(null); }
 }
 function creatorBadgeHtml(nickname) {
-  return isCreator(nickname)
-    ? `<span class="rank-creator-badge"><img src="${CREATOR_PAW_IMG}" alt="">오잉집사</span>` : '';
+  return '';
 }
 function creatorPodiumHtml(nickname) {
-  return isCreator(nickname)
-    ? `<div class="podium-creator"><img src="${CREATOR_PAW_IMG}" alt="">오잉집사</div>` : '';
+  return '';
 }
 function rankHotHtml(ts) {
   return (typeof ts === 'number' && Date.now() - ts < RANK_HOT_MS)
