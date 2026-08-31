@@ -106,7 +106,7 @@ function referralRow(row, status) {
   return `<div class="economy-row"><div class="economy-main">
     <div class="economy-name">${escapeHtml(inviter)} → ${escapeHtml(invitee)}</div>
     <div class="economy-meta">${escapeHtml(row.code || '-')} · ${escapeHtml(fmtDateTime(when))}</div>
-  </div><div class="economy-balance">${status === 'granted' ? `양쪽 +${fmtNum(row.reward || 3)} ✓` : '조건 대기'}</div></div>`;
+  </div><div class="economy-balance">${status === 'granted' ? `양쪽 +${fmtNum(row.reward || 5)} ✓` : '조건 대기'}</div></div>`;
 }
 
 async function loadReferralOverview() {

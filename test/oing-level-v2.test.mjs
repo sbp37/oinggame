@@ -32,7 +32,7 @@ test('승급 팝업·이유 토글·접속 판정·무저장 미리보기 흐름
   assert.match(src, /preview: true/);
 });
 
-test('내 정보 안내와 v4.9 업데이트 내역이 새 정책을 정확히 설명한다', () => {
+test('내 정보 안내와 최신 업데이트 내역이 새 정책을 정확히 설명한다', () => {
   assert.match(src, />레벨 안내 ⓘ<\/button>/);
   assert.match(src, /점수나 판수만 보지 않고,/);
   assert.match(src, /플레이·기록·꾸준함으로 성장해요/);
@@ -41,8 +41,12 @@ test('내 정보 안내와 v4.9 업데이트 내역이 새 정책을 정확히 �
   assert.match(src, /최고콤보 보너스/);
   assert.match(src, /메인과 내 정보의 <b>버튼·카드 대비<\/b>를 높이고 안내 문구를 간결하게/);
   assert.match(src, /기존 레벨과 XP는 절대 내려가지 않아요/);
-  assert.match(src, /const UPDATE_VERSION = 'v4\.9';/);
-  assert.match(src, /const SEEN_KEY = 'seenUpdate_v4\.9';/);
+  // 업데이트 버전은 릴리스마다 오르므로 값을 고정하지 않고, 표시 버전과 NEW 뱃지 저장키가
+  // 서로 같은 버전을 가리키는지만 본다(둘이 어긋나면 NEW 뱃지가 영영 안 사라진다).
+  const shown = src.match(/const UPDATE_VERSION = 'v([\d.]+)';/);
+  const seen = src.match(/const SEEN_KEY = 'seenUpdate_v([\d.]+)';/);
+  assert.ok(shown && seen, 'UPDATE_VERSION / SEEN_KEY 를 찾지 못함');
+  assert.equal(shown[1], seen[1], 'UPDATE_VERSION 과 SEEN_KEY 버전이 달라요');
 });
 
 test('메인·내 정보 버튼과 카드 대비를 높이고 레벨 안내 버튼은 얇게 유지한다', () => {

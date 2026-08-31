@@ -414,7 +414,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
     <div class="earn-line"><span>🎮 오늘 첫 게임 <small>첫 게임이 곧 출석이에요</small></span><b>+1</b></div>
     <div class="earn-line"><span>🎯 오늘 목표 달성</span><b>+2</b></div>
     <div class="earn-line"><span>📅 연속 플레이 <small>3일·7일째 보너스</small></span><b>+2 / +5</b></div>
-    <div class="earn-line invite"><span>💌 친구 초대 <small>친구가 닉네임을 등록하고 정상 한 판을 마치면 둘 다 받아요</small><button type="button" class="invite-btn" id="inviteBtn">초대 링크 보내기</button></span><b>둘 다 +3</b></div>
+    <div class="earn-line invite"><span>💌 친구 초대 <small>친구가 닉네임을 등록하고 정상 한 판을 마치면 둘 다 받아요</small><button type="button" class="invite-btn" id="inviteBtn">초대 링크 보내기</button></span><b>둘 다 +5</b></div>
   </div>
 </details>
 
@@ -1064,7 +1064,7 @@ async function shareInviteFromPreview() {
     const code = String((response.data && response.data.code) || '');
     if (!/^[A-Za-z0-9_-]{5,20}$/.test(code)) throw new Error('invalid-referral-code');
     const url = `https://oinggame.com/?r=${encodeURIComponent(code)}`;
-    const text = '🐱 오잉게임 같이 하자냥! 닉네임을 등록하고 첫 게임을 마치면 우리 둘 다 젤리 3개를 받아요.';
+    const text = '🐱 오잉게임 같이 하자냥! 닉네임을 등록하고 첫 게임을 마치면 우리 둘 다 젤리 5개를 받아요.';
     if (navigator.share) await navigator.share({ title:'오잉게임 친구 초대', text, url });
     else if (navigator.clipboard) {
       await navigator.clipboard.writeText(`${text}\n${url}`);

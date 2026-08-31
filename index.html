@@ -3519,6 +3519,23 @@ if ('serviceWorker' in navigator) {
     </div>
     <div style="flex:1; overflow-y:auto; margin-top:10px; text-align:left;">
 
+      <!-- v4.10 -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:700;color:#3b82f6;letter-spacing:1px;">v4.10</div>
+        <span id="newBadge410" style="display:none;background:#DD6032;color:white;font-size:11px;font-weight:900;padding:1px 6px;border-radius:10px;letter-spacing:1px;">NEW</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#DA9845;margin-bottom:5px;">🍮 젤리샵 오픈!</div>
+      <ul style="list-style:none;padding:0;font-size:14px;color:#fff;line-height:1.9;margin-bottom:8px;">
+        <li>▫️ 🛍️ 게임으로 모은 <b>젤리</b>로 내 랭킹을 꾸밀 수 있다냥! 상단 <b>🍮 젤리</b>를 눌러보라냥</li>
+        <li>▫️ 🎨 <b>닉네임 색</b> 6종(🍮30) · <b>움직이는 효과</b> 4종(🍮60) · <b>랭킹 테두리</b> 6종(🍮80)</li>
+        <li>▫️ 🐱 <b>게임 속 고양이 얼굴</b>도 젤리로 바꿀 수 있다냥(🍮60) — 게임·내 정보·시상대에 같이 나온다냥</li>
+        <li>▫️ 🎁 <b>젤리 모으는 법</b> — 하루 첫 게임 +1 · 오늘의 목표 달성 +2 · 3일 연속 +2 · 7일마다 +5</li>
+        <li>▫️ 💌 <b>친구를 초대하면 각각 5젤리 받는다냥~</b> 🍮 친구가 닉네임 등록하고 한 판을 마치면 둘 다 받는다냥</li>
+        <li>▫️ 🎀 산 아이템은 <b>껐다 켰다</b> 자유롭게 할 수 있고, 다시 켤 때는 돈이 안 든다냥</li>
+      </ul>
+      <div style="font-size:12.5px;font-weight:800;color:#8ad7aa;line-height:1.6;margin:-1px 0 9px;">꾸미기는 게임 점수에 영향을 주지 않아요.</div>
+      <div style="border-top:1px solid var(--border);margin-bottom:12px;"></div>
+
       <!-- v4.9 -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
         <div style="font-size:13px;font-weight:700;color:#3b82f6;letter-spacing:1px;">v4.9</div>
@@ -4441,6 +4458,9 @@ async function callReferralAction(action, payload = {}) {
 }
 
 let referralNoticeBusy = false;
+// 친구초대 1건당 양쪽이 받는 젤리. 실제 지급은 서버(functions/referrals.js REFERRAL_REWARD)가
+// 하고 여기 값은 안내 문구용이다 — 서버 값을 바꾸면 이 상수도 같이 맞춰야 한다.
+const REFERRAL_REWARD = 5;
 function referralNoticeStorageKey() {
   return `oeing_referral_notice_v2_${MY_UID || 'anon'}`;
 }
@@ -4466,11 +4486,11 @@ function showReferralRewardPopup(notice) {
   }
   referralNoticeBusy = true;
   const isInviter = notice.lastRole === 'inviter';
-  const amount = Math.max(3, Number(notice.amount) || 3);
+  const amount = Math.max(REFERRAL_REWARD, Number(notice.amount) || REFERRAL_REWARD);
   const count = Math.max(1, Number(notice.count) || 1);
   const detail = isInviter
-    ? `${count > 1 ? `${count}명의 친구가` : '친구가'} 닉네임을 등록하고 첫 게임을 마쳤어요.<br><b style="color:#fde68a;">나는 🍮 +${amount}</b> · 친구도 각각 +3`
-    : `초대 링크로 와서 닉네임 등록과 첫 게임을 마쳤어요.<br><b style="color:#fde68a;">나와 친구 모두 🍮 +3</b>`;
+    ? `${count > 1 ? `${count}명의 친구가` : '친구가'} 닉네임을 등록하고 첫 게임을 마쳤어요.<br><b style="color:#fde68a;">나는 🍮 +${amount}</b> · 친구도 각각 +${REFERRAL_REWARD}`
+    : `초대 링크로 와서 닉네임 등록과 첫 게임을 마쳤어요.<br><b style="color:#fde68a;">나와 친구 모두 🍮 +${REFERRAL_REWARD}</b>`;
   const wrap = document.createElement('div');
   wrap.id = 'referralRewardOverlay';
   wrap.className = 'overlay';
@@ -5720,19 +5740,7 @@ function updateHomeTickerFromRankingRows(rawRows, period = 'weekly', shouldRebui
         ['이 기록을 갈아치웠다냥', 'ticker-good'],
       ], { id: '21-today-count', category: 'achievement', tier: 'broad' }));
     }
-    // 방금 막 기록을 올린 사람 (실시간감)
-    const justNow = rows
-      .map((r) => ({ r, t: tickerTimeMs(r.ts) }))
-      .filter((x) => x.t && Date.now() - x.t < 2 * 60 * 60 * 1000)
-      .sort((a2, b2) => b2.t - a2.t)[0];
-    if (justNow) {
-      const mins = Math.max(1, Math.round((Date.now() - justNow.t) / 60000));
-      messages.push(tickerMessage('⚡', [
-        [`${justNow.r.nickname}님이`, 'ticker-name'],
-        [mins < 60 ? `${mins}분 전` : `${Math.round(mins / 60)}시간 전`, 'ticker-accent'],
-        ['방금 뛰고 갔다냥', 'ticker-good'],
-      ], { id: '22-just-played', category: 'change', event: true, actors: [justNow.r.nickname] }));
-    }
+    // (개인별 '몇 분 전 뛰고 갔다냥'은 남을 쫓아다니는 느낌이라 넣지 않는다 — 운영 판단)
     // 이번 주 참여 인원 — 적으면 적은 대로 "지금 들어오면 순위권" 이라는 신호가 된다
     if (rows.length) {
       messages.push(rows.length <= 12
@@ -8122,7 +8130,7 @@ async function _shadowSubmitSession(nickname) {
         }
       } catch {}
       // 초대받은 신규 유저는 서버가 accepted 판과 닉네임 소유를 모두 확인한 뒤에만
-      // 양쪽 +3을 지급한다. 점수 저장 화면을 늦추지 않도록 별도 비동기로 확인한다.
+      // 양쪽 +5를 지급한다. 점수 저장 화면을 늦추지 않도록 별도 비동기로 확인한다.
       if (data && data.decision === 'accepted') {
         setTimeout(() => { maybeClaimReferralReward().catch(() => {}); }, 0);
       }
@@ -13348,7 +13356,7 @@ async function shareFriendInvite(button) {
     const code = await getOrCreateRefCode(nick);
     if (!code) throw new Error('referral-code');
     const url = `https://oinggame.com/?r=${encodeURIComponent(code)}`;
-    const text = '🐱 오잉게임 같이 하자냥! 닉네임 등록하고 첫 게임을 마치면 우리 둘 다 젤리 3개를 받아요.';
+    const text = `🐱 오잉게임 같이 하자냥! 닉네임 등록하고 첫 게임을 마치면 우리 둘 다 젤리 ${REFERRAL_REWARD}개를 받아요.`;
     if (navigator.share) {
       await navigator.share({ title:'오잉게임 친구 초대', text, url });
     } else if (navigator.clipboard) {
@@ -13614,19 +13622,19 @@ document.addEventListener('mouseup', () => {
 });
 
 // 업데이트 내역 팝업
-const UPDATE_VERSION = 'v4.9';
+const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788181900; // v4.18 — 젤리 배달 팝업 + 전광판 소식 다양화
+const BUILD = 1788182100; // v4.19 — 업데이트 내역 v4.10(젤리샵 오픈) + 친구초대 보상 5젤리
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
-const SEEN_KEY = 'seenUpdate_v4.9';
+const SEEN_KEY = 'seenUpdate_v4.10';
 
 function openUpdateLog() {
   document.getElementById('updateLog').style.display = 'flex';
   // NEW 뱃지 숨기기 + 본 것으로 저장
   localStorage.setItem(SEEN_KEY, '1');
-  const badge = document.getElementById('newBadge49');
+  const badge = document.getElementById('newBadge410');
   if (badge) badge.style.display = 'none';
   const btnBadge = document.getElementById('updateLogBtnNew');
   if (btnBadge) btnBadge.style.display = 'none';
@@ -13639,7 +13647,7 @@ document.getElementById('updateLogBtn').addEventListener('click', openUpdateLog)
 
 // 최초 방문 시 NEW 뱃지 표시
 if (!localStorage.getItem(SEEN_KEY)) {
-  const badge = document.getElementById('newBadge49');
+  const badge = document.getElementById('newBadge410');
   if (badge) badge.style.display = 'inline';
   const btnBadge = document.getElementById('updateLogBtnNew');
   if (btnBadge) btnBadge.style.display = 'inline';
