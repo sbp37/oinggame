@@ -1456,7 +1456,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   width: 100%; max-width: 100%; display: flex; align-items: center; justify-content: center; gap: 3px;
   padding: 0 2px; box-sizing: border-box;
 }
-.podium-nick-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; min-width: 0; }
+.podium-nick-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; min-width: 0; color: var(--ivory); }
 .podium-meta {
   width:100%; min-height:16px; margin:0 0 3px; padding:0 1px; box-sizing:border-box;
   display:flex; align-items:center; justify-content:center; gap:3px; overflow:hidden; white-space:nowrap;
@@ -1466,16 +1466,15 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 }
 #panelRank .podium-nick-text { overflow:visible; text-overflow:clip; }
 #panelRank .podium-title-badge { font-size:9px; }
-/* 1·2·3위도 보유한 닉네임 스킨이 그대로 보이게 한다. 순위 기본색이 스킨을 덮지 않는다. */
-.rank1 .podium-nick-text {
-  font-size: 16px; font-weight: 900; color: var(--ivory);
-}
-.rank2 .podium-nick-text {
-  font-size: 15px; font-weight: 900; color: var(--ivory);
-}
-.rank3 .podium-nick-text {
-  font-size: 15px; font-weight: 900; color: var(--ivory);
-}
+/* 1·2·3위도 보유한 닉네임 스킨이 그대로 보이게 한다.
+   ⚠️ 여기에 color 를 쓰면 안 된다 — '.rank1 .podium-nick-text'(선택자 2개)가
+   스킨 클래스 '.nick-pink'(1개)를 특정도로 이겨서, 산 아이템이 시상대에서만
+   기본색으로 보였다(2026-08-31 실사용 보고). 기본색은 .podium-nick-text 가 갖고
+   스킨 클래스는 뒤에 정의돼 있어 같은 특정도로 자연스럽게 이긴다.
+   크기·굵기만 순위별로 준다. */
+.rank1 .podium-nick-text { font-size: 16px; font-weight: 900; }
+.rank2 .podium-nick-text { font-size: 15px; font-weight: 900; }
+.rank3 .podium-nick-text { font-size: 15px; font-weight: 900; }
 .podium-score {
   font-size: 16px; font-weight: 900; margin-bottom: 8px; color: var(--ivory);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; padding: 0 2px;
@@ -5094,10 +5093,29 @@ async function capturePendingReferral() {
     return null;
   }
 }
+// 초대코드는 서버가 "닉네임 소유가 확인된 계정"에만 발급한다. 아직 계정 연결이 안 된
+// 기기에서는 발급이 실패하는데, 예전엔 그때 조용히 코드 없는 링크를 공유해버려서
+// 유저는 초대한 줄 알지만 실제로는 아무 집계도 안 됐다(2026-08-31 운영 보고).
+// 코드가 필요한 순간에 연결을 한 번 시도해 그 구멍을 메운다. 실패해도 공유 자체는 막지 않는다.
+async function ensureLinkedForReferral() {
+  if (isUidLinked()) return true;
+  const nick = loadNickname();
+  if (!nick || !MY_UID) return false;
+  try {
+    const saved = loadMyPin();
+    if (saved) { try { await restoreAccountOnNewDevice(nick, saved); } catch {} }
+    if (isUidLinked()) return true;
+    const pin = saved || generatePin();
+    if (await linkNewNicknameToUid(nick, pin)) { saveMyPin(pin); try { updateAccountLinkBtn(); } catch {} return true; }
+  } catch (e) { console.warn('초대코드용 계정 연결 시도 실패:', e); }
+  return isUidLinked();
+}
+
 // UID 소유권을 서버가 확인한 뒤 짧은 공유코드를 자동 발급한다. 클라이언트는 코드를 만들거나
 // ref_codes 문서를 직접 쓰지 않는다.
 async function getOrCreateRefCode(_nickname) {
   try {
+    await ensureLinkedForReferral();
     const result = await callReferralAction('getCode');
     const code = String((result && result.code) || '');
     if (/^[A-Za-z0-9_-]{5,20}$/.test(code)) {
@@ -5208,6 +5226,9 @@ async function loadRankings() {
       const data = d.data();
       return {
         nickname: d.id,
+        // uid 는 닉네임 필드가 없는 스킨 문서(젤리샵·서버 구매)를 이 닉네임에 잇는 유일한 열쇠다.
+        // 예전엔 여기서 버려서, 산 아이템이 랭킹에 전혀 안 보였다(linkSkinsByUid 참고).
+        uid: data.uid,
         score: data.score,
         ts: data.ts,
         oingLevel: data.oingLevel,
@@ -5368,7 +5389,7 @@ async function loadWeeklyRankings() {
     const snap = await getDocs(q);
     const list = snap.docs.map((d) => {
       const data = d.data();
-      return { nickname: d.id, score: data.score, ts: data.ts, oingLevel: data.oingLevel, oingLevelVersion: data.oingLevelVersion };
+      return { nickname: d.id, uid: data.uid, score: data.score, ts: data.ts, oingLevel: data.oingLevel, oingLevelVersion: data.oingLevelVersion };
     });
     _weeklyRankingsCache = list; _weeklyRankingsCacheTs = Date.now(); _weeklyRankingsCacheWeekId = weekId;
     return list;
@@ -7822,14 +7843,23 @@ function syncJellyShopEntry() {
 syncJellyShopEntry();
 // 카카오페이·독립 상점에서 뒤로 돌아올 때 브라우저가 BFCache 화면을 복원하면
 // module script는 다시 실행되지 않는다. 복귀 시 입구 표시와 서버 잔액을 다시 맞춘다.
-window.addEventListener('pageshow', () => {
+// 상점에서 아이템을 사고 돌아오면 스킨 캐시(10분 TTL)가 옛 값을 붙들고 있어
+// 랭킹에 새 아이템이 안 보인다. 복귀 시 캐시를 버려 다음 랭킹 렌더가 새로 읽게 한다.
+function refreshAfterShopReturn() {
   syncJellyShopEntry();
-  if (ENABLE_JELLY_SHOP && !IS_APP) loadJellyBalance().catch(() => {});
-});
+  if (!ENABLE_JELLY_SHOP || IS_APP) return;
+  try { _skinsCacheTs = 0; } catch {}
+  loadJellyBalance().catch(() => {});
+  // 지금 랭킹 화면을 보고 있으면 즉시 다시 그린다(탭 판별은 DOM 상태로 — 전역 변수 없음)
+  try {
+    const panel = document.getElementById('panelRank');
+    if (panel && panel.classList.contains('active')) renderRanking();
+  } catch {}
+}
+window.addEventListener('pageshow', refreshAfterShopReturn);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
-  syncJellyShopEntry();
-  if (ENABLE_JELLY_SHOP && !IS_APP) loadJellyBalance().catch(() => {});
+  refreshAfterShopReturn();
 });
 const ENABLE_EXTRA_SHUFFLE = false;
 const ENABLE_DAILY_OING = false;
@@ -11142,17 +11172,34 @@ async function loadSkinsCache() {
   try {
     const snap = await getDocs(collection(db, 'nickname_skins'));
     Object.keys(skinsCache).forEach(k => delete skinsCache[k]);
+    Object.keys(skinsByUid).forEach(k => delete skinsByUid[k]);
     const fromUidDoc = {};
     snap.forEach(d => {
       const v = d.data();
-      const isUidKeyed = !!v.nickname; // UID 키 문서에는 nickname 필드가 항상 있음
+      const isUidKeyed = !!v.nickname; // 게임이 직접 쓴 UID 문서에는 nickname 필드가 붙는다
       const key = v.nickname || d.id;
+      const info = { skin: v.skin || null, frame: v.frame || null, bubble: v.bubble || null };
+      // 닉네임을 모르는 문서(독립 젤리샵·서버 구매가 만든 {uid, skin} 문서)도 버리지 않고
+      // uid 로 따로 담아둔다. 랭킹은 닉네임으로 그리므로 아래 linkSkinsByUid 가 이어붙인다.
+      // 이 처리가 없으면 젤리샵에서 산 아이템이 랭킹에 전혀 안 보였다(2026-08-31 실사용 보고).
+      if (v.uid) skinsByUid[v.uid] = info;
+      if (!v.uid && !v.nickname) skinsByUid[d.id] = info; // uid 필드 없는 옛 uid 키 문서 방어
       if (fromUidDoc[key] && !isUidKeyed) return; // UID 문서가 있으면 레거시 문서가 못 덮음
-      skinsCache[key] = { skin: v.skin || null, frame: v.frame || null, bubble: v.bubble || null };
+      skinsCache[key] = info;
       if (isUidKeyed) fromUidDoc[key] = true;
     });
     _skinsCacheTs = Date.now();
   } catch (e) { console.warn('스킨 로드 실패:', e); }
+}
+// 랭킹 행에 실려온 uid 로 "닉네임을 모르는 스킨 문서"를 닉네임에 연결한다.
+// nickname 필드가 있는 문서(게임이 직접 쓴 것)가 이미 있으면 그것을 우선한다.
+function linkSkinsByUid(rows) {
+  if (!Array.isArray(rows)) return;
+  for (const row of rows) {
+    if (!row || !row.uid || !row.nickname) continue;
+    const info = skinsByUid[row.uid];
+    if (info && !skinsCache[row.nickname]) skinsCache[row.nickname] = info;
+  }
 }
 function skinnedNickHtml(nickname, plainText) {
   const info = skinsCache[nickname];
@@ -11246,6 +11293,7 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
   renderWeeklyThanks();
   let list = await loadRankings();
   if (gen !== _rankRenderGen) return;
+  linkSkinsByUid(list); // 닉네임 필드 없는 스킨 문서를 이 목록의 uid 로 연결
   const myNick = loadNickname();
   // 왕관은 실시간이 아니라 "주가 넘어갔을 때 그 시점 1등"한테만 지급 (친구 탭에서는 실행 안 함)
   if (currentRankMode !== 'friends' && list.length > 0) {
@@ -11781,6 +11829,7 @@ async function appendLastWeekPodium(el, gen) {
 async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
   const list = await loadWeeklyRankings();
   if (gen !== _rankRenderGen) return;
+  linkSkinsByUid(list); // 주간 목록에도 동일 연결 (주간 문서에도 uid 가 실려 있다)
   renderWeekSpurtBanner(true); // 금~일에만 실제로 표시됨(요일 판정은 함수 안에서)
   const myNick = loadNickname();
   const justUpdated = sessionStorage.getItem('oeing_just_updated');
@@ -13525,7 +13574,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788162600; // v4.12 — 젤리 검수 반영(죽은 오버레이 제거·잔액 표시·원장 최근순·초대 귀속 가드)
+const BUILD = 1788165400; // v4.13 — 랭킹에 젤리샵 아이템 반영 + 시상대 스킨 + 공유 초대코드 보장
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13661,7 +13710,9 @@ const FRAME_CATALOG = [
 ];
 let skinPickedNick = null;
 let skinPickedFrame = null;
-const skinsCache = {}; // nickname -> { skin, frame } (랭킹 표시용 캐시)
+const skinsCache = {}; // nickname -> { skin, frame, bubble } (랭킹 표시용 캐시)
+const skinsByUid = {};  // uid -> 같은 값. 닉네임 필드가 없는 문서(젤리샵·서버 구매)를 담아뒀다가
+                        // 랭킹 행의 uid 로 위 캐시에 이어붙인다(linkSkinsByUid).
 
 function skinClassFor(key) {
   const s = SKIN_CATALOG.find(x => x.key === key);

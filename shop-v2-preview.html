@@ -851,8 +851,12 @@ async function equip(type, item, { localOnly = !LIVE_MODE } = {}) {
     try {
       const { auth, db, fsSdk } = await getFirebaseContext();
       if (!auth.currentUser) throw new Error('게임에서 닉네임을 등록한 뒤 다시 들어와주세요.');
+      // 랭킹은 닉네임으로 그리는데 이 문서는 uid 로 저장된다. nickname 을 함께 남겨야
+      // 랭킹이 이 장착을 찾는다(안 남기면 산 아이템이 랭킹에 안 보였다 — 2026-08-31 보고).
+      const ownerNick = String(state.profile.nickname || '').trim();
       await fsSdk.setDoc(fsSdk.doc(db,'nickname_skins',auth.currentUser.uid), {
         uid:auth.currentUser.uid,
+        ...(ownerNick && ownerNick.length <= 20 && !ownerNick.includes('/') ? { nickname:ownerNick } : {}),
         [type === 'frame' ? 'frame' : 'skin']:item.key,
       }, { merge:true });
     } catch (error) {
@@ -870,8 +874,10 @@ async function unequip(type) {
     try {
       const { auth, db, fsSdk } = await getFirebaseContext();
       if (!auth.currentUser) throw new Error('로그인이 필요해요.');
+      const ownerNick = String(state.profile.nickname || '').trim();
       await fsSdk.setDoc(fsSdk.doc(db,'nickname_skins',auth.currentUser.uid), {
         uid:auth.currentUser.uid,
+        ...(ownerNick && ownerNick.length <= 20 && !ownerNick.includes('/') ? { nickname:ownerNick } : {}),
         [type === 'frame' ? 'frame' : 'skin']:null,
       }, { merge:true });
     } catch (error) {

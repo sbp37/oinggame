@@ -28,8 +28,14 @@ test('예전 스킨샵 자리의 젤리 입구는 초기 깜빡임 없이 JS 게
   assert.match(src, /const ENABLE_JELLY_SHOP = true;/, '웹 젤리샵 오픈 플래그가 켜져야 함');
   assert.match(src, /function syncJellyShopEntry\(\)[\s\S]{0,260}supportTopBtn[\s\S]{0,180}inline-flex/,
     '웹에서만 예전 스킨샵 자리의 버튼을 표시해야 함');
-  assert.match(src, /window\.addEventListener\('pageshow',[\s\S]{0,220}syncJellyShopEntry\(\)/,
-    '결제·상점에서 뒤로 돌아온 BFCache 화면도 젤리 입구를 다시 표시해야 함');
+  // 상점에서 돌아왔을 때 해야 할 일이 늘어(입구 표시 + 스킨 캐시 무효화 + 랭킹 재렌더)
+  // 이름 있는 함수로 묶였다. 텍스트 모양이 아니라 그 계약을 검사한다.
+  assert.match(src, /window\.addEventListener\('pageshow', refreshAfterShopReturn\)/,
+    '결제·상점에서 뒤로 돌아온 BFCache 화면도 복귀 처리를 해야 함');
+  assert.match(src, /function refreshAfterShopReturn\(\)[\s\S]{0,600}syncJellyShopEntry\(\)/,
+    '복귀 처리는 젤리 입구를 다시 표시해야 함');
+  assert.match(src, /function refreshAfterShopReturn\(\)[\s\S]{0,600}_skinsCacheTs = 0/,
+    '복귀 처리는 스킨 캐시를 버려야 함 — 안 그러면 방금 산 아이템이 랭킹에 안 보인다');
   assert.match(src, /supportTopBtn'\)\.addEventListener\('click', async \(\) =>[\s\S]{0,700}support_topbtn_clicks/,
     '상단 젤리 잔액 클릭은 사용자 행동 원장에 남아야 함');
   assert.match(src, /supportTopBtn'\)\.addEventListener\('click',[\s\S]{0,900}openJellyShop\(\)/,
