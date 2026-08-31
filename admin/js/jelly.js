@@ -217,7 +217,14 @@ async function adjustJelly() {
       }
       const next = balance + delta;
       if (next < 0) throw new Error(`잔액 부족 — 현재 ${balance}개라 ${delta}는 적용할 수 없어요.`);
-      tx.set(wRef, { uid, balance: next, updatedAt: Date.now(), ...createFields }, { merge: true });
+      // 지급(+)이면 '배달 왔다냥' 팝업이 뜨도록 표시를 남긴다. 유저가 다음 접속 때 보고
+      // 서버(shopAction ackJellyGift)가 지운다 — 기기를 바꿔도 딱 한 번만 뜬다.
+      // 차감(-)에는 표시하지 않는다(알릴 일이 아니다).
+      const giftFields = delta > 0
+        ? { giftPending: (typeof w?.giftPending === 'number' ? Math.max(0, w.giftPending) : 0) + delta,
+            giftPendingAt: Date.now() }
+        : {};
+      tx.set(wRef, { uid, balance: next, updatedAt: Date.now(), ...createFields, ...giftFields }, { merge: true });
       tx.set(doc(collection(db, 'jelly_log')), {
         uid, nickname: nick, ts: Date.now(), type: 'adjust', source: 'admin',
         amount: delta, reason, balanceAfter: next,

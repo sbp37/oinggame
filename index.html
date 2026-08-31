@@ -5652,11 +5652,13 @@ function updateHomeTickerFromRankingRows(rawRows, period = 'weekly', shouldRebui
       ], { id: '3-my-rank', category: 'personal', tier: 'personal' }));
     }
     const closePairs = [];
-    for (let i = 10; i < rows.length - 1; i++) {
+    // 예전엔 11위 아래(i=10)부터만 봤는데, 주간 참여자가 10명 남짓이면 이 반복문이
+    // 한 번도 돌지 않아 접전 소식이 아예 안 나왔다(전광판에 내 이야기만 남던 원인).
+    // 1·2위 대결은 위의 '맹추격'이 이미 다루므로 3위(i=2)부터 본다.
+    for (let i = 2; i < rows.length - 1; i++) {
       const gap = Math.abs(rows[i].score - rows[i + 1].score);
       closePairs.push({ upper: rows[i], lower: rows[i + 1], gap });
     }
-    // 상위 10명이 아닌 이용자도 자주 등장하도록 11위 아래의 가까운 접전 중 하나를 섞는다.
     const closestPair = tickerFreshFirst(
       closePairs.sort((a, b) => a.gap - b.gap).slice(0, 12),
       (pair) => [pair.upper.nickname, pair.lower.nickname],
@@ -5694,6 +5696,56 @@ function updateHomeTickerFromRankingRows(rawRows, period = 'weekly', shouldRebui
         id: '12-top30-chase', category: 'competition', conflict: 'top30', tier: 'nonTop',
         actors: [challenger.nickname],
       }));
+    }
+
+    // ── 인원이 적어도 늘 새 소식이 있도록 하는 항목들 ──
+    // 오늘 기록을 올린 사람들 중 최고점 (누가 오늘 잘했는지 = 가장 궁금한 정보)
+    const DAY = 24 * 60 * 60 * 1000;
+    const todays = rows.filter((r) => {
+      const t = tickerTimeMs(r.ts);
+      return t && Date.now() - t < DAY;
+    });
+    if (todays.length) {
+      const best = todays.reduce((a2, b2) => (b2.score > a2.score ? b2 : a2));
+      messages.push(tickerMessage('☀️', [
+        ['오늘 최고 점수는', 'ticker-label'],
+        [`${best.nickname}님`, 'ticker-name'],
+        [`${best.score.toLocaleString()}pt`, 'ticker-score'],
+      ], { id: '20-today-best', category: 'achievement', tier: 'broad', actors: [best.nickname] }));
+    }
+    if (todays.length >= 2) {
+      messages.push(tickerMessage('🐾', [
+        ['오늘', 'ticker-label'],
+        [`${todays.length}명`, 'ticker-accent'],
+        ['이 기록을 갈아치웠다냥', 'ticker-good'],
+      ], { id: '21-today-count', category: 'achievement', tier: 'broad' }));
+    }
+    // 방금 막 기록을 올린 사람 (실시간감)
+    const justNow = rows
+      .map((r) => ({ r, t: tickerTimeMs(r.ts) }))
+      .filter((x) => x.t && Date.now() - x.t < 2 * 60 * 60 * 1000)
+      .sort((a2, b2) => b2.t - a2.t)[0];
+    if (justNow) {
+      const mins = Math.max(1, Math.round((Date.now() - justNow.t) / 60000));
+      messages.push(tickerMessage('⚡', [
+        [`${justNow.r.nickname}님이`, 'ticker-name'],
+        [mins < 60 ? `${mins}분 전` : `${Math.round(mins / 60)}시간 전`, 'ticker-accent'],
+        ['방금 뛰고 갔다냥', 'ticker-good'],
+      ], { id: '22-just-played', category: 'change', event: true, actors: [justNow.r.nickname] }));
+    }
+    // 이번 주 참여 인원 — 적으면 적은 대로 "지금 들어오면 순위권" 이라는 신호가 된다
+    if (rows.length) {
+      messages.push(rows.length <= 12
+        ? tickerMessage('🎣', [
+            ['이번 주', 'ticker-label'],
+            [`${rows.length}명`, 'ticker-accent'],
+            ['참여 중 · 지금이 순위 올릴 기회다냥', 'ticker-good'],
+          ], { id: '23-few-players', category: 'achievement', tier: 'broad' })
+        : tickerMessage('🐱', [
+            ['이번 주', 'ticker-label'],
+            [`${rows.length}명`, 'ticker-accent'],
+            ['이 겨루는 중이다냥', 'ticker-good'],
+          ], { id: '23-many-players', category: 'achievement', tier: 'broad' }));
     }
 
     const prevRanks = context.prevRanks || {};
@@ -13564,7 +13616,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788178400; // v4.17 — 젤리 고양이 3종 한정 + 카드 확대 + 프로필 반영
+const BUILD = 1788181900; // v4.18 — 젤리 배달 팝업 + 전광판 소식 다양화
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14093,6 +14145,58 @@ function showEarlyMemberGiftPopup(amount) {
   overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
   document.body.appendChild(overlay);
 }
+
+// ══════════════════════════════
+//  🍮 운영자 젤리 선물 배달 안내
+//  어드민이 젤리를 지급하면 지갑에 giftPending(개수)이 남는다. 다음 접속 때 이 팝업을
+//  띄우고 서버(ackJellyGift)가 표시를 지운다 — 지갑은 서버 전용 쓰기라 클라가 못 지운다.
+//  기기를 바꿔도 서버 기준이라 딱 한 번만 뜬다.
+// ══════════════════════════════
+function showJellyGiftPopup(amount) {
+  if (document.getElementById('jellyGiftPopup')) return;
+  const n = Math.max(1, Number(amount) || 0);
+  const overlay = document.createElement('div');
+  overlay.id = 'jellyGiftPopup';
+  overlay.className = 'overlay';
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '520';
+  // 젤리샵 오픈 팝업과 같은 '젤리모자 쓴 파란 목도리냥' — 젤리 소식은 늘 같은 얼굴로.
+  overlay.innerHTML = `
+    <div class="overlay-card jopen-card" role="dialog" aria-modal="true" aria-label="젤리 선물 도착">
+      <div class="jopen-cat" aria-hidden="true">
+        <span class="jopen-jelly">🍮</span>
+        <img src="assets/img-03-c.png" alt="">
+      </div>
+      <div class="jopen-title">젤리 배달 왔다냥 <span class="jopen-heart">♥︎</span></div>
+      <div class="jopen-msg">오잉집사가 젤리를 보냈다냥!<br>맛있게 쓰라냥 🎁</div>
+      <div class="jopen-amount">🍮 젤리 +${n}개</div>
+      <div class="jopen-btns">
+        <button type="button" class="jopen-btn jopen-close" id="jgiftCloseBtn">닫기</button>
+        <button type="button" class="jopen-btn jopen-go" id="jgiftGoBtn">젤리샵 바로가기 →</button>
+      </div>
+    </div>`;
+  const close = () => overlay.remove();
+  overlay.querySelector('#jgiftCloseBtn').addEventListener('click', close);
+  overlay.querySelector('#jgiftGoBtn').addEventListener('click', () => { close(); openJellyShop(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.body.appendChild(overlay);
+}
+
+async function maybeShowJellyGift() {
+  if (IS_APP || !isUidLinked() || !MY_UID) return;
+  try {
+    const snap = await getDoc(doc(db, 'jelly_wallet', MY_UID));
+    if (!snap.exists()) return;
+    const pending = Number(snap.data().giftPending) || 0;
+    if (pending <= 0) return;
+    // 먼저 지우고 띄운다 — 팝업을 닫지 않고 나가도 다음에 또 뜨지 않는다.
+    // 지우기가 실패하면 팝업도 띄우지 않는다(다음 접속에 정상적으로 다시 시도).
+    const res = await callShopAction('ackJellyGift');
+    const acked = Number(res && res.acked) || 0;
+    if (acked > 0) showJellyGiftPopup(acked);
+  } catch (e) { console.warn('젤리 선물 확인 실패:', e); }
+}
+setTimeout(() => { maybeShowJellyGift(); }, 5200);
 
 // 기존 회원 감사 젤리 — 상점 오픈 후 서버가 대상 계정에 1회 합산하고 안내 팝업을 보여준다.
 async function maybeClaimEarlyMemberGift() {
