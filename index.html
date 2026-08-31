@@ -13692,7 +13692,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788183600; // v4.23 — 옛 닉네임 문서가 주문 발송 아이템을 가리던 문제
+const BUILD = 1788183900; // v4.23 — 주문 발송 아이템 표시 + 업데이트 배너는 큰 변경만
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13738,6 +13738,9 @@ function showNewVersionBanner() {
   // location.reload() 는 브라우저 HTTP 캐시를 그대로 다시 쓸 수 있어, 눌러도 같은 옛 화면이
   // 나오는 경우가 있다. 쿼리를 바꿔 '다른 주소'로 만들면 반드시 새로 받는다.
   banner.onclick = () => {
+    // 이 안내로 새로고침했다는 표시. 캐시 때문에 옛 index.html 이 다시 떠도(그래서 BUILD 가
+    // 그대로여도) 같은 안내를 또 띄우지 않는다 — "새로고침해도 계속 뜬다"는 보고의 원인.
+    try { localStorage.setItem(VERSION_NAG_KEY, String(notifyBuildSeen || 0)); } catch {}
     const base = location.pathname.replace(/[?#].*$/, '');
     location.replace(base + '?v=' + Date.now());
   };
@@ -13748,6 +13751,22 @@ function showNewVersionBanner() {
 function hideNewVersionBanner() {
   const banner = document.getElementById('newVersionBanner');
   if (banner) banner.style.transform = 'translate(-50%, -120%)';
+}
+// 상단 새로고침 배너는 '큰 변경'에만 띄운다.
+//
+// 예전엔 build 가 오르기만 하면 떴다. 그런데 build 는 배포마다 오르므로, 하루에 자잘한
+// 수정을 여러 번 내보내면 그때마다 배너가 떠서 성가시다(2026-08-31 운영 보고).
+// 그래서 version.json 에 notifyBuild 를 따로 둔다:
+//   · build       — 배포마다 오른다. 브라우저가 알아서 새 파일을 받으면 조용히 반영된다.
+//   · notifyBuild — 알릴 만한 변경일 때만 올린다. 이 값이 내 BUILD 보다 클 때만 배너.
+// notifyBuild 가 없는 옛 version.json 이면 배너를 띄우지 않는다(조용한 쪽이 안전하다).
+const VERSION_NAG_KEY = 'oeing_update_nag_v1';
+let notifyBuildSeen = 0;
+function shouldNagForUpdate(notifyBuild) {
+  if (!(notifyBuild > BUILD)) return false;
+  let acked = 0;
+  try { acked = Number(localStorage.getItem(VERSION_NAG_KEY)) || 0; } catch {}
+  return acked < notifyBuild; // 이미 이 안내로 새로고침을 눌렀으면 다시 조르지 않는다
 }
 async function checkForNewVersion() {
   // 앱 번들은 웹 새로고침으로 업데이트되지 않는다.
@@ -13766,8 +13785,10 @@ async function checkForNewVersion() {
   try {
     const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
     if (res.ok) {
-      const serverBuild = Number((await res.json()).build || 0);
-      if (serverBuild > BUILD) {
+      const data = (await res.json()) || {};
+      const notifyBuild = Number(data.notifyBuild || 0);
+      if (shouldNagForUpdate(notifyBuild)) {
+        notifyBuildSeen = notifyBuild;
         updateAvailable = true;
         showNewVersionBanner();
       }
@@ -13775,17 +13796,17 @@ async function checkForNewVersion() {
     }
   } catch (e) { console.warn('버전 파일 확인 실패, Firestore 로 재시도:', e); }
 
-  // version.json 을 못 읽는 환경(옛 배포·오프라인)에서는 기존 경로로 폴백한다.
+  // version.json 을 못 읽는 환경(오프라인·일시 장애)에서는 배너를 띄우지 않는다.
+  // 여기서는 '알릴 만한 변경인지'(notifyBuild)를 알 수 없어서, 예전처럼 build 만 보고
+  // 띄우면 자잘한 배포에도 배너가 떠 버린다 — 못 미더울 땐 조용한 쪽이 낫다.
+  // meta/appVersion 갱신은 어드민 통계 표시용이라 그대로 둔다.
   const canPublishBuild = location.protocol === 'https:'
     && (location.hostname === 'oinggame.com' || location.hostname === 'www.oinggame.com');
   try {
     const ref = doc(db, 'meta', 'appVersion');
     const snap = await getDoc(ref);
     const serverBuild = snap.exists() ? Number(snap.data().build || 0) : 0;
-    if (serverBuild > BUILD) {
-      updateAvailable = true;
-      showNewVersionBanner();
-    } else if (BUILD > serverBuild && canPublishBuild) {
+    if (BUILD > serverBuild && canPublishBuild) {
       await setDoc(ref, { build: BUILD }, { merge: true });
     }
   } catch (e) { console.warn('버전 확인 실패:', e); }
