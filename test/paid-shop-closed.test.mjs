@@ -30,6 +30,8 @@ test('예전 스킨샵 자리의 젤리 입구는 초기 깜빡임 없이 JS 게
     '웹에서만 예전 스킨샵 자리의 버튼을 표시해야 함');
   assert.match(src, /supportTopBtn'\)\.addEventListener\('click', openJellyShop\)/,
     '상단 젤리 잔액을 누르면 젤리샵으로 가야 함');
+  assert.match(src, /if \(isUidLinked\(\)\)[\s\S]{0,4200}await loadJellyBalance\(\)[\s\S]{0,220}return;/,
+    '이미 연결된 기존 유저도 인증 뒤 서버 지갑 잔액으로 다시 확정해야 함');
 });
 
 test('젤리샵 안 서포터팩(990원) 박스가 숨겨져 있다', () => {

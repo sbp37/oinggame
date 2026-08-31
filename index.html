@@ -5116,6 +5116,9 @@ async function initAccountSystem() {
       //   "무조건" 최종 반영한다. self-heal이 실제 수정을 했든 no-op이든 항상 실행되며,
       //   await로 순서를 보장해 600ms 타이머의 이른 결과가 최종 UI를 덮어쓰지 못한다.
       try { await refreshMyCatSkin(); } catch {}
+      // 상단 젤리 입구는 초기 렌더 때 레거시 user_stats 값을 먼저 볼 수 있다.
+      // 인증·UID 연결 확인이 끝난 지금 서버 전용 jelly_wallet을 다시 읽어 실제 잔액으로 확정한다.
+      try { await loadJellyBalance(); } catch {}
       try { await refreshStartScreenFromServer(); } catch { try { renderStartScreenGoal(); } catch {} }
       return;
     }
