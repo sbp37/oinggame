@@ -4659,9 +4659,18 @@ async function adoptLegacyIfEligible() {
 // 확인해 아닐 때는 서버 호출조차 하지 않는다. 소유권 판정은 서버가 3중 조건
 // (예약+무주인 / PIN secret 없음 / 이 uid 가 그 닉으로 제출한 game_sessions 존재)으로
 // 최종 판단하므로 남의 닉을 가져올 수는 없다.
+// 전수 조사(2026-08-31) 결과 미연결은 두 종류였다 — 자동입양만으로는 한쪽만 풀린다.
+//  · nickname_lookup 이 '예약(reserved)' 문서  → 자동입양이 푼다 (55명)
+//  · nickname_lookup 이 아예 없음              → 예약이 아니라 사전 필터에서 탈락 (6명)
+// 뒤쪽은 그 닉네임이 비어 있다는 뜻이라, 이미 쓰고 있는 연결 루틴이 정상적으로 선점할
+// 수 있다(ensureLinkedForReferral — 저장된 핀이 있으면 복구, 없으면 빈 닉을 선점).
+// 선점은 보안 규칙이 '기존 lookup 덮어쓰기 금지'로 막으므로 남의 닉은 못 가져온다.
 async function autoAdoptLegacy() {
   if (IS_APP || !MY_UID || isUidLinked() || !loadNickname()) return false;
-  try { return await adoptLegacyIfEligible(); } catch { return false; }
+  try {
+    if (await adoptLegacyIfEligible()) return true;
+  } catch {}
+  try { return await ensureLinkedForReferral(); } catch { return false; }
 }
 setTimeout(() => { autoAdoptLegacy(); }, 3000);
 
@@ -13644,7 +13653,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788182700; // v4.21 — 미연결 레거시 계정 자동 연결
+const BUILD = 1788183000; // v4.21 — 미연결 레거시 계정 자동 연결(lookup 없는 유형 포함)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

@@ -29,15 +29,23 @@ const STUBS = {
     // nickname_lookup/{닉} 만 '예약+무주인'으로 존재 — 자동입양 사전 필터가 통과해야 한다.
     export const getDoc=async(ref)=>{
       const p=(ref&&ref.__path)||'';
-      if(p.startsWith('nickname_lookup/')) return {exists:()=>true,data:()=>({reserved:true,nickname:'사이다'})};
+      if(p.startsWith('nickname_lookup/')){
+        if(localStorage.getItem('__noLookup')) return {exists:()=>false,data:()=>({})};
+        return {exists:()=>true,data:()=>({reserved:true,nickname:'사이다'})};
+      }
       return {exists:()=>false,data:()=>({})};
     };
     export const getDocs=async()=>({docs:[],forEach:()=>{},empty:true,size:0});
-    export const setDoc=async()=>{};export const deleteDoc=async()=>{};export const updateDoc=async()=>{};
+    export const setDoc=async(ref)=>{(window.__writes=window.__writes||[]).push((ref&&ref.__path)||'');};
+    export const deleteDoc=async()=>{};export const updateDoc=async()=>{};
     export const addDoc=async()=>({id:'x'});
     export const query=(c)=>c;export const where=()=>({});export const orderBy=()=>({});export const limit=()=>({});
     export const writeBatch=()=>({set(){},update(){},delete(){},commit:async()=>{}});
-    export const runTransaction=async(d,fn)=>fn({get:async()=>({exists:()=>false,data:()=>({})}),set(){},update(){},delete(){}});`,
+    // 선점은 트랜잭션 안에서 tx.set 으로 쓴다 — 그 쓰기도 기록해야 검증이 된다.
+    export const runTransaction=async(d,fn)=>fn({
+      get:async()=>({exists:()=>false,data:()=>({})}),
+      set(ref){(window.__writes=window.__writes||[]).push((ref&&ref.__path)||'');},
+      update(){},delete(){}});`,
   'firebase-auth.js': `const u={uid:'u1'};export const getAuth=()=>({currentUser:u});export const signInAnonymously=async()=>({user:u});export const onAuthStateChanged=(a,cb)=>{setTimeout(()=>cb(u),5);return()=>{}};export const signOut=async()=>{};export const signInWithCustomToken=async()=>({user:u});`,
   'firebase-functions.js': `
     export const getFunctions=()=>({});
@@ -86,6 +94,23 @@ test('미연결 레거시 계정은 접속만 해도 자동 연결을 시도한�
   }, (p) => p.evaluate(() => window.__calls || []));
   const adopt = calls.filter(c => c.fn === 'restoreAccount' && c.action === 'adoptLegacy');
   assert.equal(adopt.length, 1, `adoptLegacy 가 한 번 호출돼야 합니다 (호출: ${JSON.stringify(calls)})`);
+});
+
+test('lookup 문서가 아예 없는 미연결 계정도 연결을 시도한다 (예약 문서만 챙기면 6명이 빠진다)', async () => {
+  // 전수 조사에서 나온 두 번째 유형: nickname_lookup 이 없어 '예약'이 아니라
+  // 자동입양 사전 필터에서 탈락한다. 이 경우 닉네임이 비어 있다는 뜻이므로
+  // 기존 연결 루틴(빈 닉 선점)으로 넘어가야 한다.
+  const calls = await withPage(() => {
+    localStorage.setItem('oeing_nickname_v1', '에이팆대산');
+    localStorage.setItem('__noLookup', '1'); // 스텁이 lookup 을 없는 것으로 취급
+  }, (p) => p.evaluate(() => ({ calls: window.__calls || [], writes: window.__writes || [] })));
+  // 자동입양은 사전 필터에서 멈춘다 — 서버 호출이 없어야 한다(불필요한 호출 방지).
+  const adopt = calls.calls.filter(c => c.action === 'adoptLegacy');
+  assert.equal(adopt.length, 0, 'lookup 이 없으면 자동입양 서버 호출은 없어야 합니다');
+  // 대신 선점 경로가 실제로 돌아야 한다 — nickname_lookup 선점 쓰기가 남는다.
+  const claimed = calls.writes.filter(p => p.startsWith('nickname_lookup/'));
+  assert.ok(claimed.length > 0,
+    `빈 닉 선점(nickname_lookup 쓰기)이 일어나야 합니다 (쓰기: ${JSON.stringify(calls.writes)})`);
 });
 
 test('이미 연결된 계정에는 자동 연결을 호출하지 않는다 (불필요한 서버 호출 0)', async () => {
