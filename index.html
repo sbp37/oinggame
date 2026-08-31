@@ -5490,7 +5490,7 @@ async function loadWeeklyRankings() {
 }
 
 // ══════════════════════════════
-//  메인 냥전광판 — 서버에 실제로 있는 주간 점수와 내 누적 기록만 사용한다.
+//  메인 냥전광판 — 웹에서는 서버에 실제로 있는 '이번 주' 점수만 사용한다.
 //  공개 콤보·전체 출석자 수처럼 현재 데이터로 검증할 수 없는 문구는 만들지 않는다.
 // ══════════════════════════════
 let _homeTickerPersonal = [];
@@ -5893,15 +5893,16 @@ async function initHomeTicker() {
     return; // 앱은 Play 게임즈 랭킹 화면에서 받은 데이터로만 갱신한다.
   }
   try {
-    // 두 랭킹을 모두 받은 뒤 한 번만 렌더해 로딩 중 흐름이 초기화되지 않게 한다.
-    const [weekly, allTime, weeklySnapshot, todayNewSet] = await Promise.all([
-      loadWeeklyRankings(), loadRankings(), getWeeklyRankSnapshot(), loadTodayNewUsers(),
+    // 웹 전광판은 현재 주차 자료만 받은 뒤 한 번 렌더한다.
+    // all-time 랭킹을 함께 읽지 않아 지난주 최고점·누적 스트릭이 섞이지 않는다.
+    const [weekly, weeklySnapshot, todayNewSet] = await Promise.all([
+      loadWeeklyRankings(), getWeeklyRankSnapshot(), loadTodayNewUsers(),
     ]);
     const prevRanks = weeklySnapshot && weeklySnapshot.weekId === getWeekId()
       ? (weeklySnapshot.ranks || {})
       : {};
+    _homeTickerAllTime = [];
     updateHomeTickerFromRankingRows(weekly, 'weekly', false, { prevRanks, todayNewSet });
-    updateHomeTickerFromRankingRows(allTime, 'all', false);
     rebuildHomeTicker();
   } catch {}
 }
