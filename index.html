@@ -1853,6 +1853,49 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 
 /* ── 닉네임 스킨 ── */
 .nick-gold { color:#fbbf24; }
+/* ══ 젤리샵 오픈 기념 팝업 — 젤리샵 점원과 같은 '젤리모자 쓴 파란 목도리냥' ══
+   상점(shop-v2-preview.html)의 .cat-wrap/.cat-jelly 와 같은 구성이다:
+   얼굴은 assets/img-03.png, 모자는 🍮 를 머리 위에 살짝 기울여 얹는다.
+   팝업에서는 얼굴이 크므로 같은 비율(모자 ≈ 얼굴의 0.43배)로 키웠다. */
+.jopen-cat {
+  position: relative; width: 116px; height: 120px; margin: 0 auto 12px;
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: jopenCatBob 3s ease-in-out infinite;
+}
+.jopen-cat img {
+  width: 116px; height: 116px; object-fit: contain; display: block;
+  filter: drop-shadow(0 3px 12px rgba(73,175,228,0.24));
+}
+.jopen-jelly {
+  position: absolute; z-index: 2; left: 50%; top: 4px;
+  transform: translateX(-50%) rotate(-4deg);
+  font-size: 50px; line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.38)); pointer-events: none;
+}
+@keyframes jopenCatBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .jopen-cat { animation: none; } }
+.jopen-card { max-width: 330px; text-align: center; padding: 26px 22px 20px; }
+.jopen-title { font-size: 19px; font-weight: 900; color: var(--text); margin-bottom: 8px; letter-spacing: -0.3px; }
+.jopen-msg { font-size: 14.5px; font-weight: 700; line-height: 1.62; color: var(--muted); }
+.jopen-msg b { color: var(--blue-light); }
+.jopen-heart { color: #ff8fa8; font-weight: 900; }
+.jopen-amount {
+  margin: 14px auto 0; padding: 9px 14px; border-radius: 12px; display: inline-block;
+  background: rgba(251,191,36,0.13); border: 1px solid rgba(251,191,36,0.32);
+  font-size: 18px; font-weight: 900; color: #f3cf91; letter-spacing: -0.2px;
+}
+.jopen-btns { display: flex; gap: 8px; margin-top: 18px; }
+.jopen-btn {
+  flex: 1; padding: 12px 8px; border-radius: 12px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 800; letter-spacing: -0.2px;
+  white-space: nowrap; transition: filter 0.15s ease;
+}
+.jopen-btn:active { filter: brightness(0.92); }
+.jopen-close { flex: 0.72; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); }
+.jopen-go { border: none; background: linear-gradient(135deg, #4a8fd1, #6bb0ea); color: #071a2b; box-shadow: 0 3px 10px rgba(74,143,209,0.32); }
+/* 라이트 모드에서도 .overlay-card 는 어두운 색 그대로다(이 게임의 기존 관례) —
+   닫기 버튼만 밝게 바꾸면 어두운 카드 위에 흰 버튼이 떠 보인다. 별도 규칙을 두지 않는다. */
+
 .nick-lemon { color:#ffd866; }
 .nick-pink { color:#f472b6; }
 .nick-mint { color:#34d399; }
@@ -13574,7 +13617,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788165400; // v4.13 — 랭킹에 젤리샵 아이템 반영 + 시상대 스킨 + 공유 초대코드 보장
+const BUILD = 1788168300; // v4.14 — 젤리샵 오픈 팝업 + 가격 인하(효과 60·테두리 80)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -13728,12 +13771,12 @@ function skinClassFor(key) {
 }
 // 젤리 전용 프레임 카탈로그 — 서버 shopAction(JELLY_FRAME_PRICES)과 가격·key 동일해야 함
 const JELLY_FRAME_CATALOG = [
-  { key:'neon',   name:'네온 프레임',     price:120, cls:'frame-neon' },
-  { key:'sakura', name:'벚꽃 프레임',     price:120, cls:'frame-sakura' },
-  { key:'aurora', name:'오로라 프레임',   price:120, cls:'frame-aurora' },
-  { key:'paw',    name:'발바닥 프레임',   price:120, cls:'frame-paw' },
-  { key:'royal',  name:'로얄 프레임',     price:120, cls:'frame-royal' },
-  { key:'crown',  name:'황금왕관 프레임', price:120, cls:'frame-crown' },
+  { key:'neon',   name:'네온 프레임',     price:80,  cls:'frame-neon' },
+  { key:'sakura', name:'벚꽃 프레임',     price:80,  cls:'frame-sakura' },
+  { key:'aurora', name:'오로라 프레임',   price:80,  cls:'frame-aurora' },
+  { key:'paw',    name:'발바닥 프레임',   price:80,  cls:'frame-paw' },
+  { key:'royal',  name:'로얄 프레임',     price:80,  cls:'frame-royal' },
+  { key:'crown',  name:'황금왕관 프레임', price:80,  cls:'frame-crown' },
 ];
 function frameClassFor(key) {
   const f = FRAME_CATALOG.find(x => x.key === key) || JELLY_FRAME_CATALOG.find(x => x.key === key);
@@ -14053,15 +14096,31 @@ function showEarlyMemberGiftPopup(amount) {
   overlay.className = 'overlay';
   overlay.style.display = 'flex';
   overlay.style.zIndex = '520';
+  // 파란 목도리냥 얼굴에 젤리(푸딩) 모자를 씌운다. 별도 이미지 파일을 만들지 않고
+  // 기존 얼굴 에셋 위에 SVG 푸딩을 얹어 합성한다 — 색·모양을 상점 젤리와 맞추기 쉽고
+  // 나중에 전용 그림이 생기면 이 블록만 <img> 하나로 바꾸면 된다.
   overlay.innerHTML = `
-    <div class="overlay-card" role="dialog" aria-modal="true" aria-label="초기 멤버 선물" style="max-width:350px;text-align:center;padding:24px 20px 18px;">
-      <div style="font-size:42px;line-height:1;margin-bottom:10px;">🎁</div>
-      <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:7px;">함께해줘서 고맙다냥!</div>
-      <div style="font-size:14px;font-weight:700;line-height:1.55;color:var(--muted);">초기 멤버 선물로<br><b style="font-size:19px;color:#f3cf91;">🍮 젤리 +${Number(amount) || 20}개</b>를 드렸어요.</div>
-      <button type="button" class="action-btn" style="margin-top:18px;width:100%;">선물 받기</button>
+    <div class="overlay-card jopen-card" role="dialog" aria-modal="true" aria-label="젤리샵 오픈 선물">
+      <div class="jopen-cat" aria-hidden="true">
+        <span class="jopen-jelly">🍮</span>
+        <img src="assets/img-03.png" alt="">
+      </div>
+      <div class="jopen-title">젤리샵 오픈 기념 🎉</div>
+      <div class="jopen-msg">
+        젤리를 보관함에 <b>숑</b> 넣어뒀다냥~<br>꾸며보라냥 <span class="jopen-heart">♥︎</span>
+      </div>
+      <div class="jopen-amount">🍮 젤리 +${Number(amount) || 20}개</div>
+      <div class="jopen-btns">
+        <button type="button" class="jopen-btn jopen-close" id="jopenCloseBtn">닫기</button>
+        <button type="button" class="jopen-btn jopen-go" id="jopenGoBtn">젤리샵 바로가기 →</button>
+      </div>
     </div>`;
   const close = () => overlay.remove();
-  overlay.querySelector('button').addEventListener('click', close);
+  overlay.querySelector('#jopenCloseBtn').addEventListener('click', close);
+  overlay.querySelector('#jopenGoBtn').addEventListener('click', () => {
+    close();
+    openJellyShop();
+  });
   overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
   document.body.appendChild(overlay);
 }
