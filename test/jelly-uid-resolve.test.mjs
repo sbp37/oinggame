@@ -157,8 +157,10 @@ test('⑦ 초기 멤버 선물 요청은 계정 연결이 아니라 uid 만 요�
   const body = game.slice(start, game.indexOf('\n}', start))
     .split('\n').filter(line => !line.trim().startsWith('//')).join('\n');
   assert.match(body, /if \(!MY_UID\) return;/, '로그인(uid) 여부만 확인해야 합니다');
-  assert.doesNotMatch(body, /isUidLinked\(\)/,
-    '계정 연결(isUidLinked) 조건이 다시 들어오면 레거시 초기 멤버가 또 못 받습니다');
+  // 금지되는 건 '연결 안 됐으면 아예 묻지 않는다'는 조기 반환이다.
+  // (연결 여부를 다른 데 쓰는 건 정상 — 아래 ⑩ 이 그 쓰임을 고정한다.)
+  assert.doesNotMatch(body, /if \(!isUidLinked\(\)\)\s*return/,
+    '계정 연결 조건으로 요청을 막으면 레거시 초기 멤버가 또 못 받습니다');
   assert.match(body, /callShopAction\('claimEarlyMember'\)/);
 });
 
@@ -191,4 +193,28 @@ test('⑧ 자동 연결을 접속할 때와 젤리샵 진입 때 시도한다', 
   // 사실과 다른 옛 안내("점수를 한 번 등록하면 자동으로 연결돼요")는 남아 있으면 안 된다 —
   // 점수 제출은 계정 연결을 만들지 않는다.
   assert.doesNotMatch(game, /점수를 한 번 등록하면 자동으로 연결돼요/);
+});
+
+// 부르는 곳이 넷이다(접속 3초 / 젤리샵 진입 / 점수 등록 직후 / 친구초대 보상 확인).
+// 겹쳐 돌면 서버 자동입양 트랜잭션이 서로를 'race'로 밀어내 둘 다 실패할 수 있다.
+test('⑨ 자동 연결은 진행 중인 시도를 공유해 중복 실행되지 않는다', () => {
+  const game = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const start = game.indexOf('async function autoAdoptLegacy(');
+  const body = game.slice(start, game.indexOf('\n}', start));
+  assert.match(body, /if \(autoAdoptInFlight\) return autoAdoptInFlight;/,
+    '진행 중인 시도가 있으면 그 약속을 같이 기다려야 합니다');
+  assert.match(body, /finally \{ autoAdoptInFlight = null; \}/,
+    '끝나면 반드시 비워야 다음 시도가 막히지 않습니다');
+});
+
+// 기기를 바꿔 익명 계정이 새로 발급된 옛 유저는, 연결 전에 물으면 서버가 '대상 아님'을
+// 준다(이 계정 자체로는 근거가 없다). 그때 '확인 완료'로 못을 박아버리면 연결이 끝난
+// 뒤에도 영영 못 받는다 — 연결된 계정일 때만 못을 박아야 한다.
+test('⑩ 초기 멤버 선물: 연결 전에 받은 "대상 아님"으로는 다시 묻기를 포기하지 않는다', () => {
+  const game = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const start = game.indexOf('async function maybeClaimEarlyMemberGift(');
+  const body = game.slice(start, game.indexOf('\n}\nsetTimeout', start));
+  assert.match(body, /await autoAdoptLegacy\(\)/, '묻기 전에 계정 연결을 끝내야 합니다');
+  assert.match(body, /r === 'not-early-member' && isUidLinked\(\)/,
+    '연결된 계정일 때만 확인 완료로 표시해야 합니다');
 });

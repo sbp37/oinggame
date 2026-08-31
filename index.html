@@ -4527,7 +4527,14 @@ async function pollReferralReward() {
   }
 }
 async function maybeClaimReferralReward() {
-  if (IS_APP || !isUidLinked()) return null;
+  if (IS_APP) return null;
+  // 초대받아 온 신규 유저가 아직 미연결이면 예전엔 여기서 그냥 돌아갔다 — 초대한 사람도
+  // 초대받은 사람도 젤리를 영영 못 받는다. 보상은 닉네임 소유가 확인돼야 지급되므로,
+  // 포기하지 말고 연결부터 한 번 시도한다(실패하면 다음 판에 다시 시도된다).
+  if (!isUidLinked()) {
+    await autoAdoptLegacy().catch(() => false);
+    if (!isUidLinked()) return null;
+  }
   try {
     const result = await callReferralAction('claim');
     if (result && typeof result.balance === 'number') updateJellyDisplay(result.balance);
@@ -4665,12 +4672,20 @@ async function adoptLegacyIfEligible() {
 // 뒤쪽은 그 닉네임이 비어 있다는 뜻이라, 이미 쓰고 있는 연결 루틴이 정상적으로 선점할
 // 수 있다(ensureLinkedForReferral — 저장된 핀이 있으면 복구, 없으면 빈 닉을 선점).
 // 선점은 보안 규칙이 '기존 lookup 덮어쓰기 금지'로 막으므로 남의 닉은 못 가져온다.
+// 부르는 곳이 여럿이라(접속 3초 / 젤리샵 진입 / 점수 등록 직후 / 친구초대 보상 확인)
+// 같은 순간에 두 번 돌 수 있다. 그러면 서버 자동입양 트랜잭션이 서로를 'race'로 밀어내
+// 둘 다 실패할 수 있으므로, 진행 중인 시도가 있으면 그 약속을 같이 기다린다.
+let autoAdoptInFlight = null;
 async function autoAdoptLegacy() {
   if (IS_APP || !MY_UID || isUidLinked() || !loadNickname()) return false;
-  try {
-    if (await adoptLegacyIfEligible()) return true;
-  } catch {}
-  try { return await ensureLinkedForReferral(); } catch { return false; }
+  if (autoAdoptInFlight) return autoAdoptInFlight;
+  autoAdoptInFlight = (async () => {
+    try {
+      if (await adoptLegacyIfEligible()) return true;
+    } catch {}
+    try { return await ensureLinkedForReferral(); } catch { return false; }
+  })();
+  try { return await autoAdoptInFlight; } finally { autoAdoptInFlight = null; }
 }
 setTimeout(() => { autoAdoptLegacy(); }, 3000);
 
@@ -8162,6 +8177,16 @@ async function _shadowSubmitSession(nickname) {
       // 양쪽 +5를 지급한다. 점수 저장 화면을 늦추지 않도록 별도 비동기로 확인한다.
       if (data && data.decision === 'accepted') {
         setTimeout(() => { maybeClaimReferralReward().catch(() => {}); }, 0);
+      }
+      // 아직 계정이 연결 안 된 기기라면 바로 지금 연결을 시도한다.
+      //
+      // 자동입양의 마지막 관문은 "이 uid 가 그 닉네임으로 제출한 game_sessions 가 있는가"인데,
+      // 세션은 30일 뒤 만료된다(expireAt). 그래서 오래 쉬다 돌아온 유저는 접속 직후 시도가
+      // '기록 없음'으로 떨어지고, 한 판 하고 나서야 근거가 생긴다 — 방금 그 한 판이 여기다.
+      // 이 자리에서 한 번 더 하지 않으면 그 유저는 '다음 접속'까지 미연결로 남는다.
+      // 점수 저장 화면을 늦추지 않도록 별도 비동기로 돌리고, 실패는 조용히 넘긴다.
+      if (data && !isUidLinked()) {
+        setTimeout(() => { autoAdoptLegacy().catch(() => {}); }, 0);
       }
       if (attempt > 0) console.info(`점수 등록 성공 (재시도 ${attempt}회차)`);
       return data;
@@ -13653,7 +13678,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788183000; // v4.21 — 미연결 레거시 계정 자동 연결(lookup 없는 유형 포함)
+const BUILD = 1788183300; // v4.22 — 계정 자동 연결 상시화 + 초기 멤버 선물 누락 해소
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14252,6 +14277,10 @@ async function maybeClaimEarlyMemberGift() {
     // game_sessions 또는 Auth 계정 생성 시각. 지급 멱등도 지갑 플래그가 보장한다.
     // 그러니 로그인(uid)만 있으면 물어보게 하고, 판단은 서버에 맡긴다.
     if (!MY_UID) return;
+    // 계정 연결부터 끝내고 묻는다. 기기를 바꿔 익명 계정이 새로 발급된 옛 유저는 이 계정
+    // 자체로는 근거가 없어서(세션도 계정 생성 시각도 전부 기준 이후) 연결 전에 물으면
+    // '대상 아님'이 나온다 — 연결돼야 서버가 닉네임 소유를 근거로 인정해 준다.
+    await autoAdoptLegacy().catch(() => false);
     const res = await callShopAction('claimEarlyMember');
     localStorage.setItem('oeing_early_gift_v1', '1');
     localStorage.setItem('oeing_early_gift_check_v2', '1');
@@ -14263,9 +14292,12 @@ async function maybeClaimEarlyMemberGift() {
       }
     }
   } catch (e) {
-    // not-early-member(신규 계정) 등 — 다시 묻지 않음
+    // not-early-member(진짜 신규 계정) — 다시 묻지 않는다.
+    //  단, 아직 계정 연결이 안 된 상태의 '대상 아님'은 최종 답이 아니다. 연결이 끝나면
+    //  서버가 닉네임 소유를 근거로 다시 판단해 대상이 될 수 있기 때문이다. 여기서 확인
+    //  완료로 표시해 버리면 그 유저는 영영 못 받는다 — 연결된 계정일 때만 못을 박는다.
     const r = e && e.details && e.details.reason;
-    if (r === 'not-early-member') {
+    if (r === 'not-early-member' && isUidLinked()) {
       try {
         localStorage.setItem('oeing_early_gift_v1', '1');
         localStorage.setItem('oeing_early_gift_check_v2', '1');
