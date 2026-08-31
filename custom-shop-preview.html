@@ -112,6 +112,37 @@ function createCustomOrder(){
   if(orderType==='bundle')return{...common,effect:nickKey,frame:frameKey,catSkin:catKey,label:nickName+' + '+frameName+' + '+catName,price:2980};
   return{...common,effect:nickKey,frame:frameKey,label:nickName+' + '+frameName,price:1990};
 }
+// ── 주문 선접수 ──
+// 결제(카카오페이 QR)에는 webhook이 없어서, 예전엔 "결제 후 게임으로 복귀"해야만 주문이
+// 서버에 접수됐다. 결제만 하고 탭을 닫으면 입금은 있는데 주문함이 비는 운영 구멍
+// (2026-08-31 검수 지적). 이제 결제 버튼을 누르는 순간 pending 주문을 먼저 서버에 만든다.
+// 서버는 checkoutId 로 멱등이라 복귀 흐름의 재접수는 duplicate 로 무해하게 흡수되고,
+// 입금 없는 주문은 어드민 주문함에서 취소하면 된다. 로그인 안 된 기기면 조용히 건너뛰고
+// 기존 복귀 흐름이 그대로 안전망으로 남는다. 결제 이동(새 탭)은 이 호출을 기다리지 않는다.
+const ORDER_FIREBASE_CONFIG={
+  apiKey:'AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg',authDomain:'oing-game.firebaseapp.com',
+  projectId:'oing-game',storageBucket:'oing-game.firebasestorage.app',
+  messagingSenderId:'974542803508',appId:'1:974542803508:web:0b01327dd02c9b08b23061'
+};
+async function preRegisterOrder(order){
+  try{
+    const [appSdk,authSdk,fnSdk]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js'),
+    ]);
+    const app=appSdk.getApps().find(x=>x.name==='[DEFAULT]')||appSdk.initializeApp(ORDER_FIREBASE_CONFIG);
+    const auth=authSdk.getAuth(app);
+    await new Promise(resolve=>{
+      let settled=false;
+      const off=authSdk.onAuthStateChanged(auth,()=>{if(!settled){settled=true;off();resolve()}});
+      setTimeout(()=>{if(!settled){settled=true;off();resolve()}},1800);
+    });
+    if(!auth.currentUser)return; // 이 기기에서 게임을 안 해본 경우 — 복귀 흐름이 접수한다
+    const fns=fnSdk.getFunctions(app,'asia-northeast3');
+    await fnSdk.httpsCallable(fns,'shopAction')({action:'submitCustomOrder',...order});
+  }catch(e){console.warn('주문 선접수 실패(복귀 시 재접수됨):',e)}
+}
 payBtn.addEventListener('click',(event)=>{
   if(!checkoutMode){
     event.preventDefault();
@@ -120,6 +151,7 @@ payBtn.addEventListener('click',(event)=>{
   }
   const order=createCustomOrder();
   try{localStorage.setItem(CUSTOM_ORDER_PENDING_KEY,JSON.stringify(order))}catch{}
+  preRegisterOrder(order); // fire-and-forget — 결제 새 탭 이동을 막지 않는다
   paymentWindowOpenedAt=Date.now();
 });
 function returnToGameAfterPay(){

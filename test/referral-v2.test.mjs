@@ -31,6 +31,9 @@ test('젤리샵은 친구 초대 조건과 양쪽 +3, 자동 링크 버튼을 �
     assert.match(html, /친구 초대/);
     assert.match(html, /둘 다 \+3|나와 친구 모두/);
   }
-  assert.match(source, /jshopInviteBtn/);
+  // 초대 입구: 게임은 공유/초대 플로우(shareFriendInvite + 공유 링크의 ?r=), 상점 페이지는 inviteBtn.
+  // 옛 오버레이의 jshopInviteBtn 은 오버레이 제거(2026-08-31 검수)와 함께 사라졌다.
+  assert.match(source, /shareFriendInvite/);
+  assert.match(source, /\?r=\$\{encodeURIComponent\(code\)\}/);
   assert.match(preview, /id="inviteBtn"/);
 });

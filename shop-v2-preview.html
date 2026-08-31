@@ -647,7 +647,16 @@ async function loadShopAccount() {
     ]);
     const wallet = walletSnap.exists() ? walletSnap.data() : {};
     const skins = skinsSnap.exists() ? skinsSnap.data() : {};
-    state.bal = Math.max(0, Number(wallet.balance) || 0);
+    let balance = Math.max(0, Number(wallet.balance) || 0);
+    if (!walletSnap.exists()) {
+      // 지갑이 아직 없는 기존 유저(젤리 오픈 후 미플레이)는 옛 user_stats.jelly 가 잔액이다.
+      // 게임 헤더와 같은 폴백 — 지갑 생성 때 서버가 같은 값을 흡수하므로 표시만 미리 맞춘다.
+      try {
+        const statsSnap = await fsSdk.getDoc(fsSdk.doc(db,'user_stats',user.uid));
+        if (statsSnap.exists()) balance = Math.max(0, Number((statsSnap.data()||{}).jelly) || 0);
+      } catch (_) {}
+    }
+    state.bal = balance;
     state.owned.color = [];
     state.owned.fx = [];
     for (const key of Array.isArray(skins.ownedSkins) ? skins.ownedSkins : []) {

@@ -3224,151 +3224,7 @@ if ('serviceWorker' in navigator) {
 
 <!-- 닉네임 꾸미기(스킨) 오버레이 -->
 <!-- 젤리상점 -->
-<div id="jellyShopOverlay" class="overlay" style="display:none;">
-  <div class="jshop-card">
-    <span class="jshop-sparkle" style="top:12px; left:18px; font-size:11px;">✦</span>
-    <span class="jshop-sparkle" style="top:120px; left:14px; font-size:12px; animation-delay:1.2s;">✦</span>
-    <span class="jshop-sparkle" style="top:60px; right:24px; font-size:10px; animation-delay:0.6s;">✦</span>
-    <span class="jshop-sparkle" style="top:230px; right:16px; font-size:13px; animation-delay:1.8s;">✦</span>
-    <span class="jshop-sparkle" style="top:340px; left:30px; font-size:9px; animation-delay:0.9s;">✦</span>
-    <span class="jshop-sparkle" style="top:410px; right:34px; font-size:11px; animation-delay:2.1s;">✦</span>
-    <span class="jshop-sparkle" style="top:520px; left:20px; font-size:10px; animation-delay:1.5s;">✦</span>
 
-    <div class="jshop-title">
-      <div class="small">오잉냥이가 운영하는</div>
-      <h1>젤리상점 <span class="heart">♥</span></h1>
-    </div>
-    <div class="jshop-desc">🍮 게임하면 첫 판이 곧 출석이에요<br>모은 젤리로 닉네임과 랭킹을 꾸민다냥! 😺</div>
-
-    <div class="jshop-top-pill-row">
-      <div class="jshop-balance-chip"><span class="lbl">🍮</span> <span class="num" id="jshopBalanceText">내 젤리 0개</span></div>
-      <button class="jshop-claim-btn" id="jshopClaimBtn" style="display:none;" disabled>첫 게임이 곧 출석이에요</button>
-    </div>
-
-    <div class="jshop-rank-mock-label">↓ 랭킹에서는 이렇게 보여요</div>
-    <div class="jshop-rank-mock">
-      <span class="num">4</span>
-      <span class="nick2" style="color:#34d399;">오잉</span>
-      <span class="jshop-rank-preview-bubble rank-bubble-tag" id="jshopRankPreviewBubble" style="display:none;"></span>
-      <span class="score" style="margin-left:auto;">17,495pt</span>
-    </div>
-
-    <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">🎨</span><span class="name">닉네임 컬러</span><span class="price">🍮 30개</span></div>
-      <div class="jshop-dot-row">
-        <div class="jshop-color-dot" style="background:#ffd866;" data-skin="lemon"></div>
-        <div class="jshop-color-dot" style="background:#f472b6;" data-skin="pink"></div>
-        <div class="jshop-color-dot" style="background:#34d399;" data-skin="mint"></div>
-        <div class="jshop-color-dot" style="background:#a78bfa;" data-skin="purple"></div>
-        <div class="jshop-color-dot" style="background:#ffb36b;" data-skin="apricot"></div>
-        <div class="jshop-color-dot" style="background:#38bdf8;" data-skin="sky"></div>
-      </div>
-    </div>
-
-    <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">✨</span><span class="name">움직이는 효과</span><span class="price">🍮 60~100개</span></div>
-      <div class="jshop-effect-row">
-        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="rainbow" style="animation:jshopRainbow 2.5s linear infinite;">가나다</div><div class="jshop-item-price">🍮 60</div></div>
-        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="goldshine" style="color:#fbbf24; animation:jshopPulse 1.6s ease-in-out infinite;">가나다</div><div class="jshop-item-price">🍮 80</div></div>
-        <div class="jshop-effect-item"><div class="jshop-effect-chip" data-skin="diamond" style="color:#e0e7ff; text-shadow:0 0 8px rgba(224,231,255,0.9);">가나다</div><div class="jshop-item-price">🍮 100</div></div>
-      </div>
-    </div>
-    <style>
-      @keyframes jshopRainbow { 0%{color:#fbbf24} 25%{color:#f472b6} 50%{color:#60a5fa} 75%{color:#34d399} 100%{color:#fbbf24} }
-      @keyframes jshopPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-      .jshop-effect-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
-      .jshop-item-price { font-size:11px; font-weight:800; color:var(--muted); }
-      .jshop-frame-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-      .jshop-frame-chip { display:flex; flex-direction:column; align-items:center; gap:2px;
-        padding:7px 10px; border-radius:12px; cursor:pointer; min-width:64px;
-        border:1.5px solid var(--frame-color, var(--border));
-        box-shadow:0 0 8px var(--frame-color, transparent);
-        background:rgba(20,30,46,0.35); }
-      .jshop-frame-chip .fname { font-size:11.5px; font-weight:800; color:var(--ivory); }
-      .jshop-frame-chip .fprice { font-size:10.5px; font-weight:800; color:var(--muted); }
-      .jshop-frame-chip.owned .fprice::after { content:' · 보유'; color:#7fe895; }
-      .jshop-frame-chip.picked { outline:2px solid #7fe895; outline-offset:1px; }
-      body.light .jshop-frame-chip { background:rgba(255,255,255,0.55); }
-    </style>
-
-    <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">🖼️</span><span class="name">랭킹 프레임</span><span class="price">모두 🍮 120개</span></div>
-      <div class="jshop-frame-row">
-        <div class="jshop-frame-chip frame-moon" data-frame="moon"><span class="fname">달빛</span><span class="fprice">판매 종료</span></div>
-        <div class="jshop-frame-chip frame-neon" data-frame="neon"><span class="fname">네온</span><span class="fprice">🍮 120</span></div>
-        <div class="jshop-frame-chip frame-sakura" data-frame="sakura"><span class="fname">벚꽃</span><span class="fprice">🍮 120</span></div>
-        <div class="jshop-frame-chip frame-aurora" data-frame="aurora"><span class="fname">오로라</span><span class="fprice">🍮 120</span></div>
-        <div class="jshop-frame-chip frame-royal" data-frame="royal"><span class="fname">로얄</span><span class="fprice">🍮 120</span></div>
-      </div>
-      <div class="jshop-speech-free-note" style="margin-top:8px;">✓ 내 랭킹 줄 테두리가 은은하게 빛나요 · 한번 사면 영구 소유</div>
-    </div>
-
-    <!-- 랭킹 한마디 — 2026-08-30 젤리 개편에서 범위 제외(랭킹 공간 부족, 운영 결정).
-         서버(buyBubble)는 그대로 살아 있어 아래 display:none 한 줄만 지우면 원복된다. -->
-    <div class="jshop-section speech-box jshop-speech-box" style="display:none;">
-      <div class="jshop-section-head" style="margin-bottom:10px;"><span class="icon">💬</span><span class="name">랭킹 한마디</span><span class="price" id="jshopBubblePrice">🍮 20개</span></div>
-      <div class="jshop-speech-input-row">
-        <input class="jshop-speech-input" id="jshopBubbleInput" placeholder="예: 오늘은1등" maxlength="5">
-        <span class="jshop-speech-count" id="jshopBubbleCount">0/5자</span>
-      </div>
-      <div class="jshop-speech-free-note" id="jshopBubbleNote">✓ 최초 등록 후엔 랭킹에서 문구만 무료로 바로 수정</div>
-      <div class="jshop-apply-row">
-        <button class="jshop-off-btn" id="jshopBubbleOffBtn">끄기</button>
-        <button class="jshop-apply-btn" id="jshopBubbleApplyBtn">✓ 이대로 적용하기</button>
-      </div>
-    </div>
-
-    <div class="jshop-section">
-      <div class="jshop-section-head"><span class="icon">🍮</span><span class="name">젤리 모으는 법</span></div>
-      <div class="jshop-speech-free-note" style="text-align:left; line-height:1.9;">
-        · 하루 첫 게임(출석) <b>+1</b><br>
-        · 오늘의 목표 달성 <b>+2</b><br>
-        · 3일 연속 플레이 <b>+2</b> &nbsp;· 7일 연속마다 <b>+5</b><br>
-        · 친구가 닉네임 등록 후 정상 한 판 완료 <b>둘 다 +3</b>
-      </div>
-      <button type="button" class="jshop-invite-btn" id="jshopInviteBtn">💌 친구 초대 링크 보내기</button>
-    </div>
-    <div class="jshop-notice-text">✨ 더 다양한 꾸미기가 앞으로 계속 추가될 예정이에요!</div>
-
-    <!-- 서포터팩(990원 현금) — 닫아둠. 젤리샵은 랭킹의 '+ 말풍선' 탭으로도
-         열리므로, 유료 결제 경로를 완전히 막으려면 이 박스도 함께 숨긴다.
-         다시 열 때는 아래 display:none 한 줄만 지우면 원복. -->
-    <div class="jshop-support-box" style="display:none;">
-      <div class="jshop-support-ribbon">🐾⭐ 오잉게임 서포터팩 ⭐🐾</div>
-      <div class="jshop-support-body">
-        <div class="jshop-support-items">
-          <div class="jshop-support-item"><span class="ic">🌟</span>서포터 전용 별 배지</div>
-          <div class="jshop-support-item"><span class="ic">🍮</span>젤리 30개</div>
-          <div class="jshop-support-item"><span class="ic">💬</span>서포터 전용 말풍선 테두리</div>
-        </div>
-      </div>
-      <div class="jshop-support-price-row"><div class="jshop-support-price">990원</div></div>
-      <button id="jshopSupportBtn">⭐ 서포터팩 구매하기</button>
-      <div class="jshop-usage-guide">
-        <div class="jshop-usage-title">🐱 구매하시는 분 안내다냥</div>
-        <div class="jshop-usage-grid">
-          <div>· 카카오페이 송금 화면으로만<br>&nbsp;&nbsp;이동한다냥</div>
-          <div>· 카카오톡 채팅방은<br>&nbsp;&nbsp;안 생긴다냥</div>
-          <div>· 버튼 눌러도 자동으로<br>&nbsp;&nbsp;결제되지 않는다냥</div>
-          <div>· 입금 확인하고 나서<br>&nbsp;&nbsp;바로 챙겨드린다냥 💙</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="jshop-footer-box">
-      <div class="jshop-footer-text">
-        <p>🐱 오잉게임은 냥집사가 혼자 취미로 개발하고 운영하고 있어요!</p>
-        <p>여러분이 구매해주신 금액은 <b class="hl1">서버 유지</b>와 <b class="hl2">콘텐츠 제작</b>에 쓰여요.</p>
-        <p>구매하지 않아도 게임은 계속 즐길 수 있어요. 💙</p>
-      </div>
-    </div>
-
-    <div class="jshop-bottom-row">
-      <button class="jshop-close" id="jshopContactBtn" style="flex:1;">💬 문의하기</button>
-      <button class="jshop-close" id="jshopCloseBtn" style="flex:1;">닫기</button>
-    </div>
-  </div>
-</div>
 
 <div id="skinOverlay" class="overlay" style="display:none;">
   <div class="overlay-card" style="max-width:340px; text-align:center; max-height:85vh; overflow-y:auto;">
@@ -7975,20 +7831,6 @@ document.addEventListener('visibilitychange', () => {
   syncJellyShopEntry();
   if (ENABLE_JELLY_SHOP && !IS_APP) loadJellyBalance().catch(() => {});
 });
-// 🔍 젤리상점 디자인 미리보기 — ?preview=jelly 를 붙인 사람만 상점 화면을 볼 수 있다.
-// 상점이 정식 오픈(ENABLE_JELLY_SHOP=true)되기 전에 화면만 확인하는 용도라 "읽기 전용"이다:
-// 구매·출석 등 서버를 실제로 바꾸는 동작은 아래 jshopPreviewBlocked() 가 전부 막는다.
-// 링크를 모르는 일반 유저에게는 이 코드가 한 번도 실행되지 않는다(파라미터가 없으면 false).
-const JSHOP_PREVIEW = (() => {
-  try { return new URLSearchParams(location.search).get('preview') === 'jelly' && !window.Capacitor; }
-  catch { return false; }
-})();
-// 미리보기에서 서버를 건드리는 동작을 차단 — true 를 반환하면 호출부가 즉시 중단한다.
-function jshopPreviewBlocked() {
-  if (!JSHOP_PREVIEW) return false;
-  alert('🔍 디자인 미리보기예요.\n실제 구매·출석은 상점이 정식으로 열린 뒤에 할 수 있어요.');
-  return true;
-}
 const ENABLE_EXTRA_SHUFFLE = false;
 const ENABLE_DAILY_OING = false;
 const ENABLE_NEWBIE_AUTO_HINT = true;
@@ -8076,6 +7918,18 @@ async function _shadowStartSession() {
     uid = await ensureAnonymousAuth();
   } catch (e) { console.warn('세션 시작: 익명 인증 실패', e && (e.code || e.message)); return; }
   if (!uid) return; // 익명 인증 없으면 shadow 생략(게임/랭킹은 정상)
+  // 친구초대 링크로 막 들어온 기기라면 귀속(capture)을 세션 생성보다 먼저 끝낸다.
+  // 서버는 "게임 세션이 하나라도 생기기 전"의 귀속만 인정하므로, 링크를 열자마자
+  // 시작 버튼을 누른 유저의 초대 자격이 이 순서 경합으로 영구 소멸하는 걸 막는다.
+  // 대기 상한 2.5초 — 귀속 대기 코드가 없는 보통의 경우엔 검사 한 번이라 지연 0.
+  try {
+    if (localStorage.getItem(REFERRAL_PENDING_KEY)) {
+      await Promise.race([
+        capturePendingReferral(),
+        new Promise(r => setTimeout(r, 2500)),
+      ]);
+    }
+  } catch (_) { /* 귀속 실패는 다음 접속에 재시도 — 세션 시작을 막지 않는다 */ }
   // Cloud Functions 콜드스타트는 5~10초가 걸린다. 예전 재시도(0/0.4/1.2초)는 총 1.6초라
   // 콜드스타트를 전혀 못 넘겼고, 그 판들이 전부 '세션 없음'으로 어드민 검증 불가에 쌓였다.
   // (2026-08-30: 2주간 193건) 총 대기를 ~10초로 늘려 콜드스타트를 실제로 넘긴다.
@@ -10238,7 +10092,9 @@ async function endGame() {
         const prevList = await prevListPromise;
         try {
           const { stats, prev } = await updateUserStats(savedNick, playTimeSeconds, score, sessionCats, maxCombo);
-          updateJellyDisplay(stats.jelly);
+          // 젤리 잔액은 여기서 갱신하지 않는다 — user_stats.jelly 는 지갑 도입 후 낡은
+          // 미러라, 서버 제출 응답(official.jelly.balance)이 그리는 진짜 잔액을 잠깐
+          // 옛 값으로 덮는 깜빡임이 있었다(2026-08-31 검수 지적).
           const prevBestCombo = prev ? (prev.bestCombo || 0) : 0;
           if (maxCombo > prevBestCombo && maxCombo > 0) showComboRecordPop(maxCombo);
           maybeCelebrateOingLevelUp(stats, prev, 'game'); // 🎉 레벨업이면 다른 팝업과 안 겹치게 축하
@@ -10918,7 +10774,7 @@ document.getElementById('submitScore').addEventListener('click', async () => {
   try {
     const { stats, prev } = await updateUserStats(nick, playTimeSeconds, score, sessionCats, maxCombo);
     statsMsg += ' 📊✓';
-    updateJellyDisplay(stats.jelly);
+    // 젤리 잔액은 서버 제출 응답이 갱신한다 (위 updateUserStats 경로 주석과 동일 이유)
     const prevBestCombo2 = prev ? (prev.bestCombo || 0) : 0;
     if (maxCombo > prevBestCombo2 && maxCombo > 0) showComboRecordPop(maxCombo);
     maybeCelebrateOingLevelUp(stats, prev, 'game'); // 🎉 최초 등록 경로에서도 동일하게
@@ -13046,7 +12902,9 @@ async function loadMyJellyHistory() {
   try {
     const [walletSnap, logsSnap] = await Promise.all([
       getDoc(doc(db, 'jelly_wallet', MY_UID)),
-      getDocs(query(collection(db, 'jelly_log'), where('uid', '==', MY_UID), limit(50))),
+      // orderBy 없이 limit 만 걸면 문서 id 순 '임의 50건'이라, 로그가 50건을 넘는
+      // 유저부터 최근 내역이 빠진다. (uid ASC, ts DESC) 복합 인덱스 생성 완료.
+      getDocs(query(collection(db, 'jelly_log'), where('uid', '==', MY_UID), orderBy('ts', 'desc'), limit(50))),
     ]);
     const wallet = walletSnap.exists() ? walletSnap.data() : {};
     const logs = logsSnap.docs.map(d => d.data() || {});
@@ -13418,9 +13276,6 @@ async function shareFriendInvite(button) {
     if (button) { button.disabled = false; button.textContent = original; }
   }
 }
-document.getElementById('jshopInviteBtn')?.addEventListener('click', (event) => {
-  shareFriendInvite(event.currentTarget);
-});
 
 document.getElementById('shareResultBtn').addEventListener('click', async () => {
   const btn = document.getElementById('shareResultBtn');
@@ -13670,7 +13525,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.9';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788128600; // v4.11 — 주간 빈 화면에 지난주 최종 순위 + 냥 말투
+const BUILD = 1788162600; // v4.12 — 젤리 검수 반영(죽은 오버레이 제거·잔액 표시·원장 최근순·초대 귀속 가드)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14038,8 +13893,6 @@ function updateJellyDisplay(jelly) {
   const n = jelly || 0;
   const topEl = document.getElementById('jellyBalanceText');
   if (topEl) topEl.textContent = n;
-  const shopEl = document.getElementById('jshopBalanceText');
-  if (shopEl) shopEl.textContent = `내 젤리 ${n}개`;
 }
 
 async function loadJellyBalance() {
@@ -14059,59 +13912,11 @@ async function loadJellyBalance() {
 
 async function openJellyShop() {
   if (IS_APP) return; // 앱: 인앱 재화 판매는 Play 결제 정책 위반 — 진입 자체를 막는다
-  if (!ENABLE_JELLY_SHOP && !JSHOP_PREVIEW) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
-  // 최종 젤리샵은 독립 모바일 페이지가 실제 화면이다. 메인 게임의 오래된 오버레이는
-  // 더 이상 유저에게 열지 않는다. 오픈 전에는 읽기 전용 preview, 오픈 뒤에는 live로 이동한다.
-  location.href = `shop-v2-preview.html?${ENABLE_JELLY_SHOP ? 'live=1' : 'preview=1'}`;
-  return;
-  await loadJellyBalance();
-  await pollReferralReward();
-  updateClaimBtnState();
-  const nick = loadNickname();
-  const bubbleInput = document.getElementById('jshopBubbleInput');
-  const bubbleCount = document.getElementById('jshopBubbleCount');
-  document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip').forEach(el => el.classList.remove('picked', 'owned'));
-  bubbleInput.value = '';
-  bubbleCount.textContent = '0/5자';
-  updateJshopRankPreviewBubble('');
-  if (nick) {
-    try {
-      const { data: skinDocData } = await getMyDoc('nickname_skins');
-      const data = skinDocData || {};
-      const owned = data.ownedSkins || [];
-      document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip').forEach(el => {
-        const key = el.dataset.skin;
-        if (owned.includes(key)) el.classList.add('owned');
-        if (data.skin === key) el.classList.add('picked');
-      });
-      if (data.bubble) {
-        bubbleInput.value = data.bubble;
-        bubbleCount.textContent = data.bubble.length + '/5자';
-        updateJshopRankPreviewBubble(data.bubble);
-      }
-    } catch (e) { console.warn('상점 데이터 로드 실패:', e); }
-  }
-  document.getElementById('jellyShopOverlay').style.display = 'flex';
+  if (!ENABLE_JELLY_SHOP) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
+  // 젤리샵의 실제 화면은 독립 모바일 페이지 하나뿐이다. 예전 인게임 오버레이는
+  // 서버 가격표와 어긋난 채 죽은 코드로 남아 있어 2026-08-31 검수에서 제거했다.
+  location.href = 'shop-v2-preview.html?live=1';
 }
-function updateJshopRankPreviewBubble(text) {
-  const el = document.getElementById('jshopRankPreviewBubble');
-  if (!el) return;
-  if (text) {
-    el.textContent = text;
-    el.style.display = 'inline-flex';
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-async function updateClaimBtnState() {
-  const btn = document.getElementById('jshopClaimBtn');
-  if (!btn) return;
-  btn.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = '첫 게임이 곧 출석이에요';
-}
-
 document.getElementById('jellyShopBtn').addEventListener('click', openJellyShop);
 document.getElementById('supportTopBtn').addEventListener('click', async () => {
   const nickname = loadNickname() || '익명';
@@ -14130,216 +13935,6 @@ document.getElementById('supportTopBtn').addEventListener('click', async () => {
   openJellyShop();
 });
 document.getElementById('jellyBalanceBtn').addEventListener('click', openJellyShop);
-document.getElementById('jshopCloseBtn').addEventListener('click', () => {
-  document.getElementById('jellyShopOverlay').style.display = 'none';
-});
-document.getElementById('jshopContactBtn').addEventListener('click', () => {
-  document.getElementById('jellyShopOverlay').style.display = 'none';
-  openContactOverlay();
-});
-document.getElementById('jshopSupportBtn').addEventListener('click', () => {
-  openDonateOverlay();
-});
-document.getElementById('jshopClaimBtn').addEventListener('click', (event) => event.preventDefault());
-
-// ── 젤리로 닉네임 컬러/효과 구매·장착·해제 (한번 사면 계속 소유, 무료로 껐다 켰다 가능) ──
-async function buySkinWithJelly(skinKey, price) {
-  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
-  const nick = loadNickname();
-  if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
-  if (guardLocalOnlyForShop()) return;
-  try {
-    const { ref: skinRef, data: skinDocData } = await getMyDoc('nickname_skins');
-    const existing = skinDocData || {};
-    const owned = existing.ownedSkins || [];
-    const isActive = existing.skin === skinKey;
-    const isOwned = owned.includes(skinKey);
-
-    if (isActive) {
-      // 지금 장착 중인 걸 다시 누르면 → 끄고 기본으로
-      if (!confirm('이 스타일을 끄고 기본 글씨로 되돌릴까요?')) return;
-      await setDoc(skinRef, withOwnerFields({ ...existing, skin: null }), { merge: true });
-      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-      skinsCache[nick].skin = null;
-      renderRanking();
-      refreshShopOwnershipUI();
-      return;
-    }
-
-    if (isOwned) {
-      // 이미 산 아이템 → 무료로 바로 장착
-      await setDoc(skinRef, withOwnerFields({ ...existing, skin: skinKey }), { merge: true });
-      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-      skinsCache[nick].skin = skinKey;
-      renderRanking();
-      refreshShopOwnershipUI();
-      return;
-    }
-
-    // 처음 사는 아이템 → 서버가 잔액 확인·차감·소유 등록·장착을 원자적으로 처리
-    // (ownedSkins와 젤리 증감은 클라이언트가 직접 쓸 수 없음 — 보안 규칙으로 차단)
-    if (!requireLinkedForShop()) return;
-    if (!confirm(`🍮 ${price}개로 이 스타일을 구매하고 적용할까요?`)) return;
-    let purchase;
-    try {
-      purchase = await callShopAction('buySkin', { skinKey });
-    } catch (e2) {
-      alert(parseShopError(e2).msg);
-      return;
-    }
-    updateJellyDisplay(purchase.jelly);
-    if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-    skinsCache[nick].skin = skinKey;
-    alert('구매하고 바로 적용했다냥! 🎉 다음부턴 이 아이템은 무료로 껐다 켤 수 있어요.');
-    renderRanking();
-    refreshShopOwnershipUI();
-  } catch (e) {
-    console.warn('스킨 구매 실패:', e);
-    alert('오류가 발생했어요. 다시 시도해주세요.');
-  }
-}
-const JELLY_EFFECT_PRICES = { bluewave:80, auroraglow:80, cherry:80, goldshine:80 }; // 서버 가격표와 동일
-document.querySelectorAll('.jshop-color-dot').forEach(dot => {
-  dot.addEventListener('click', () => buySkinWithJelly(dot.dataset.skin, 30));
-});
-document.querySelectorAll('.jshop-effect-chip').forEach(chip => {
-  chip.addEventListener('click', () => buySkinWithJelly(chip.dataset.skin, JELLY_EFFECT_PRICES[chip.dataset.skin] || 60));
-});
-// ── 젤리 프레임 구매·장착·해제 (스킨과 동일 패턴 — 소유는 서버(buyFrame)만 기록) ──
-async function buyFrameWithJelly(frameKey) {
-  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
-  const nick = loadNickname();
-  if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
-  if (guardLocalOnlyForShop()) return;
-  const item = JELLY_FRAME_CATALOG.find(x => x.key === frameKey);
-  if (!item) return;
-  try {
-    const { ref: skinRef, data: skinDocData } = await getMyDoc('nickname_skins');
-    const existing = skinDocData || {};
-    const owned = existing.ownedFrames || [];
-    const isActive = existing.frame === frameKey;
-    const isOwned = owned.includes(frameKey);
-    if (isActive) {
-      if (!confirm('이 프레임을 끄고 기본으로 되돌릴까요?')) return;
-      await setDoc(skinRef, withOwnerFields({ ...existing, frame: null }), { merge: true });
-      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-      skinsCache[nick].frame = null;
-      renderRanking(); refreshShopOwnershipUI();
-      return;
-    }
-    if (isOwned) {
-      await setDoc(skinRef, withOwnerFields({ ...existing, frame: frameKey }), { merge: true });
-      if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-      skinsCache[nick].frame = frameKey;
-      renderRanking(); refreshShopOwnershipUI();
-      return;
-    }
-    if (!requireLinkedForShop()) return;
-    if (!confirm(`🍮 ${item.price}개로 ${item.name}을 구매하고 적용할까요?`)) return;
-    let purchase;
-    try {
-      purchase = await callShopAction('buyFrame', { frameKey });
-    } catch (e2) {
-      alert(parseShopError(e2).msg);
-      return;
-    }
-    updateJellyDisplay(purchase.jelly);
-    if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-    skinsCache[nick].frame = frameKey;
-    alert('구매하고 바로 적용했다냥! 🎉 다음부턴 이 프레임은 무료로 껐다 켤 수 있어요.');
-    renderRanking(); refreshShopOwnershipUI();
-  } catch (e) {
-    console.warn('프레임 구매 실패:', e);
-    alert('오류가 발생했어요. 다시 시도해주세요.');
-  }
-}
-document.querySelectorAll('.jshop-frame-chip').forEach(chip => {
-  chip.addEventListener('click', () => buyFrameWithJelly(chip.dataset.frame));
-});
-// 상점 열 때 내가 산 것/지금 장착 중인 것 표시
-async function refreshShopOwnershipUI() {
-  const nick = loadNickname();
-  document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip, .jshop-frame-chip').forEach(el => {
-    el.classList.remove('picked', 'owned');
-  });
-  if (!nick) return;
-  try {
-    const { data: skinDocData } = await getMyDoc('nickname_skins');
-    const data = skinDocData || {};
-    const owned = data.ownedSkins || [];
-    const ownedFrames = data.ownedFrames || [];
-    document.querySelectorAll('.jshop-color-dot, .jshop-effect-chip').forEach(el => {
-      const key = el.dataset.skin;
-      if (owned.includes(key)) el.classList.add('owned');
-      if (data.skin === key) el.classList.add('picked');
-    });
-    document.querySelectorAll('.jshop-frame-chip').forEach(el => {
-      const key = el.dataset.frame;
-      if (ownedFrames.includes(key)) el.classList.add('owned');
-      if (data.frame === key) el.classList.add('picked');
-    });
-  } catch (e) { console.warn('보유 아이템 확인 실패:', e); }
-}
-
-// ── 랭킹 한마디: 최초 등록(20젤리) / 이미 산 적 있으면 문구 수정 무료 / 끄기 버튼 ──
-const jshopBubbleInputEl = document.getElementById('jshopBubbleInput');
-jshopBubbleInputEl.addEventListener('input', (e) => {
-  document.getElementById('jshopBubbleCount').textContent = e.target.value.length + '/5자';
-  updateJshopRankPreviewBubble(e.target.value);
-});
-document.getElementById('jshopBubbleApplyBtn').addEventListener('click', async () => {
-  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
-  const nick = loadNickname();
-  if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
-  if (guardLocalOnlyForShop()) return;
-  const text = jshopBubbleInputEl.value.trim().slice(0, 5);
-  if (!text) { alert('문구를 입력해주세요!'); return; }
-  try {
-    const { ref: skinRef, data: skinDocData } = await getMyDoc('nickname_skins');
-    const existing = skinDocData || {};
-    const alreadyPurchased = !!existing.bubblePurchased;
-    if (!alreadyPurchased) {
-      // 최초 구매 — 서버가 잔액 확인·차감·구매 등록·문구 저장을 원자적으로 처리
-      // (bubblePurchased와 젤리 증감은 클라이언트가 직접 쓸 수 없음 — 보안 규칙으로 차단)
-      if (!requireLinkedForShop()) return;
-      if (!confirm('🍮 20개로 말풍선을 등록할까요?')) return;
-      let purchase;
-      try {
-        purchase = await callShopAction('buyBubble', { text });
-      } catch (e2) {
-        alert(parseShopError(e2).msg);
-        return;
-      }
-      updateJellyDisplay(purchase.jelly);
-    } else {
-      // 이미 구매한 상태 — 문구 수정은 무료 (bubble 필드는 장착/표시 설정이라 클라이언트 쓰기 허용)
-      await setDoc(skinRef, withOwnerFields({ ...existing, bubble: text }), { merge: true });
-    }
-    if (!skinsCache[nick]) skinsCache[nick] = { skin: null, frame: null, bubble: null };
-    skinsCache[nick].bubble = text;
-    alert('말풍선이 적용됐다냥! 💬');
-    renderRanking();
-  } catch (e) {
-    console.warn('말풍선 적용 실패:', e);
-    alert('오류가 발생했어요. 다시 시도해주세요.');
-  }
-});
-document.getElementById('jshopBubbleOffBtn').addEventListener('click', async () => {
-  const nick = loadNickname();
-  if (!nick) return;
-  if (guardLocalOnlyForShop()) return;
-  if (!confirm('말풍선을 끌까요? (다시 켤 때 무료로 문구만 다시 쓰면 돼요)')) return;
-  try {
-    const { ref: skinRef, data: skinDocData } = await getMyDoc('nickname_skins');
-    const existing = skinDocData || {};
-    await setDoc(skinRef, withOwnerFields({ ...existing, bubble: null }), { merge: true });
-    if (skinsCache[nick]) skinsCache[nick].bubble = null;
-    jshopBubbleInputEl.value = '';
-    document.getElementById('jshopBubbleCount').textContent = '0/5자';
-    updateJshopRankPreviewBubble('');
-    renderRanking();
-  } catch (e) { console.warn('말풍선 끄기 실패:', e); }
-});
 // 페이지 로드 시 잔액 미리 표시 (닉네임 있으면)
 loadJellyBalance();
 renderStartScreenGoal();
@@ -14450,27 +14045,6 @@ async function maybeClaimEarlyMemberGift() {
 }
 setTimeout(() => { maybeClaimEarlyMemberGift(); }, 4000);
 
-// 🔍 ?preview=jelly — 상점 정식 오픈 전, 링크를 아는 사람만 디자인을 확인하는 읽기 전용 모드.
-// 숨겨진 상점 오버레이를 강제로 띄우고, 랭킹 한마디 섹션도 함께 보여준다(오픈 시 되살릴지 판단용).
-if (JSHOP_PREVIEW) {
-  setTimeout(async () => {
-    try {
-      const banner = document.createElement('div');
-      banner.style.cssText = `
-        position:fixed; top:0; left:0; right:0; z-index:500; pointer-events:none;
-        background:rgba(251,191,36,0.95); color:#3a2b06; text-align:center;
-        padding:6px 10px; font-size:12px; font-weight:900; letter-spacing:-0.2px;
-        box-shadow:0 2px 10px rgba(0,0,0,0.35);`;
-      banner.textContent = '🔍 젤리상점 디자인 미리보기 — 구매·출석은 동작하지 않아요 (일반 유저에게는 안 보임)';
-      document.body.appendChild(banner);
-      // 숨겨둔 랭킹 한마디 섹션도 미리보기에서는 보이게(오픈 때 되살릴지 판단용)
-      document.querySelectorAll('.jshop-speech-box').forEach(el => { el.style.display = ''; });
-      await openJellyShop();
-      const card = document.querySelector('#jellyShopOverlay .jshop-card');
-      if (card) card.style.paddingTop = '26px';
-    } catch (e) { console.warn('상점 미리보기 실패:', e); }
-  }, 1500);
-}
 document.getElementById('contactBoardBtn').addEventListener('click', () => {
   closeContactOverlay();
   document.getElementById('feedbackBoardOverlay').style.display = 'flex';

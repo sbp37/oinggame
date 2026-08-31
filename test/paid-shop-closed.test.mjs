@@ -51,12 +51,12 @@ test('내 정보에서 본인 젤리 잔액과 선물 출처를 분리해 보여
     '원장 도입 전 기본 10개도 지갑 seed에서 복원해 표시해야 함');
 });
 
-test('젤리샵 안 서포터팩(990원) 박스가 숨겨져 있다', () => {
-  // 상점 안 유료 박스 자체도 숨겨야 간접 진입 회귀가 생겨도 결제 경로가 열리지 않는다
-  const i = src.indexOf('class="jshop-support-box"');
-  assert.notEqual(i, -1, '서포터팩 박스를 찾지 못함');
-  const end = src.indexOf('>', i);
-  assert.ok(/display\s*:\s*none/.test(src.slice(i, end)), '서포터팩 박스가 열려 있으면 안 됨');
+test('옛 젤리샵 오버레이(서포터팩 박스 포함)는 완전히 제거됐다', () => {
+  // 2026-08-31 검수: 죽은 오버레이가 서버 가격표와 어긋난 표기(레인보우 60 등)를 담고
+  // 있어 통째로 제거했다. 서포터팩(990원) 박스도 오버레이와 함께 사라졌으므로
+  // "숨김" 검사가 아니라 "부재" 검사로 계약을 바꾼다.
+  assert.equal(src.indexOf('id="jellyShopOverlay"'), -1, '옛 오버레이가 되살아나면 안 됨');
+  assert.equal(src.indexOf('class="jshop-support-box"'), -1, '서포터팩 박스가 되살아나면 안 됨');
 });
 
 test('중복 젤리샵 진입 버튼들은 숨기고 상단 잔액 입구 하나만 쓴다', () => {
@@ -65,21 +65,19 @@ test('중복 젤리샵 진입 버튼들은 숨기고 상단 잔액 입구 하나
   }
 });
 
-test('상점 진입·구매 함수의 이중 게이트는 오픈 후에도 유지한다', () => {
+test('상점 진입 게이트는 오픈 후에도 유지한다', () => {
   assert.match(src, /if \(!text && !ENABLE_JELLY_SHOP\) return '';/,
     '상점 비활성 시 +말풍선을 렌더하지 않아야 함');
-  assert.match(src, /if \(!ENABLE_JELLY_SHOP && !JSHOP_PREVIEW\) return;/,
-    'openJellyShop 자체에도 이중 게이트가 있어야 함');
-  assert.match(src, /if \(!ENABLE_JELLY_SHOP \|\| jshopPreviewBlocked\(\)\) return;/,
-    '구매 함수도 상점 오픈 전 호출을 거부해야 함');
+  assert.match(src, /if \(!ENABLE_JELLY_SHOP\) return;[\s\S]{0,400}shop-v2-preview\.html\?live=1/,
+    'openJellyShop 은 플래그 게이트 후 독립 상점 페이지로만 이동해야 함');
+  // 구매 함수는 이제 index.html 에 없다 — 실제 구매는 독립 상점 페이지(LIVE_MODE 게이트)가 전담
+  assert.equal(src.indexOf('buySkinWithJelly'), -1, '인게임 구매 함수가 되살아나면 안 됨');
 });
 
-test('수동 오늘의 젤리 버튼은 숨김·비활성 상태다', () => {
-  assert.ok(isHiddenById('jshopClaimBtn'), '수동 출석 버튼은 보여서는 안 됨');
-  const i = src.indexOf('id="jshopClaimBtn"');
-  const start = src.lastIndexOf('<', i);
-  const end = src.indexOf('>', i);
-  assert.match(src.slice(start, end), /disabled/, '수동 출석 버튼은 비활성이어야 함');
+test('수동 오늘의 젤리(출석) 경로는 존재하지 않는다', () => {
+  // 출석은 '하루 첫 게임 +1' 로 통합됐다. 수동 출석 버튼은 오버레이와 함께 제거됐고
+  // 클라이언트 어디에서도 claimDaily 를 호출하지 않아야 한다(서버도 종료 응답만 반환).
+  assert.equal(src.indexOf('id="jshopClaimBtn"'), -1, '수동 출석 버튼이 되살아나면 안 됨');
   assert.doesNotMatch(src, /callShopAction\('claimDaily'\)/, '클라이언트에서 수동 출석 지급을 호출하면 안 됨');
 });
 
@@ -100,8 +98,8 @@ test('결제 링크는 donateOverlay 안에만 있고, 그 오버레이는 기�
 
 test('openDonateOverlay 호출부는 숨겨진 두 버튼뿐', () => {
   const calls = [...src.matchAll(/openDonateOverlay\(\)/g)];
-  // 함수 정의 1 + 호출 2 (supportTopBtn, jshopSupportBtn) = 3 이하로 유지
-  assert.ok(calls.length <= 3,
+  // 함수 정의 1 + 호출 1 (구 skinBuyBtn 결제 흐름) = 2 이하 (오버레이 제거로 jshopSupportBtn 소멸)
+  assert.ok(calls.length <= 2,
     `openDonateOverlay 호출 지점이 늘어남(${calls.length}) — 새 진입점이 생겼는지 확인 필요`);
 });
 

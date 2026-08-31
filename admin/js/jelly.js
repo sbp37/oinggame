@@ -172,10 +172,11 @@ async function lookupJelly() {
     adjBox.style.display = 'block';
     // 이 유저의 원장 — uid 등호 쿼리(복합 인덱스 불필요), 정렬은 여기서
     setLoading(logEl, '원장 확인 중...');
-    const rows = await fetchDocs(query(collection(db, 'jelly_log'), where('uid', '==', uid), limit(50)));
+    // (uid ASC, ts DESC) 복합 인덱스로 서버가 최근순을 보장한다 — orderBy 없이 limit만
+    // 걸면 문서 id 순 '임의 N건'이라 로그 많은 유저부터 최근 내역이 빠졌다(검수 지적).
+    const rows = await fetchDocs(query(collection(db, 'jelly_log'), where('uid', '==', uid), orderBy('ts', 'desc'), limit(15)));
     if (!rows.length) { setEmpty(logEl, '아직 원장 기록이 없어요.'); return; }
-    rows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    logEl.innerHTML = rows.slice(0, 15).map(r => logRowHtml(r)).join('');
+    logEl.innerHTML = rows.map(r => logRowHtml(r)).join('');
   } catch (e) { setError(box, humanError(e)); }
 }
 
