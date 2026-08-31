@@ -3379,11 +3379,11 @@ if ('serviceWorker' in navigator) {
       <div class="small">오잉냥이가 운영하는</div>
       <h1>젤리상점 <span class="heart">♥</span></h1>
     </div>
-    <div class="jshop-desc">🍮 게임하고 출석하면 젤리가 모여요<br>모은 젤리로 닉네임과 랭킹을 꾸민다냥! 😺</div>
+    <div class="jshop-desc">🍮 게임하면 첫 판이 곧 출석이에요<br>모은 젤리로 닉네임과 랭킹을 꾸민다냥! 😺</div>
 
     <div class="jshop-top-pill-row">
       <div class="jshop-balance-chip"><span class="lbl">🍮</span> <span class="num" id="jshopBalanceText">내 젤리 0개</span></div>
-      <button class="jshop-claim-btn" id="jshopClaimBtn">🎁 오늘의 젤리 +1</button>
+      <button class="jshop-claim-btn" id="jshopClaimBtn" style="display:none;" disabled>첫 게임이 곧 출석이에요</button>
     </div>
 
     <div class="jshop-rank-mock-label">↓ 랭킹에서는 이렇게 보여요</div>
@@ -3462,7 +3462,7 @@ if ('serviceWorker' in navigator) {
     <div class="jshop-section">
       <div class="jshop-section-head"><span class="icon">🍮</span><span class="name">젤리 모으는 법</span></div>
       <div class="jshop-speech-free-note" style="text-align:left; line-height:1.9;">
-        · 출석 체크 <b>+1</b> &nbsp;· 하루 첫 게임 완료 <b>+1</b><br>
+        · 하루 첫 게임(출석) <b>+1</b><br>
         · 오늘의 목표 달성 <b>+2</b><br>
         · 3일 연속 플레이 <b>+2</b> &nbsp;· 7일 연속마다 <b>+5</b>
       </div>
@@ -11226,6 +11226,9 @@ function bubbleTagHtml(nickname, isMe) {
   const info = skinsCache[nickname];
   const text = info && info.bubble ? info.bubble : '';
   if (!text && !isMe) return '';
+  // 상점 오픈 전에는 신규 구매용 '+ 말풍선'을 랭킹에 노출하지 않는다.
+  // 이미 보유한 말풍선 문구는 계속 보이고 무료 수정도 유지한다.
+  if (!text && !ENABLE_JELLY_SHOP) return '';
   if (!text) return `<span class="rank-bubble-tag rank-bubble-empty" data-nick="${escapeHtml(nickname)}">+ 말풍선</span>`;
   return `<span class="rank-bubble-tag${isMe ? ' rank-bubble-mine' : ''}" data-nick="${escapeHtml(nickname)}">${escapeHtml(text)}</span>`;
 }
@@ -11237,6 +11240,7 @@ document.addEventListener('click', async (e) => {
   if (guardLocalOnlyForShop()) return;
   if (IS_APP && tag.classList.contains('rank-bubble-empty')) return; // 앱: 상점 유도 경로 차단
   if (tag.classList.contains('rank-bubble-empty')) {
+    if (!ENABLE_JELLY_SHOP) return;
     // 아직 말풍선 없음 → 상점에서 구매 유도
     openJellyShop();
     return;
@@ -13836,6 +13840,7 @@ async function loadJellyBalance() {
 
 async function openJellyShop() {
   if (IS_APP) return; // 앱: 인앱 재화 판매는 Play 결제 정책 위반 — 진입 자체를 막는다
+  if (!ENABLE_JELLY_SHOP && !JSHOP_PREVIEW) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
   await loadJellyBalance();
   updateClaimBtnState();
   const nick = loadNickname();
@@ -13878,28 +13883,9 @@ function updateJshopRankPreviewBubble(text) {
 async function updateClaimBtnState() {
   const btn = document.getElementById('jshopClaimBtn');
   if (!btn) return;
-  const nick = loadNickname();
-  if (!nick) { btn.disabled = true; btn.textContent = '🎁 닉네임 등록 후 가능'; return; }
-  try {
-    let lastClaim = '';
-    if (isUidLinked() && MY_UID) {
-      try {
-        const wSnap = await getDoc(doc(db, 'jelly_wallet', MY_UID));
-        if (wSnap.exists()) lastClaim = wSnap.data().lastDailyClaim || '';
-      } catch {}
-    }
-    if (!lastClaim) {
-      const { data } = await getMyDoc('user_stats');
-      lastClaim = data ? (data.jellyLastClaim || '') : '';
-    }
-    if (lastClaim === getTodayDateStr()) {
-      btn.disabled = true;
-      btn.textContent = '✅ 오늘은 받았어요';
-    } else {
-      btn.disabled = false;
-      btn.textContent = '🎁 오늘의 젤리 +1';
-    }
-  } catch (e) { console.warn('출석 상태 확인 실패:', e); }
+  btn.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '첫 게임이 곧 출석이에요';
 }
 
 document.getElementById('jellyShopBtn').addEventListener('click', openJellyShop);
@@ -13921,35 +13907,11 @@ document.getElementById('jshopContactBtn').addEventListener('click', () => {
 document.getElementById('jshopSupportBtn').addEventListener('click', () => {
   openDonateOverlay();
 });
-document.getElementById('jshopClaimBtn').addEventListener('click', async () => {
-  if (jshopPreviewBlocked()) return;
-  const nick = loadNickname();
-  if (!nick) return;
-  if (guardLocalOnlyForShop()) return;
-  const btn = document.getElementById('jshopClaimBtn');
-  btn.disabled = true;
-  try {
-    // 젤리 증가는 서버만 가능 (보안 규칙이 클라이언트의 잔액 증가 쓰기를 차단)
-    if (!requireLinkedForShop()) { btn.disabled = false; return; }
-    const result = await callShopAction('claimDaily');
-    if (result.already) {
-      btn.textContent = '✅ 오늘은 받았어요';
-      return;
-    }
-    updateJellyDisplay(result.jelly);
-    btn.textContent = '✅ 오늘은 받았어요';
-  } catch (e) {
-    console.warn('오늘의 젤리 받기 실패:', e);
-    const p = parseShopError(e);
-    if (p.reason === 'already-claimed') { btn.textContent = '✅ 오늘은 받았어요'; return; }
-    alert(p.msg);
-    btn.disabled = false;
-  }
-});
+document.getElementById('jshopClaimBtn').addEventListener('click', (event) => event.preventDefault());
 
 // ── 젤리로 닉네임 컬러/효과 구매·장착·해제 (한번 사면 계속 소유, 무료로 껐다 켰다 가능) ──
 async function buySkinWithJelly(skinKey, price) {
-  if (jshopPreviewBlocked()) return;
+  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
@@ -14012,7 +13974,7 @@ document.querySelectorAll('.jshop-effect-chip').forEach(chip => {
 });
 // ── 젤리 프레임 구매·장착·해제 (스킨과 동일 패턴 — 소유는 서버(buyFrame)만 기록) ──
 async function buyFrameWithJelly(frameKey) {
-  if (jshopPreviewBlocked()) return;
+  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
@@ -14093,7 +14055,7 @@ jshopBubbleInputEl.addEventListener('input', (e) => {
   updateJshopRankPreviewBubble(e.target.value);
 });
 document.getElementById('jshopBubbleApplyBtn').addEventListener('click', async () => {
-  if (jshopPreviewBlocked()) return;
+  if (!ENABLE_JELLY_SHOP || jshopPreviewBlocked()) return;
   const nick = loadNickname();
   if (!nick) { alert('닉네임을 먼저 등록해주세요!'); return; }
   if (guardLocalOnlyForShop()) return;
