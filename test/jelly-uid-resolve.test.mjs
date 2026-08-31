@@ -139,3 +139,25 @@ test('⑥ weekIdBack 은 KST 월요일 문서 id 를 만든다 (getWeekId 와 �
   const diff = new Date(env.weekIdBack(0)) - new Date(env.weekIdBack(1));
   assert.equal(diff, 7 * 86400000);
 });
+
+// ══════════════════════════════════════════════════════════════
+//  같은 뿌리의 두 번째 사고 — 초기 멤버 선물이 '계정 연결'을 요구했다
+// ══════════════════════════════════════════════════════════════
+// 사이다 님은 2026-07-05부터 매일 하는 초기 멤버인데 +20 을 못 받았다.
+// nickname_lookup/사이다 가 phase-a 예약 문서인 채로 남아 isUidLinked() 가 false 였고,
+// 클라가 그 조건에서 먼저 return 해버려 서버에 요청조차 가지 않았다 —
+// 정작 대상인 옛 유저를 게이트가 걸러낸 셈이다.
+// 자격 판정은 어차피 서버가 서버 진실(그 uid 의 기준시각 이전 game_sessions 또는
+// Auth 계정 생성 시각)로만 하고, 중복 지급도 지갑 플래그가 막는다.
+test('⑦ 초기 멤버 선물 요청은 계정 연결이 아니라 uid 만 요구한다', () => {
+  const game = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const start = game.indexOf('async function maybeClaimEarlyMemberGift(');
+  assert.ok(start > 0, 'maybeClaimEarlyMemberGift 를 찾지 못했습니다');
+  // 주석 줄은 뺀다 — 왜 이 조건을 없앴는지 설명하느라 함수 안 주석에 isUidLinked 가 적혀 있다.
+  const body = game.slice(start, game.indexOf('\n}', start))
+    .split('\n').filter(line => !line.trim().startsWith('//')).join('\n');
+  assert.match(body, /if \(!MY_UID\) return;/, '로그인(uid) 여부만 확인해야 합니다');
+  assert.doesNotMatch(body, /isUidLinked\(\)/,
+    '계정 연결(isUidLinked) 조건이 다시 들어오면 레거시 초기 멤버가 또 못 받습니다');
+  assert.match(body, /callShopAction\('claimEarlyMember'\)/);
+});

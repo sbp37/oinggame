@@ -13624,7 +13624,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788182100; // v4.19 — 업데이트 내역 v4.10(젤리샵 오픈) + 친구초대 보상 5젤리
+const BUILD = 1788182400; // v4.20 — 레거시 계정도 초기 멤버 선물 수령
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14212,7 +14212,13 @@ async function maybeClaimEarlyMemberGift() {
   try {
     // v2는 조용히 지급됐던 기존 수령자에게도 안내 팝업을 딱 한 번 보여주기 위한 확인 키다.
     if (localStorage.getItem('oeing_early_gift_check_v2')) return;
-    if (!isUidLinked()) return;
+    // 예전엔 isUidLinked() 를 요구했는데, 그 조건이 정작 대상인 옛 유저를 걸러냈다.
+    // 실사례(사이다): 2026-07-05부터 매일 하는데 nickname_lookup 이 phase-a 예약 문서인
+    // 채로 남아 계정 연결이 안 돼 있었고, 그래서 서버에 요청조차 안 가 +20을 못 받았다.
+    // 자격 판정은 어차피 서버가 서버 진실로만 한다 — 이 uid 가 기준시각 이전에 제출한
+    // game_sessions 또는 Auth 계정 생성 시각. 지급 멱등도 지갑 플래그가 보장한다.
+    // 그러니 로그인(uid)만 있으면 물어보게 하고, 판단은 서버에 맡긴다.
+    if (!MY_UID) return;
     const res = await callShopAction('claimEarlyMember');
     localStorage.setItem('oeing_early_gift_v1', '1');
     localStorage.setItem('oeing_early_gift_check_v2', '1');
