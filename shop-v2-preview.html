@@ -232,6 +232,32 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 .pvbox { border-radius:12px; background:var(--card2); border:1px solid transparent;
   height:52px; display:flex; align-items:center; justify-content:center; }
 .card-nick { font-size:19px; font-weight:900; letter-spacing:-0.3px; }
+/* 고양이 미리보기 — 얼굴 에셋마다 가로세로 비율이 달라서(176x180, 220x201 …)
+   그냥 넣으면 칸 안에서 위아래로 삐뚤어 보인다. 정사각 상자에 object-fit:contain 으로
+   담아 어떤 얼굴이든 칸 정중앙에 오게 한다. */
+.pv-cat { display:flex; align-items:center; justify-content:center; width:46px; height:46px; }
+.pv-cat img { width:100%; height:100%; object-fit:contain; display:block; }
+.item-cat .pvbox { height:60px; }
+
+/* ── 구매 완료 안내(고양이) ── */
+.bought-back { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:rgba(4,10,20,0.62); padding:20px; }
+.bought-card { width:100%; max-width:300px; text-align:center; border-radius:18px; padding:22px 18px 16px;
+  background:var(--card); border:1px solid var(--border); box-shadow:0 12px 34px rgba(0,0,0,0.45); }
+.bought-cat { width:88px; height:88px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; }
+.bought-cat img { width:100%; height:100%; object-fit:contain; display:block;
+  filter:drop-shadow(0 3px 10px rgba(73,175,228,0.28)); }
+.bought-title { font-size:19px; font-weight:900; margin-bottom:7px; letter-spacing:-0.3px; }
+.bought-msg { font-size:14px; font-weight:700; line-height:1.55; color:var(--muted); }
+.bought-msg b { color:var(--blue); }
+.bought-note { margin-top:12px; padding:8px 10px; border-radius:10px; font-size:12.5px; line-height:1.5;
+  background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); color:var(--jelly); }
+.bought-note b { color:var(--jelly); }
+.bought-btns { display:flex; gap:8px; margin-top:16px; }
+.bought-btn { flex:1; padding:12px 8px; border-radius:12px; cursor:pointer; font-family:inherit;
+  font-size:14px; font-weight:800; letter-spacing:-0.2px; white-space:nowrap; }
+.bought-stay { flex:0.8; border:1px solid var(--border); background:var(--card2); color:var(--muted); }
+.bought-go { border:none; background:linear-gradient(135deg,#4a8fd1,#6bb0ea); color:#071a2b; }
 .pv-rank { display:flex; align-items:center; gap:6px; width:88%;
   background:var(--card2); border:1.5px solid var(--frame-color); border-radius:10px;
   padding:7px 9px; box-shadow:0 0 9px var(--frame-color); }
@@ -366,6 +392,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
   <button type="button" class="tab on" role="tab" aria-selected="true" data-tab="all">전체</button>
   <button type="button" class="tab" role="tab" aria-selected="false" data-tab="nick">닉네임</button>
   <button type="button" class="tab" role="tab" aria-selected="false" data-tab="frame">프레임</button>
+  <button type="button" class="tab" role="tab" aria-selected="false" data-tab="cat">고양이</button>
   <button type="button" class="tab" role="tab" aria-selected="false" data-tab="owned">보유</button>
 </div>
 </div>
@@ -449,6 +476,16 @@ const CATALOG = {
     { key:'cherry',    nm:'벚꽃비',     ds:'분홍빛이 부드럽게 흐름', price:60, cls:'fx-cherry' },
     { key:'goldshine', nm:'골드샤인',   ds:'따뜻한 금빛이 물결치며 흐름', price:60, cls:'fx-goldshine' },
   ],
+  // 게임 속 고양이 얼굴 — key 는 게임의 CUSTOM_CAT_ASSETS·서버 JELLY_CAT_KEYS·
+  // 현금 주문의 CUSTOM_CATS 와 모두 같아야 한다(같은 소유 목록을 공유한다).
+  cat: [
+    { key:'blue-scarf', nm:'파란 목도리냥', ds:'오잉게임의 기본 냥이', price:60, img:'assets/img-03-c.png' },
+    { key:'gray',       nm:'회색냥',       ds:'차분한 회색 털',       price:60, img:'assets/img-04-c.png' },
+    { key:'calico',     nm:'삼색냥',       ds:'복스러운 삼색 무늬',   price:60, img:'assets/img-05-c.png' },
+    { key:'cheese',     nm:'치즈냥',       ds:'노릇한 치즈색 털',     price:60, img:'assets/cat-cheese-c.png' },
+    { key:'pink',       nm:'핑크냥',       ds:'말랑한 분홍 털',       price:60, img:'assets/cat-pink-c.png' },
+    { key:'mint',       nm:'민트냥',       ds:'산뜻한 민트 털',       price:60, img:'assets/cat-mint-v3-c.png' },
+  ],
   frame: [
     { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:80, c:'#22d3ee' },
     { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:80, c:'#fda4af' },
@@ -461,11 +498,12 @@ const CATALOG = {
 const SECT = {
   nick:  { title:'닉네임 꾸미기', fair:'단색과 움직이는 효과 중 하나를 골라요 · 게임 점수에는 영향이 없어요' },
   frame: { title:'랭킹 프레임',   fair:'내 랭킹 줄 테두리가 은은하게 빛나요 · 글자색·효과와 같이 써요' },
+  cat:   { title:'게임 속 고양이', fair:'게임 화면과 랭킹 시상대에 나오는 내 고양이가 바뀌어요 · 게임 점수에는 영향이 없어요' },
 };
 const state = {
   bal: 47,
-  owned: { color:[], fx:[], frame:[] },
-  equipped: { nick:null, frame:null },
+  owned: { color:[], fx:[], frame:[], cat:[] },
+  equipped: { nick:null, frame:null, cat:null },
   trying: { nick:null, frame:null },
   tab: 'all',
   selected: null,
@@ -665,8 +703,12 @@ async function loadShopAccount() {
     }
     state.owned.frame = (Array.isArray(skins.ownedFrames) ? skins.ownedFrames : [])
       .filter(key => CATALOG.frame.some(item => item.key === key));
+    state.owned.cat = (Array.isArray(skins.ownedCatSkins) ? skins.ownedCatSkins : [])
+      .filter(key => CATALOG.cat.some(item => item.key === key));
     state.equipped.nick = typeof skins.skin === 'string' ? skins.skin : null;
     state.equipped.frame = typeof skins.frame === 'string' ? skins.frame : null;
+    // cat 플래그가 꺼져 있으면 얼굴을 골라뒀어도 게임에선 기본 냥이가 나온다 — 착용 표시도 끈다.
+    state.equipped.cat = (skins.cat && typeof skins.catSkin === 'string') ? skins.catSkin : null;
     state.trying.nick = state.equipped.nick;
     state.trying.frame = state.equipped.frame;
     $('bal').textContent = state.bal;
@@ -716,12 +758,15 @@ function renderMirror() {
 // ── 카드 ──
 function cardHtml(type, it) {
   const owned = state.owned[type].includes(it.key);
-  const equipped = (type === 'frame') ? state.equipped.frame === it.key : state.equipped.nick === it.key;
+  const equipped = (type === 'frame') ? state.equipped.frame === it.key
+    : (type === 'cat') ? state.equipped.cat === it.key
+    : state.equipped.nick === it.key;
   const trying = state.selected && state.selected.item.key === it.key && state.selected.type === type;
   const wished = state.wish && state.wish.key === it.key;
   let pv;
   if (type === 'color') pv = `<span class="card-nick" style="color:${it.c};">오잉러</span>`;
   else if (type === 'fx') pv = `<span class="card-nick fx ${it.cls}">오잉러</span>`;
+  else if (type === 'cat') pv = `<span class="pv-cat"><img src="${it.img}" alt="" loading="lazy"></span>`;
   else pv = `<span class="pv-rank" style="--frame-color:${it.c};"><span class="n">24</span><span class="k">오잉러</span><span class="s">6,865pt</span></span>`;
   const badge = equipped ? '' : wished ? '<span class="badge wish">🎯 찜</span>' : '';
   return `<div class="item item-${type} ${trying ? 'trying' : ''}" data-type="${type}" data-key="${it.key}">
@@ -753,13 +798,16 @@ function renderCatalog() {
   const area = $('catalogArea');
   const tab = state.tab;
   if (tab === 'all') {
-    area.innerHTML = nicknameSectionHtml(nicknameEntries()) + sectionHtml('frame', CATALOG.frame);
+    area.innerHTML = nicknameSectionHtml(nicknameEntries()) + sectionHtml('frame', CATALOG.frame) + sectionHtml('cat', CATALOG.cat);
   } else if (tab === 'nick') {
     area.innerHTML = nicknameSectionHtml(nicknameEntries());
   } else if (tab === 'owned') {
     const nickOwned = nicknameEntries(true);
     const frameOwned = CATALOG.frame.filter(item => state.owned.frame.includes(item.key));
-    const parts = [nickOwned.length ? nicknameSectionHtml(nickOwned) : '', frameOwned.length ? sectionHtml('frame', frameOwned) : ''].filter(Boolean);
+    const catOwned = CATALOG.cat.filter(item => state.owned.cat.includes(item.key));
+    const parts = [nickOwned.length ? nicknameSectionHtml(nickOwned) : '',
+      frameOwned.length ? sectionHtml('frame', frameOwned) : '',
+      catOwned.length ? sectionHtml('cat', catOwned) : ''].filter(Boolean);
     area.innerHTML = parts.length
       ? parts.join('')
       : `<div class="empty-owned">아직 보유한 아이템이 없어요<br>마음에 드는 걸 입어보고 데려와 보라냥 🐾</div>`;
@@ -771,12 +819,48 @@ function renderCatalog() {
   });
 }
 
+// ── 구매 완료 안내 (고양이 전용) ──
+// 고양이는 이 페이지가 아니라 게임 화면에 나오는 얼굴이라, 여기서는 바뀐 걸 볼 수 없다.
+// 게임으로 돌아가면 자동으로 반영되지만(복귀 시 refreshMyCatSkin 재조회), 브라우저가
+// 옛 화면을 들고 있으면 그대로일 수 있어 새로고침 방법을 함께 알려준다.
+function showBoughtPopup(item, { free = false } = {}) {
+  const old = document.getElementById('boughtPopup');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'boughtPopup';
+  wrap.className = 'bought-back';
+  wrap.innerHTML = `
+    <div class="bought-card" role="dialog" aria-modal="true" aria-label="구매 완료">
+      <div class="bought-cat"><img src="${item.img}" alt=""></div>
+      <div class="bought-title">구매완료다냥! 🎉</div>
+      <div class="bought-msg">
+        <b>${item.nm}</b>${free ? '으로 바꿨다냥!' : ' 데려갔다냥!'}<br>
+        게임 화면에서 바로 만날 수 있다냥
+      </div>
+      <div class="bought-note">바로 안 바뀌면 게임을 <b>새로고침</b> 해보라냥 🔄</div>
+      <div class="bought-btns">
+        <button type="button" class="bought-btn bought-stay" id="boughtStay">더 구경하기</button>
+        <button type="button" class="bought-btn bought-go" id="boughtGo">게임으로 가기 →</button>
+      </div>
+    </div>`;
+  const close = () => wrap.remove();
+  document.body.appendChild(wrap);
+  document.getElementById('boughtStay').addEventListener('click', close);
+  document.getElementById('boughtGo').addEventListener('click', () => {
+    close();
+    // 새로고침까지 확실히 되도록 캐시를 우회하는 주소로 돌아간다.
+    location.href = 'index.html?v=' + Date.now();
+  });
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+}
+
 // ── 선택 = 시착 + 액션바 ──
 function selectItem(type, key) {
   const item = findItem(type, key);
   state.selected = { type, item };
+  // 고양이는 랭킹 줄에 입히는 게 아니라 게임 화면에 나오는 얼굴이라 거울 시착 대상이 아니다.
   if (type === 'frame') state.trying.frame = key;
-  else state.trying.nick = key;
+  else if (type !== 'cat') state.trying.nick = key;
   renderMirror(); renderCatalog(); renderActionbar();
   const owned = state.owned[type].includes(key);
   say(owned ? `${item.nm} — 이미 갖고 있다냥. 바로 바꿔줄까냥?`
@@ -789,8 +873,10 @@ function renderActionbar() {
   if (!sel) { bar.classList.remove('show'); return; }
   const { type, item } = sel;
   const owned = state.owned[type].includes(item.key);
-  const equipped = (type === 'frame') ? state.equipped.frame === item.key : state.equipped.nick === item.key;
-  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : ' 닉네임');
+  const equipped = (type === 'frame') ? state.equipped.frame === item.key
+    : (type === 'cat') ? state.equipped.cat === item.key
+    : state.equipped.nick === item.key;
+  $('abName').textContent = item.nm + (type === 'frame' ? ' 프레임' : type === 'cat' ? '' : ' 닉네임');
   $('abPrice').textContent = owned ? '보유중' : `🍮 ${item.price} (보유 ${state.bal})`;
   let html = '';
   if (equipped) {
@@ -827,26 +913,56 @@ async function buy(type, item) {
   try {
     const { auth, fns, fnSdk } = await getFirebaseContext();
     if (!auth.currentUser) throw new Error('게임에서 닉네임을 등록한 뒤 다시 들어와주세요.');
-    const payload = type === 'frame'
-      ? { action:'buyFrame', frameKey:item.key }
+    const payload = type === 'frame' ? { action:'buyFrame', frameKey:item.key }
+      : type === 'cat' ? { action:'buyCat', catSkin:item.key }
       : { action:'buySkin', skinKey:item.key };
     const response = await fnSdk.httpsCallable(fns,'shopAction')(payload);
     const result = (response && response.data) || {};
     state.bal = Math.max(0, Number(result.jelly) || 0);
     if (!state.owned[type].includes(item.key)) state.owned[type].push(item.key);
     if (type === 'frame') state.equipped.frame = item.key;
+    else if (type === 'cat') state.equipped.cat = item.key;
     else state.equipped.nick = item.key;
     state.trying = { nick:state.equipped.nick, frame:state.equipped.frame };
     $('bal').textContent = state.bal;
     renderMirror(); renderCatalog(); renderActionbar();
-    toast(`구매 완료! 🍮 ${item.price}개 사용`);
-    say(`${item.nm} 바로 입혀뒀다냥! 🎉`);
+    if (type === 'cat') {
+      // 고양이는 게임 화면에 나오는 얼굴이라 이 페이지에서는 결과가 안 보인다.
+      // 게임으로 돌아가면 자동으로 바뀌지만, 옛 화면이 캐시돼 그대로일 수 있어 안내한다.
+      showBoughtPopup(item);
+    } else {
+      toast(`구매 완료! 🍮 ${item.price}개 사용`);
+      say(`${item.nm} 바로 입혀뒀다냥! 🎉`);
+    }
   } catch (error) {
     const message = (error && error.message) || '구매하지 못했어요. 잠시 뒤 다시 시도해주세요.';
     alert(message.replace(/^FirebaseError:\s*/i,''));
   }
 }
 async function equip(type, item, { localOnly = !LIVE_MODE } = {}) {
+  // 고양이의 cat 플래그는 보안 규칙상 클라이언트가 쓸 수 없다 — 이미 가진 얼굴로 바꾸는
+  // 것도 서버(buyCat)가 처리한다. 서버는 보유분이면 젤리를 받지 않고 장착만 해준다.
+  if (type === 'cat') {
+    if (localOnly) {
+      state.equipped.cat = item.key;
+      renderCatalog(); renderActionbar();
+      return;
+    }
+    try {
+      const { auth, fns, fnSdk } = await getFirebaseContext();
+      if (!auth.currentUser) throw new Error('게임에서 닉네임을 등록한 뒤 다시 들어와주세요.');
+      const res = await fnSdk.httpsCallable(fns,'shopAction')({ action:'buyCat', catSkin:item.key });
+      const out = (res && res.data) || {};
+      state.bal = Math.max(0, Number(out.jelly) || state.bal);
+      state.equipped.cat = item.key;
+      $('bal').textContent = state.bal;
+      renderCatalog(); renderActionbar();
+      showBoughtPopup(item, { free:true });
+    } catch (error) {
+      alert(((error && error.message) || '장착하지 못했어요.').replace(/^FirebaseError:\s*/i,''));
+    }
+    return;
+  }
   if (!localOnly) {
     try {
       const { auth, db, fsSdk } = await getFirebaseContext();
