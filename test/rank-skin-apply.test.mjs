@@ -7,6 +7,7 @@ const RANKS = [
   { id: '쿠앙', score: 138795, uid: 'u-kuang', oingLevel: 7 },
   { id: '레레', score: 90847, uid: 'u-lele', oingLevel: 5 },
   { id: '오잉이', score: 6865, uid: 'u1', oingLevel: 5 },
+  { id: '이웃냥', score: 6000, uid: 'u-nb', oingLevel: 5 },  // 같은 Top10 등급의 '남의 행' — 비교 기준
 ];
 // 1위·4위에 스킨을 입혀둔다(시상대 vs 일반 줄 비교용)
 // ★ 젤리샵·서버 구매가 실제로 만드는 모양: 문서 키가 uid 이고 nickname 필드가 없다.
@@ -91,10 +92,19 @@ const probe = await p.evaluate(() => {
       color: (ics || cs).color, html: el.innerHTML.slice(0, 90) };
   };
   const podium = [...document.querySelectorAll('#podiumWrap .podium-nick-text')].map(pick);
-  const rows = [...document.querySelectorAll('#rankList .rank-row')].slice(0, 3).map(r => ({
-    nick: pick(r.querySelector('.rank-nick')),
-    rowCls: r.className,
-  }));
+  const rows = [...document.querySelectorAll('#rankList .rank-row')].slice(0, 4).map(r => {
+    const cs = getComputedStyle(r);
+    const af = getComputedStyle(r, '::after');
+    return {
+      nick: pick(r.querySelector('.rank-nick')),
+      rowCls: r.className,
+      boxShadow: cs.boxShadow,
+      borderColor: cs.borderColor,
+      bg: cs.backgroundColor,
+      afterContent: af.content,   // 도는 하이라이트 링이 남아 있으면 'none' 이 아니다
+      hasMeBadge: !!r.querySelector('.rank-me-badge'),
+    };
+  });
   return { podium, rows, podiumCount: podium.length };
 });
 console.log('── 시상대(1~3위) 닉네임 ──');
@@ -107,7 +117,19 @@ await b.close();
 // 판정 — 젤리샵이 쓰는 uid 키 문서(nickname 필드 없음)가 랭킹에 반영돼야 한다.
 const podiumSkinned = probe.podium.find(x => x && x.text === '제이1');
 const rowSkinned = probe.rows[0] && probe.rows[0].nick;
+// 내 행이 '같은 등급의 남의 행'과 완전히 같은 모양인지 확인한다.
+// (Top10 행은 등급 자체의 배경·테두리가 따로 있어서, 일반 행이 아니라 같은 등급 행과 비교해야 한다.)
+const meRow = probe.rows.find(r => / me\b/.test(r.rowCls));
+const peerRow = probe.rows.find(r => !/ me\b/.test(r.rowCls) && /top10/.test(r.rowCls));
 const checks = [
+  ['내 행·비교용 남의 행 둘 다 찾음', !!meRow && !!peerRow],
+  ['내 행에 도는 하이라이트 링 없음', meRow && (meRow.afterContent === 'none' || meRow.afterContent === '')],
+  ['내 행에 하늘색 글로우 없음', meRow && !/126,\s*205,\s*240/.test(meRow.boxShadow)],
+  ['내 행 그림자가 남의 행과 동일', meRow && peerRow && meRow.boxShadow === peerRow.boxShadow],
+  ['내 행 테두리가 남의 행과 동일', meRow && peerRow && meRow.borderColor === peerRow.borderColor],
+  ['내 행 배경이 남의 행과 동일', meRow && peerRow && meRow.bg === peerRow.bg],
+  ['내 행에 고양이 배지 있음 (자기 줄 찾는 유일한 단서)', meRow && meRow.hasMeBadge === true],
+  ['남의 행에는 고양이 배지 없음', peerRow && peerRow.hasMeBadge === false],
   ['시상대 1위에 스킨 span 적용', podiumSkinned && podiumSkinned.innerCls === 'nick-pink'],
   ['시상대 색이 순위 기본색에 안 덮임', podiumSkinned && podiumSkinned.color === 'rgb(244, 114, 182)'],
   ['일반 줄에도 스킨 적용', rowSkinned && rowSkinned.innerCls === 'nick-mint'],

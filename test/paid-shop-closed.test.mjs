@@ -146,8 +146,19 @@ test('젤리샵은 글자색·효과를 닉네임 한 카테고리로 보여준�
 test('구매 프레임은 등급 바를 덮지 않고 내 랭킹에 두 겹 선을 만들지 않는다', () => {
   assert.doesNotMatch(src, /\.rank-row\[class\*="frame-"\]::before/,
     '프레임이 ::before를 쓰면 Top10·Top30 등급 바와 충돌함');
-  assert.match(src, /\.rank-row\.me\[class\*="frame-"\]::after\s*\{\s*content\s*:\s*none/,
-    '내 랭킹은 기존 하늘색 링을 끄고 구매 프레임 외곽 효과만 보여야 함');
-  assert.match(src, /0 0 13px color-mix\(/,
+  // 내 행의 기본 강조(도는 하늘색 링·글로우)는 2026-08-31 에 통째로 제거됐다 —
+  // 빛나는 테두리는 사 입는 것이 됐고, 내 행 특례도 없앴다. 그래서 '링을 끄는 규칙'이
+  // 아니라 '링 자체가 없는지'를 검사한다.
+  assert.doesNotMatch(src, /\.rank-row\.me::after/,
+    '내 행 기본 하이라이트 링이 되살아나면 안 됨 — 프레임을 사야 빛나야 한다');
+  assert.doesNotMatch(src, /\.rank-row\.(top10|top30)\.me\s*\{/,
+    '등급 행의 내 행 특례도 되살아나면 안 됨');
+  assert.match(src, /const meBadgeHtml = isMe \?/,
+    '내 행은 고양이 배지로만 알아본다 — 모든 유저에게 보여야 함');
+  // 13px 짜리는 삭제된 '내 행 전용' 프레임 규칙의 값이었다. 이제 내 행/남의 행이
+  // 같은 규칙(12px)을 쓴다 — 산 프레임은 누구 행이든 똑같이 빛난다.
+  assert.match(src, /0 0 12px color-mix\(/,
     '구매 프레임 효과는 기본 테두리 바깥 글로우로 표현해야 함');
+  assert.doesNotMatch(src, /\.rank-row\.me\[class\*="frame-"\]/,
+    '프레임 착용 시 내 행만 다르게 보이는 특례가 되살아나면 안 됨');
 });
