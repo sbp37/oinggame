@@ -11,7 +11,7 @@
 // ══════════════════════════════════════════════════════════════
 import {
   db, fns, collection, doc, query, where, orderBy, limit, runTransaction, httpsCallable,
-  fetchDoc, fetchDocs, resolveUserDocId, getUserDocByNick,
+  fetchDoc, fetchDocs, resolveUserDocId,
   fmtNum, fmtDateTime, escapeHtml, humanError,
 } from './firebase.js';
 import { setLoading, setEmpty, setError, guardBtn, resultMsg } from './admin.js';
@@ -47,12 +47,58 @@ function logRowHtml(r, { withNick = false } = {}) {
   </div>`;
 }
 
-// 닉네임 → uid (nickname_lookup 우선, rankings/{nick}.uid 폴백 — 섀도우밴과 동일 규칙)
+// 이번 주에서 weeksAgo 주 전의 주간 문서 id — getWeekId() 와 같은 KST 월요일 계산.
+function weekIdBack(weeksAgo) {
+  const k = new Date(Date.now() + 9 * 3600 * 1000 - weeksAgo * 7 * 86400000);
+  const day = k.getUTCDay();
+  k.setUTCDate(k.getUTCDate() - (day === 0 ? 6 : day - 1));
+  return `${k.getUTCFullYear()}-${String(k.getUTCMonth() + 1).padStart(2, '0')}-${String(k.getUTCDate()).padStart(2, '0')}`;
+}
+const WEEKLY_UID_LOOKBACK = 12; // 주간 문서를 거슬러 볼 주 수 (약 3개월)
+
+// 닉네임 → uid.
+//
+// 예전엔 nickname_lookup 과 rankings/{nick} 두 곳만 봤는데, 옛날부터 하던 유저는
+// 둘 다 uid 가 없어서 "계정(UID)을 못 찾았어요"로 막혔다(실제 사례: 사이다).
+//  · nickname_lookup/{닉} 이 phase-a 이관 때 만들어진 '예약(reserved)' 문서면 uid 가 없다.
+//  · rankings/{닉} 은 이미 uid 가 박힌 문서만 그 값을 보존하고, 새로 붙이지는 않는다
+//    (닉네임 탈취 방지 정책 — gameSession.js 의 rkUid 는 자동 claim 하지 않는다).
+// 그래서 uid 가 실제로 남는 곳까지 순서대로 내려가며 찾는다:
+//  ① nickname_lookup  — 계정 연결을 마친 유저(가장 확실)
+//  ② rankings/{닉}    — 소유 uid 가 기록된 전체 랭킹 문서
+//  ③ weekly_rankings  — 주간 문서는 weeklyUidFor 규칙에 따라 본인이 최고점을 쓸 때만
+//                       uid 를 남긴다. 이번 주부터 거슬러 올라가며 확인.
+//  ④ game_sessions    — 점수 제출마다 uid 가 함께 저장된다(30일 보관). 닉네임 등호
+//                       쿼리라 복합 인덱스가 필요 없고, 최근순 정렬은 여기서 한다.
+// ③④ 는 같은 닉네임을 여러 계정이 거쳐갔을 수 있으므로 '가장 최근' 기록을 쓰고,
+// 서로 다른 uid 가 섞여 있으면 ambiguous 로 알려 운영자가 눈으로 확인하게 한다.
 async function resolveJellyUid(nick) {
   const { uid } = await resolveUserDocId(nick);
-  if (uid) return uid;
+  if (uid) return { uid, source: '계정 연결 기록' };
+
   const rk = await fetchDoc(doc(db, 'rankings', nick)).catch(() => null);
-  return (rk && rk.uid) ? rk.uid : null;
+  if (rk && rk.uid) return { uid: rk.uid, source: '전체 랭킹 문서' };
+
+  for (let w = 0; w < WEEKLY_UID_LOOKBACK; w++) {
+    const weekId = weekIdBack(w);
+    const wk = await fetchDoc(doc(db, 'weekly_rankings', weekId, 'scores', nick)).catch(() => null);
+    if (wk && wk.uid) return { uid: wk.uid, source: `주간 랭킹(${weekId})` };
+  }
+
+  const sessions = await fetchDocs(
+    query(collection(db, 'game_sessions'), where('nickname', '==', nick), limit(50)),
+  ).catch(() => []);
+  const withUid = sessions
+    .filter(s => s && typeof s.uid === 'string' && s.uid)
+    .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+  if (withUid.length) {
+    return {
+      uid: withUid[0].uid,
+      source: '최근 게임 기록',
+      ambiguous: new Set(withUid.map(s => s.uid)).size > 1,
+    };
+  }
+  return { uid: null };
 }
 
 let current = null; // { nick, uid }
@@ -144,8 +190,11 @@ async function lookupJelly() {
   if (!nick) { resultMsg('jellyResult', '닉네임을 입력하세요.', false); return; }
   setLoading(box, '지갑 확인 중...');
   try {
-    const uid = await resolveJellyUid(nick);
-    if (!uid) { setError(box, `"${nick}"의 계정(UID)을 못 찾았어요 — 랭킹/계정 연결 기록이 있는 유저만 관리할 수 있어요.`); return; }
+    const { uid, source, ambiguous } = await resolveJellyUid(nick);
+    if (!uid) {
+      setError(box, `"${nick}"의 계정(UID)을 못 찾았어요 — 계정 연결·랭킹·최근 30일 게임 기록 어디에도 uid가 없어요. 닉네임 철자를 확인하거나, 이 유저가 한 판 더 하고 나서 다시 조회해 주세요.`);
+      return;
+    }
     const w = await fetchDoc(doc(db, 'jelly_wallet', uid));
     let balance, note;
     if (w) {
@@ -158,16 +207,31 @@ async function lookupJelly() {
         typeof w.seededAmount === 'number' ? `레거시 흡수 ${w.seededAmount}` : '',
       ].filter(Boolean).join(' · ');
     } else {
-      // 지갑 없음 — 서버가 흡수하게 될 레거시 잔액을 참고로 표시
-      const { data: stats } = await getUserDocByNick('user_stats', nick);
-      balance = (stats && typeof stats.jelly === 'number') ? stats.jelly : 0;
-      note = '지갑 미생성 — 표시 잔액은 첫 지급/구매 때 흡수될 옛 user_stats 값';
+      // 지갑 없음 — 서버가 흡수하게 될 레거시 잔액을 참고로 표시한다.
+      // 흡수 조건은 서버(submitScore)·아래 지급 트랜잭션과 똑같이 따진다:
+      // user_stats/{uid} 이거나, 닉네임 문서라도 uid 필드가 이 uid 와 일치할 때만.
+      // (예전엔 닉네임 문서를 조건 없이 보여줘서, 실제로는 흡수되지 않을 옛 잔액이
+      //  마치 남아 있는 것처럼 보였다 — 레거시 닉네임 계정에서 표시가 어긋났다.)
+      const uidStats = await fetchDoc(doc(db, 'user_stats', uid)).catch(() => null);
+      const legacy = uidStats ? null : await fetchDoc(doc(db, 'user_stats', nick)).catch(() => null);
+      const seedStats = uidStats || ((legacy && legacy.uid === uid) ? legacy : null);
+      balance = (seedStats && typeof seedStats.jelly === 'number') ? seedStats.jelly : 0;
+      note = seedStats
+        ? '지갑 미생성 — 표시 잔액은 첫 지급/구매 때 흡수될 옛 user_stats 값'
+        : (legacy && typeof legacy.jelly === 'number' && legacy.jelly > 0
+          ? `지갑 미생성 — 옛 닉네임 문서에 ${fmtNum(legacy.jelly)}개가 있지만 uid가 달라 흡수되지 않아요(잔액 0으로 시작)`
+          : '지갑 미생성 — 첫 지급 때 만들어져요');
     }
     current = { nick, uid };
+    const originLine = [
+      source ? `계정 확인: ${source}` : '',
+      ambiguous ? '⚠️ 이 닉네임을 쓴 계정이 둘 이상이라 가장 최근 계정을 골랐어요 — UID를 확인하고 지급하세요.' : '',
+    ].filter(Boolean).join(' · ');
     box.innerHTML = `<div class="stat-tile" style="text-align:left;">
       <div class="stat-label">${escapeHtml(nick)} <span style="color:var(--muted);font-size:10px;">${escapeHtml(uid)}</span></div>
       <div class="stat-value">🍮 ${fmtNum(balance)}개</div>
       <div class="stat-label" style="margin-top:4px;">${escapeHtml(note)}</div>
+      ${originLine ? `<div class="stat-label" style="margin-top:4px;color:${ambiguous ? 'var(--warn,#f6c453)' : 'var(--muted)'};">${escapeHtml(originLine)}</div>` : ''}
     </div>`;
     adjBox.style.display = 'block';
     // 이 유저의 원장 — uid 등호 쿼리(복합 인덱스 불필요), 정렬은 여기서
