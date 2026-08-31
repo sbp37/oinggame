@@ -188,11 +188,9 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .fx-goldshine { background-image:linear-gradient(90deg,#9c6f24,#fff0b8,#f2ca73,#fff0b8,#9c6f24); }
 .fx-bluewave { background-image:linear-gradient(90deg,#2f8cff,#83dcff,#c3efff,#68b8ff,#2f8cff); filter:drop-shadow(0 0 4px rgba(74,174,255,.35)); }
 .fx-auroraglow { background-image:linear-gradient(90deg,#62e6c4,#89b9ff,#d7a7ff,#62e6c4); filter:drop-shadow(0 0 4px rgba(99,240,215,.45)); }
-.fx-cherry { background-image:linear-gradient(90deg,#ff91b7,#ffd0dc,#ff9fc4,#ffd0dc,#ff91b7); padding-right:15px; }
-.fx-cherry::after { content:'🌸'; position:absolute; right:-1px; top:-4px; font-size:10px; animation:petalFloat 2.1s ease-in-out infinite; }
+.fx-cherry { background-image:linear-gradient(90deg,#ff7fae,#ffd1df,#ff9fc4,#ffe0e8,#ff7fae); }
 @keyframes nickShine { to { background-position:-300% center; } }
-@keyframes petalFloat { 0%,100%{transform:translateY(-1px) rotate(-8deg)} 50%{transform:translateY(3px) rotate(9deg)} }
-@media (prefers-reduced-motion:reduce) { .nick.fx,.card-nick.fx,.podium-demo-nick.fx,.fx-cherry::after { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .nick.fx,.card-nick.fx,.podium-demo-nick.fx { animation:none; } }
 
 /* ── 찜 진행 ── */
 .wish-card { margin:0 16px 10px; background:var(--card); border:1px dashed rgba(126,205,240,0.52);
@@ -232,6 +230,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .pv-rank .s { margin-left:auto; font-size:10px; font-weight:800; color:var(--blue); }
 .item .nm { font-size:15px; font-weight:900; margin-top:9px; letter-spacing:-0.3px; }
 .item .ds { min-height:39px; font-size:13.5px; line-height:1.45; color:#bdcde0; font-weight:700; margin-top:3px; letter-spacing:-0.2px; }
+.item-fx .nm, .item-fx .ds { text-align:center; }
 .item .pr { margin-top:8px; text-align:center; border-radius:10px; padding:7px 0;
   font-size:13.5px; font-weight:900; background:rgba(73,175,228,0.09);
   border:1px solid rgba(126,205,240,0.34); color:var(--jelly); }
@@ -405,6 +404,7 @@ const CATALOG = {
   fx: [
     { key:'bluewave',  nm:'블루웨이브', ds:'맑은 푸른빛이 천천히 흐름', price:80, cls:'fx-bluewave', previewOnly:true },
     { key:'auroraglow',nm:'오로라빛',   ds:'민트와 보랏빛이 은은하게 흐름', price:80, cls:'fx-auroraglow', previewOnly:true },
+    { key:'cherry',    nm:'벚꽃비',     ds:'분홍빛이 부드럽게 흐름', price:80, cls:'fx-cherry', previewOnly:true },
     { key:'goldshine', nm:'골드샤인',   ds:'따뜻한 금빛이 물결치며 흐름', price:80, cls:'fx-goldshine' },
   ],
   frame: [
@@ -601,7 +601,7 @@ function cardHtml(type, it) {
   else if (type === 'fx') pv = `<span class="card-nick fx ${it.cls}">오잉러</span>`;
   else pv = `<span class="pv-rank" style="--frame-color:${it.c};"><span class="n">24</span><span class="k">오잉러</span><span class="s">6,865pt</span></span>`;
   const badge = equipped ? '' : wished ? '<span class="badge wish">🎯 찜</span>' : '';
-  return `<div class="item ${trying ? 'trying' : ''}" data-type="${type}" data-key="${it.key}">
+  return `<div class="item item-${type} ${trying ? 'trying' : ''}" data-type="${type}" data-key="${it.key}">
     ${badge}
     <div class="pvbox">${pv}</div>
     <div class="nm">${it.nm}</div>
