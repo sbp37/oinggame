@@ -28,6 +28,7 @@ const STUBS = {
     export const httpsCallable=(f,n)=>async(p)=>{
       (window.__CALLS=window.__CALLS||[]).push(p);
       if(n==='shopAction'&&p&&p.action==='buyCat') return {data:{jelly:60,ownedCatSkins:[p.catSkin],catSkin:p.catSkin}};
+      if(n==='shopAction') return {data:{}};
       return {data:{}};
     };`,
   'firebase-analytics.js': `export const getAnalytics=()=>({});export const logEvent=()=>{};export const isSupported=async()=>false;`,
@@ -64,14 +65,15 @@ const cards = await p.evaluate(() => {
       dx: +((ib.left + ib.right) / 2 - (box.left + box.right) / 2).toFixed(1),
       dy: +((ib.top + ib.bottom) / 2 - (box.top + box.bottom) / 2).toFixed(1),
       loaded: img.complete && img.naturalWidth > 0,
+      imgW: Math.round(ib.width),
     };
   });
 });
 console.log('── 고양이 카드 ──');
-cards.forEach(c => console.log(` ${c.key.padEnd(11)} ${c.nm.padEnd(8)} ${c.price.padEnd(8)} 중앙어긋남(${c.dx},${c.dy}) 이미지로드=${c.loaded}`));
+cards.forEach(c => console.log(` ${c.key.padEnd(11)} ${c.nm.padEnd(8)} ${c.price.padEnd(7)} 그림 ${c.imgW}px 중앙어긋남(${c.dx},${c.dy})`));
 
 // 구매
-await p.click('.item-cat[data-key="cheese"]');
+await p.click('.item-cat[data-key="gray"]');
 await p.waitForTimeout(400);
 p.once('dialog', d => d.accept());
 await p.click('#abBuy');
@@ -88,11 +90,14 @@ console.log(' 잔액:', after.bal);
 console.log(' 팝업 문구:', after.popupText.replace(/\n+/g, ' | '));
 
 const checks = [
-  ['고양이 6종 카드', cards.length === 6],
+  ['젤리 판매는 3종만', cards.length === 3],
+  ['젤리 판매 목록이 파란·회색·삼색', cards.map(c => c.key).sort().join(',') === 'blue-scarf,calico,gray'],
+  ['치즈·핑크·민트는 젤리샵에 없음(현금 전용)', !cards.some(c => ['cheese','pink','mint'].includes(c.key))],
+  ['고양이 그림이 충분히 큼(80px 이상)', cards.every(c => c.imgW >= 80)],
   ['모두 60젤리', cards.every(c => c.price.includes('60'))],
   ['이미지 전부 로드됨', cards.every(c => c.loaded)],
   ['모든 고양이가 칸 정중앙(±1px)', cards.every(c => Math.abs(c.dx) <= 1 && Math.abs(c.dy) <= 1)],
-  ['buyCat 으로 서버 호출', after.calls.some(c => c && c.action === 'buyCat' && c.catSkin === 'cheese')],
+  ['buyCat 으로 서버 호출', after.calls.some(c => c && c.action === 'buyCat' && c.catSkin === 'gray')],
   ['구매완료 팝업 표시', after.popup],
   ['"구매완료다냥" 문구', /구매완료다냥/.test(after.popupText)],
   ['새로고침 안내 포함', /새로고침/.test(after.popupText)],
