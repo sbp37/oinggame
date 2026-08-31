@@ -5,28 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <title>젤리샵 v3 — 합본 디자인 데모</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
 <!-- ══════════════════════════════════════════════════════════════
   젤리샵 v3 합본 데모 (2026-08-30) — 클로드 v2 + 코덱스 시안의 좋은 점만 합침
   · 코덱스에서: 카드 상품화(이름+한줄 설명+개별 미리보기+배지), 실제 랭킹 줄
-    재현(순위변동·레벨), 신뢰 문구, 초창기 멤버 선물 배너, 보유 탭
+    재현(순위변동·레벨·Top 배지), 신뢰 문구, 보유 탭
   · 클로드 v2에서: 시착 거울(컬러+효과+프레임 조합이 사기 전에 실시간 적용),
     오늘 획득 체크리스트, 찜+D-day 진행바, 오잉냥이 점원 멘트
-  · 실서비스 아님 — 서버 호출 0, 실구매 0 (잔액·소유 전부 가짜, noindex)
-  · 가격·key 는 서버(shopAction) 가격표와 동일: 컬러20 / 효과 60·80·100 / 프레임 100~250
+  · 실서비스 아님 — 실구매·지급 0 (noindex). 내 닉네임·랭킹은 읽기 전용으로만 불러옴.
+  · 가격과 일부 아이템은 최종 선택을 위한 디자인 후보. 오픈 전 서버 가격표와 함께 확정해야 함.
 ═══════════════════════════════════════════════════════════════ -->
 <style>
 :root {
-  --bg:#0b1220; --card:#121b2e; --card2:#0f1830; --border:rgba(148,163,184,0.16);
-  --ivory:#eef2f8; --muted:#8a9bb5; --gold:#fbbf24; --gold-dim:rgba(251,191,36,0.14);
-  --blue:#7ec2f0; --green:#7fe895;
+  --bg:#071426; --card:#10243b; --card2:#0b1c32; --border:rgba(126,205,240,0.24);
+  --ivory:#f3f7fd; --muted:#93a8c2; --jelly:#f3cf91; --jelly-dim:rgba(243,207,145,0.10);
+  --blue:#83d1f6; --blue-strong:#49afe4; --blue-dim:rgba(73,175,228,0.16); --green:#7fe0ae;
 }
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { margin:0; padding:0; background:var(--bg); color:var(--ivory);
   font-family:'Pretendard','Malgun Gothic',-apple-system,sans-serif; }
 body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
-.demo-banner { position:sticky; top:0; z-index:80; background:var(--gold); color:#3a2b06;
-  text-align:center; font-size:11px; font-weight:900; padding:5px 8px; letter-spacing:-0.2px; }
+.demo-banner { position:sticky; top:0; z-index:80; background:#173c5d; color:#dff4ff;
+  text-align:center; font-size:12.5px; font-weight:900; padding:6px 8px; letter-spacing:-0.2px; }
 
 /* ── 페이지 헤더 (코덱스 프레임) ── */
 .page-head { display:flex; align-items:center; gap:10px; padding:12px 16px 8px; }
@@ -34,27 +37,50 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   background:var(--card); color:var(--ivory); font-size:15px; display:flex;
   align-items:center; justify-content:center; flex:0 0 auto; }
 .head-title { line-height:1.2; }
-.head-title .sub { font-size:10.5px; color:var(--muted); font-weight:800; }
-.head-title .main { font-size:18px; font-weight:900; letter-spacing:-0.5px; }
-.head-bal { margin-left:auto; background:var(--gold-dim); border:1px solid rgba(251,191,36,0.5);
-  color:var(--gold); border-radius:999px; padding:7px 14px; font-size:14px; font-weight:900; }
+.head-title .sub { font-size:12.5px; color:#adbed2; font-weight:800; }
+.head-title .main { font-family:'Jua','Malgun Gothic',sans-serif; font-size:21px; font-weight:400; letter-spacing:-0.3px; }
+.head-bal { margin-left:auto; background:rgba(73,175,228,0.10); border:1px solid rgba(126,205,240,0.38);
+  color:var(--jelly); border-radius:999px; padding:7px 14px; font-size:14px; font-weight:900; }
 
 /* ── 점원 ── */
-.shop-head { display:flex; align-items:center; gap:12px; padding:8px 16px 10px; }
-.cat-face { font-size:36px; filter:drop-shadow(0 2px 8px rgba(251,191,36,0.3));
+.shop-head { display:flex; align-items:center; gap:10px; padding:8px 16px 10px; }
+.cat-wrap { position:relative; width:54px; height:56px; flex:0 0 54px; display:flex; align-items:flex-end; justify-content:center;
   animation:catBob 3s ease-in-out infinite; }
+.cat-face { width:54px; height:54px; object-fit:contain; flex:0 0 54px;
+  filter:drop-shadow(0 3px 9px rgba(73,175,228,0.22)); }
+.cat-jelly { position:absolute; z-index:2; left:50%; top:3px; transform:translateX(-50%) rotate(-4deg);
+  font-size:23px; line-height:1; filter:drop-shadow(0 2px 3px rgba(0,0,0,.38)); pointer-events:none; }
 @keyframes catBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-.cat-bubble { position:relative; background:var(--card); border:1px solid var(--border);
-  border-radius:14px; padding:8px 12px; font-size:12.5px; line-height:1.45;
-  font-weight:600; flex:1; min-height:18px; transition:opacity 0.15s; }
-.cat-bubble::before { content:''; position:absolute; left:-6px; top:14px; width:10px; height:10px;
-  background:var(--card); border-left:1px solid var(--border); border-bottom:1px solid var(--border);
-  transform:rotate(45deg); }
-.cat-bubble b { color:var(--gold); }
+.cat-bubble { background:var(--card); border:1px solid var(--border);
+  border-radius:999px; padding:9px 15px; font-family:'Jua','Malgun Gothic',sans-serif;
+  font-size:15px; line-height:1.35; font-weight:400; flex:1; min-height:18px; transition:opacity 0.15s; }
+.cat-bubble b { color:var(--blue); }
 
-/* ── 지갑 + 오늘 획득 + 초창기 선물 ── */
-.wallet { margin:2px 16px 8px; background:linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.03));
-  border:1px solid rgba(251,191,36,0.35); border-radius:16px; padding:11px 14px; }
+/* 오늘 받을 젤리는 상단에서 바로 확인 */
+.today-rewards { margin:0 16px 8px; display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+.today-reward { min-width:0; padding:10px 10px 9px; text-align:left; border:1px solid var(--border);
+  border-radius:13px; background:linear-gradient(180deg,rgba(19,45,73,.98),rgba(11,29,51,.98)); }
+.today-reward .reward-top,.today-reward .reward-sub { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.today-reward .reward-head { display:flex; align-items:center; min-width:0; gap:5px; }
+.today-reward .ico { display:block; font-size:16px; line-height:1; }
+.today-reward .name { display:block; min-width:0; color:#eaf3ff; font-size:13px; line-height:1.2; font-weight:850; white-space:nowrap; }
+.today-reward .value { display:inline-flex; flex-shrink:0; align-items:center; padding:3px 7px; border-radius:999px;
+  color:var(--green); background:rgba(127,224,174,.10); border:1px solid rgba(127,224,174,.24); font-size:12px; font-weight:950; }
+.today-reward.pending .value { color:var(--blue); background:rgba(73,175,228,.10); border-color:rgba(126,205,240,.26); }
+.today-reward .reward-sub { margin-top:8px; padding-top:7px; border-top:1px solid rgba(126,205,240,.12);
+  color:#c0d1e4; font-size:12px; line-height:1.25; font-weight:800; }
+.today-reward .reward-sub b { flex-shrink:0; color:var(--green); font-size:12px; font-weight:950; }
+.today-reward.pending .reward-sub b { color:var(--jelly); }
+
+/* ── 젤리 획득 안내: 상품 뒤에서 필요할 때만 펼침 ── */
+.earn-details { margin:2px 16px 14px; background:var(--card); border:1px solid var(--border);
+  border-radius:15px; overflow:hidden; }
+.earn-details summary { list-style:none; display:flex; align-items:center; gap:8px; padding:14px 15px;
+  cursor:pointer; color:var(--blue); font-size:15px; font-weight:900; }
+.earn-details summary::-webkit-details-marker { display:none; }
+.earn-details summary::after { content:'⌄'; margin-left:auto; color:var(--muted); transition:transform .2s; }
+.earn-details[open] summary::after { transform:rotate(180deg); }
+.wallet { padding:0 12px 12px; }
 .earn-row { display:flex; gap:6px; }
 .earn-chip { flex:1; text-align:center; border-radius:10px; padding:6px 2px 5px;
   background:rgba(148,163,184,0.07); border:1px solid var(--border); }
@@ -62,93 +88,180 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 .earn-chip .t { font-size:10px; color:var(--muted); font-weight:800; display:block; }
 .earn-chip .v { font-size:12px; font-weight:900; margin-top:2px; display:block; }
 .earn-chip.done .v { color:var(--green); }
-.gift-card { margin:0 16px 10px; display:flex; align-items:center; gap:10px;
-  background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.3);
-  border-radius:14px; padding:10px 14px; }
-.gift-card .ic { font-size:20px; }
-.gift-card .tt { font-size:12.5px; font-weight:900; }
-.gift-card .dd { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:1px; }
-.gift-card .amt { margin-left:auto; font-size:14px; font-weight:900; color:var(--gold); }
+.earn-list { padding:0 12px 12px; }
+.earn-line { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 5px;
+  border-top:1px solid rgba(126,205,240,.12); color:#eef5ff; font-size:14px; line-height:1.3; font-weight:850; }
+.earn-line span { min-width:0; }
+.earn-line small { display:block; margin-top:4px; color:#adc0d6; font-size:12px; line-height:1.45; font-weight:700; }
+.earn-line b { flex-shrink:0; color:var(--jelly); font-size:14px; }
+.earn-line.invite { margin-top:5px; padding:10px 9px; border:1px solid rgba(126,205,240,.30); border-radius:11px;
+  background:rgba(73,175,228,.08); }
+.earn-line.invite b { color:var(--blue); }
 
 /* ── 거울(내 랭킹 줄) — sticky, 실제 랭킹 줄 재현 ── */
-.mirror-wrap { position:sticky; top:25px; z-index:50; padding:6px 16px 10px;
-  background:linear-gradient(var(--bg) 84%, transparent); }
-.mirror-label { font-size:10.5px; font-weight:800; color:var(--muted); letter-spacing:0.3px;
-  margin:0 0 5px 4px; display:flex; justify-content:space-between; align-items:center; }
-.mirror-reset { background:none; border:none; color:var(--blue); font-size:10.5px; font-weight:800;
+.mirror-wrap { position:sticky; top:28px; z-index:50; margin-bottom:10px; padding:10px 16px 18px;
+  background:rgba(7,20,38,.98); border-bottom:1px solid rgba(126,205,240,.22);
+  box-shadow:0 14px 20px rgba(3,10,21,.36); backdrop-filter:blur(10px); }
+.mirror-wrap.podium-active { position:relative; top:auto; z-index:1; box-shadow:none; backdrop-filter:none; }
+.mirror-label { font-size:13px; font-weight:800; color:#c0d1e4; letter-spacing:0.1px;
+  margin:0 0 9px 2px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.mirror-reset { background:none; border:none; color:var(--blue); font-size:13px; font-weight:800;
   cursor:pointer; font-family:inherit; padding:0; }
-.rank-row { position:relative; display:flex; align-items:center; gap:8px;
-  background:var(--card); border:1.5px solid var(--frame-color, var(--border));
-  border-radius:14px; padding:12px 14px; transition:border-color 0.25s; }
-.rank-row.has-frame::before { content:''; position:absolute; inset:-1px; border-radius:inherit;
-  pointer-events:none; box-shadow:0 0 12px var(--frame-color), 0 0 4px var(--frame-color);
-  animation:glowPulse 2.2s ease-in-out infinite; }
-@keyframes glowPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
-.rank-row .num { font-size:15px; font-weight:900; color:var(--ivory); }
-.rank-row .delta { font-size:10px; font-weight:900; color:var(--green); }
-.rank-row .lv { font-size:9.5px; font-weight:900; color:var(--muted); border:1px solid var(--border);
-  border-radius:999px; padding:2px 7px; background:var(--card2); }
-.rank-row .nick { font-size:15.5px; font-weight:900; letter-spacing:-0.3px; transition:color 0.2s; }
-.rank-row .score { margin-left:auto; font-size:13.5px; font-weight:800; color:var(--blue); }
-.nick.fx, .card-nick.fx { background-clip:text; -webkit-background-clip:text; color:transparent !important;
-  background-size:300% 100%; animation:nickShine 3s linear infinite; }
-.fx-rainbow { background-image:linear-gradient(90deg,#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f472b6,#f87171); }
-.fx-goldshine { background-image:linear-gradient(90deg,#92600a,#fde68a,#fbbf24,#fde68a,#92600a); }
-.fx-diamond { background-image:linear-gradient(90deg,#7dd3fc,#ffffff,#a5f3fc,#ffffff,#7dd3fc); }
+.mirror-tools { display:flex; gap:4px; margin-left:auto; }
+.mirror-mode { border:1px solid var(--border); color:var(--muted); background:var(--card2); border-radius:8px;
+  padding:6px 9px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+.mirror-mode.on { color:#e8f7ff; border-color:rgba(126,205,240,.65); background:var(--blue-dim); }
+
+/* 실제 랭킹 행 구조와 같은 배치: 순위·변동·레벨·닉·Top배지·점수 */
+.rank-row { position:relative; isolation:isolate; display:flex; align-items:center; gap:5px; min-height:46px;
+  background:rgba(47,126,201,0.13); border:1px solid rgba(47,126,201,0.25);
+  border-radius:12px; padding:8px 10px 8px 8px; box-shadow:0 2px 5px rgba(0,0,0,.20); overflow:visible; }
+.rank-row > * { position:relative; z-index:2; }
+.rank-row .rank-num { font-size:15.5px; font-weight:800; color:#c3d2ea; min-width:23px; text-align:right; }
+.rank-row .rank-change { font-size:12px; font-weight:900; min-width:30px; text-align:center; color:var(--green); }
+.rank-row .rank-change.down { color:#ff8a75; }
+.rank-row .rank-change.same { color:var(--muted); }
+.rank-identity { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:2px; overflow:hidden; }
+.rank-nick-line { width:100%; min-width:0; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.oing-level-badge { flex-shrink:0; display:inline-flex; align-items:center; gap:2px; padding:1.5px 4.5px;
+  border-radius:6px; border:1px solid rgba(218,152,69,.34); background:rgba(218,152,69,.10);
+  color:#f0c87c; font-size:11px; font-weight:900; }
+.rank-nick { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:15.5px; line-height:1.18; font-weight:800; letter-spacing:-.35px; }
+.rank-title-count,.rank-hot { flex-shrink:0; font-size:10px; }
+.rank-title-count { color:#e1ae6d; font-weight:900; }
+.rank-tail { min-width:0; flex-shrink:0; display:flex; flex-direction:row; align-items:center; justify-content:flex-end; gap:5px; }
+.rank-pts { color:#f2f7ff; font-size:15px; line-height:1.1; font-weight:900; letter-spacing:-.35px; white-space:nowrap; }
+.rank-badge { font-size:10px; font-weight:900; padding:3px 6px; border-radius:8px; white-space:nowrap; }
+.rank-badge-top10 { background:linear-gradient(135deg,#6f5418,#9a741f 55%,#c99b35); border:1px solid #f4d77e; color:#fff7df; }
+.rank-badge-top30 { background:linear-gradient(135deg,#4b4f96,#5d63b8 55%,#8e97ff); border:1px solid #b7bfff; color:#f5f6ff; }
+.rank-row.top10,.rank-row.top30 { border-radius:16px; }
+.rank-row.top10 { background:linear-gradient(90deg,rgba(244,215,126,.10),transparent 65%),linear-gradient(180deg,#1c2f4e,#11223b); border-color:rgba(244,215,126,.48); }
+.rank-row.top30 { background:linear-gradient(90deg,rgba(142,151,255,.10),transparent 65%),linear-gradient(180deg,#1a2d4b,#11213a); border-color:rgba(183,191,255,.42); }
+.rank-row.top10::before,.rank-row.top30::before { content:''; position:absolute; z-index:3; left:0; top:10px; bottom:10px; width:5px; border-radius:999px; }
+.rank-row.top10::before { background:linear-gradient(#ffe9a8,#f4d77e,#c99b35); }
+.rank-row.top30::before { background:linear-gradient(#b7bfff,#8e97ff,#5d63b8); }
+
+/* 프레임은 기본선과 겹쳐 두 줄로 만들지 않고, 기존 한 줄의 색을 바꾼 뒤 빛만 바깥으로 번짐 */
+.rank-row.has-frame { border-color:var(--frame-color); box-shadow:0 0 10px var(--frame-color); }
+.rank-row.has-frame::after { display:none; }
+
+/* 1·2·3위도 실제 시상대 구조로 미리보기. 프레임은 프로필 원형 링에 적용. */
+.podium-preview { display:none; min-height:250px; padding:15px 9px 8px; border:1px solid var(--border);
+  border-radius:17px; background:linear-gradient(180deg,#10243b,#0a1a2e); overflow:hidden; }
+.podium-preview.show { display:block; }
+.podium-stage { display:flex; align-items:flex-end; justify-content:center; gap:10px; min-height:220px; }
+.podium-person { display:flex; flex-direction:column; align-items:center; width:29%; min-width:0; text-align:center; }
+.podium-person.first { width:36%; }
+.podium-crown { height:21px; line-height:21px; margin-bottom:-4px; position:relative; z-index:2; font-size:18px; filter:drop-shadow(0 0 5px rgba(255,219,130,.45)); }
+.podium-person.first .podium-crown { font-size:23px; }
+.podium-avatar { width:49px; height:49px; margin:0 auto 6px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#182b47; border:2px solid rgba(255,255,255,.34); overflow:hidden; }
+.podium-avatar img { width:86%; height:86%; object-fit:contain; }
+.podium-preview.has-frame .podium-avatar { border-color:var(--frame-color); box-shadow:0 0 11px var(--frame-color); }
+.podium-person.first .podium-avatar { width:59px; height:59px; }
+.podium-rank-label { display:inline-flex; align-items:center; gap:3px; min-height:23px; padding:3px 9px; border-radius:999px;
+  color:#152030; font-size:11px; font-weight:950; background:linear-gradient(135deg,#aab8c9,#eef3f8); }
+.podium-person.first .podium-rank-label { color:#2a1d0d; background:linear-gradient(135deg,#cfa05c,#eac275); }
+.podium-person.third .podium-rank-label { color:#fff8f0; background:linear-gradient(135deg,#9f561e,#bf7520); }
+.podium-meta { min-height:17px; margin:5px 0 2px; display:flex; justify-content:center; }
+.podium-meta .oing-level-badge { font-size:8px; padding:1px 4px; }
+.podium-demo-nick { width:100%; margin:1px 0 3px; padding:0 2px; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; color:var(--ivory); font-size:13px; font-weight:900; }
+.podium-person.first .podium-demo-nick { font-size:15px; }
+.podium-score { margin-bottom:7px; color:#f4f8ff; font-size:14px; line-height:1; font-weight:950; letter-spacing:-.35px; }
+.podium-person.first .podium-score { font-size:18px; }
+.podium-base { position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:54px;
+  overflow:hidden; border:1px solid #eef2f7; border-radius:7px 7px 4px 4px; color:#fff; font-size:26px; font-weight:950;
+  background:linear-gradient(180deg,#fff,#c4cfdb 35%,#78879b 100%); box-shadow:inset 0 2px rgba(255,255,255,.75),0 4px 10px rgba(0,0,0,.25); }
+.podium-person.first .podium-base { height:87px; border-color:#ffdf9e; background:linear-gradient(180deg,#fff0c9,#e0b45f 45%,#96651f 100%); }
+.podium-person.third .podium-base { height:43px; border-color:#ffcb98; background:linear-gradient(180deg,#ffd9b0,#d58e50 45%,#7d481f 100%); }
+.podium-floor { height:10px; margin:2px 3px 0; border:1px solid rgba(205,220,240,.25); border-top-color:rgba(205,220,240,.55);
+  border-radius:3px 3px 9px 9px; background:linear-gradient(180deg,rgba(96,118,150,.6),rgba(18,28,44,.95)); }
+.podium-note { display:none; margin:8px 2px 0; text-align:center; color:#bdcde0; font-size:12.5px; line-height:1.45; font-weight:700; }
+.podium-note.show { display:block; }
+
+.nick.fx, .card-nick.fx, .rank-nick.fx, .podium-demo-nick.fx { background-clip:text; -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent !important;
+  position:relative; display:inline-block; background-size:300% 100%; animation:nickShine 3s linear infinite; }
+.fx-rainbow { background-image:linear-gradient(90deg,#ff718c 0 14%,#ffd76d 14% 29%,#65ddb8 29% 44%,#73c7ff 44% 60%,#b69cff 60% 77%,#ff88c8 77% 91%,#ff718c 91%); background-size:180% 100% !important; }
+.fx-goldshine { background-image:linear-gradient(90deg,#9c6f24,#fff0b8,#f2ca73,#fff0b8,#9c6f24); }
+.fx-star { background-image:linear-gradient(90deg,#fff1a8,#fff,#ffdc76,#fff,#fff1a8); padding-right:13px; }
+.fx-star::after { content:'✦'; position:absolute; right:0; top:-4px; color:#fff0a9; font-size:11px; animation:tinyTwinkle 1.9s ease-in-out infinite; }
+.fx-auroraglow { background-image:linear-gradient(90deg,#62e6c4,#89b9ff,#d7a7ff,#62e6c4); filter:drop-shadow(0 0 4px rgba(99,240,215,.45)); }
+.fx-cherry { background-image:linear-gradient(90deg,#ff91b7,#ffd0dc,#ff9fc4,#ffd0dc,#ff91b7); padding-right:15px; }
+.fx-cherry::after { content:'🌸'; position:absolute; right:-1px; top:-4px; font-size:10px; animation:petalFloat 2.1s ease-in-out infinite; }
 @keyframes nickShine { to { background-position:-300% center; } }
+@keyframes tinyTwinkle { 0%,100%{opacity:.35;transform:scale(.75)} 50%{opacity:1;transform:scale(1.1)} }
+@keyframes petalFloat { 0%,100%{transform:translateY(-1px) rotate(-8deg)} 50%{transform:translateY(3px) rotate(9deg)} }
+@media (prefers-reduced-motion:reduce) { .nick.fx,.card-nick.fx,.podium-demo-nick.fx,.fx-star::after,.fx-cherry::after { animation:none; } }
 
 /* ── 찜 진행 ── */
-.wish-card { margin:0 16px 10px; background:var(--card); border:1px dashed rgba(251,191,36,0.5);
+.wish-card { margin:0 16px 10px; background:var(--card); border:1px dashed rgba(126,205,240,0.52);
   border-radius:14px; padding:11px 14px; display:none; }
 .wish-card.show { display:block; }
-.wish-head { display:flex; justify-content:space-between; font-size:12.5px; font-weight:800; }
-.wish-head .dday { color:var(--gold); }
+.wish-head { display:flex; justify-content:space-between; font-size:13.5px; font-weight:800; }
+.wish-head .dday { color:var(--blue); }
 .wish-bar { height:8px; border-radius:999px; background:rgba(148,163,184,0.15); margin-top:8px; overflow:hidden; }
 .wish-bar i { display:block; height:100%; border-radius:999px; width:0;
-  background:linear-gradient(90deg,#f59e0b,var(--gold)); transition:width 0.5s ease; }
-.wish-sub { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:6px; }
+  background:linear-gradient(90deg,#49afe4,#9addff); transition:width 0.5s ease; }
+.wish-sub { font-size:12.5px; line-height:1.45; color:#bdcde0; font-weight:700; margin-top:6px; }
 
 /* ── 탭 ── */
-.tabs { display:flex; gap:5px; padding:2px 16px 10px; }
-.tab { flex:1; text-align:center; padding:9px 0; border-radius:12px; font-size:12.5px; font-weight:800;
+.tabs { display:flex; gap:5px; padding:0 16px 14px; }
+.tab { flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:13.5px; font-weight:850;
   color:var(--muted); background:var(--card2); border:1px solid var(--border); cursor:pointer; }
-.tab.on { color:#1a2338; background:var(--gold); border-color:var(--gold); }
+.tab.on { color:#061524; background:var(--blue); border-color:var(--blue); }
 
 /* ── 섹션 + 카드 (코덱스 상품화) ── */
 .sect-head { display:flex; justify-content:space-between; align-items:baseline; padding:6px 20px 2px; }
-.sect-head h3 { margin:0; font-size:15px; font-weight:900; letter-spacing:-0.4px; }
-.sect-head .cnt { font-size:11px; color:var(--muted); font-weight:800; }
-.sect-fair { padding:0 20px 8px; font-size:10.5px; color:var(--muted); font-weight:700; }
+.sect-head h3 { margin:0; font-size:17px; font-weight:900; letter-spacing:-0.4px; }
+.sect-head .cnt { font-size:13px; color:#bdcde0; font-weight:800; }
+.sect-fair { padding:2px 20px 10px; font-size:13px; line-height:1.45; color:#bdcde0; font-weight:700; }
 .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 14px; }
 .item { position:relative; background:var(--card); border:1.5px solid var(--border); border-radius:16px;
   padding:12px 11px 11px; cursor:pointer; transition:transform 0.12s, border-color 0.2s; }
 .item:active { transform:scale(0.96); }
-.item.trying { border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-dim); }
+.item.trying { border-color:var(--blue); box-shadow:0 0 0 2px var(--blue-dim); }
 .pvbox { border-radius:12px; background:var(--card2); border:1px solid var(--border);
   height:52px; display:flex; align-items:center; justify-content:center; }
-.card-nick { font-size:17px; font-weight:900; letter-spacing:-0.3px; }
+.card-nick { font-size:19px; font-weight:900; letter-spacing:-0.3px; }
 .pv-rank { display:flex; align-items:center; gap:6px; width:88%;
   background:var(--card2); border:1.5px solid var(--frame-color); border-radius:10px;
   padding:7px 9px; box-shadow:0 0 9px var(--frame-color); }
 .pv-rank .n { font-size:10px; font-weight:900; }
 .pv-rank .k { font-size:11px; font-weight:900; }
-.pv-rank .s { margin-left:auto; font-size:9px; font-weight:800; color:var(--blue); }
-.item .nm { font-size:13px; font-weight:900; margin-top:9px; letter-spacing:-0.3px; }
-.item .ds { font-size:10.5px; color:var(--muted); font-weight:700; margin-top:2px; letter-spacing:-0.2px; }
+.pv-rank .s { margin-left:auto; font-size:10px; font-weight:800; color:var(--blue); }
+.item .nm { font-size:15px; font-weight:900; margin-top:9px; letter-spacing:-0.3px; }
+.item .ds { min-height:39px; font-size:13.5px; line-height:1.45; color:#bdcde0; font-weight:700; margin-top:3px; letter-spacing:-0.2px; }
 .item .pr { margin-top:8px; text-align:center; border-radius:10px; padding:7px 0;
-  font-size:12px; font-weight:900; background:rgba(251,191,36,0.09);
-  border:1px solid rgba(251,191,36,0.3); color:var(--gold); }
+  font-size:13.5px; font-weight:900; background:rgba(73,175,228,0.09);
+  border:1px solid rgba(126,205,240,0.34); color:var(--jelly); }
 .item .pr.owned { background:rgba(127,232,149,0.08); border-color:rgba(127,232,149,0.35); color:var(--green); }
-.badge { position:absolute; top:9px; right:9px; z-index:2; font-size:9px; font-weight:900;
+.badge { position:absolute; top:9px; right:9px; z-index:2; font-size:10px; font-weight:900;
   padding:2.5px 7px; border-radius:999px; letter-spacing:0.2px; }
 .badge.hot { background:rgba(244,114,182,0.16); color:#f9a8d4; border:1px solid rgba(244,114,182,0.45); }
 .badge.rec { background:rgba(126,194,240,0.14); color:var(--blue); border:1px solid rgba(126,194,240,0.45); }
-.badge.wish { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(251,191,36,0.45); }
-.empty-owned { padding:26px 20px; text-align:center; color:var(--muted); font-size:12.5px; font-weight:700; }
+.badge.wish { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(126,205,240,0.45); }
+.empty-owned { padding:26px 20px; text-align:center; color:var(--muted); font-size:14px; line-height:1.5; font-weight:700; }
 
 /* ── 신뢰 문구 ── */
-.fair-foot { margin:6px 20px 14px; text-align:center; font-size:11px; color:var(--muted);
+.fair-foot { margin:8px 20px 16px; text-align:center; font-size:12.5px; color:#aebfd2;
   font-weight:700; line-height:1.7; }
+.coming-note { margin:0 16px 18px; padding:12px 14px; border:1px dashed rgba(126,205,240,.34);
+  border-radius:14px; background:rgba(73,175,228,.07); color:#c8d9eb; text-align:center;
+  font-family:'Jua','Malgun Gothic',sans-serif; font-size:14px; line-height:1.45; }
+.custom-link { display:flex; align-items:center; gap:12px; margin:0 16px 14px; padding:14px;
+  border:1.5px solid rgba(190,151,255,.52); border-radius:16px; color:#eef4ff; text-decoration:none;
+  background:linear-gradient(135deg,rgba(119,88,190,.22),rgba(45,139,187,.16));
+  box-shadow:0 8px 24px rgba(2,8,22,.2); }
+.custom-link:active { transform:scale(.985); }
+.custom-link-icon { width:43px; height:43px; border-radius:14px; display:grid; place-items:center; flex:0 0 43px;
+  font-size:23px; background:rgba(184,151,255,.15); border:1px solid rgba(205,181,255,.35); }
+.custom-link-copy { min-width:0; flex:1; }
+.custom-link-copy b { display:block; font-family:'Jua','Malgun Gothic',sans-serif; font-size:16px; font-weight:400; }
+.custom-link-copy small { display:block; margin-top:3px; color:#bfd0e5; font-size:12.5px; font-weight:700; }
+.custom-link-arrow { color:#a9dbf5; font-size:22px; }
 
 /* ── 하단 액션바 ── */
 .actionbar { position:fixed; bottom:0; left:50%; transform:translate(-50%, 110%); width:100%; max-width:430px;
@@ -156,26 +269,42 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
   backdrop-filter:blur(8px); transition:transform 0.25s ease; z-index:70; }
 .actionbar.show { transform:translate(-50%, 0); }
 .ab-info { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
-.ab-name { font-size:14px; font-weight:900; }
-.ab-price { font-size:13px; font-weight:900; color:var(--gold); }
+.ab-name { font-size:15px; font-weight:900; }
+.ab-price { font-size:14.5px; font-weight:900; color:var(--jelly); }
 .ab-btns { display:flex; gap:8px; }
-.ab-btn { flex:1; border:none; border-radius:13px; padding:13px 0; font-size:14px; font-weight:900;
+.ab-btn { flex:1; border:none; border-radius:13px; padding:13px 0; font-size:15px; font-weight:900;
   font-family:inherit; cursor:pointer; letter-spacing:-0.3px; }
-.ab-buy { background:var(--gold); color:#1a2338; }
+.ab-buy { background:linear-gradient(135deg,#62c4f2,#3aa7df); color:#061524; }
 .ab-buy:disabled { background:rgba(148,163,184,0.2); color:var(--muted); }
-.ab-wish { background:var(--card); color:var(--gold); border:1.5px solid rgba(251,191,36,0.5); flex:0 0 104px; }
+.ab-wish { background:var(--card); color:var(--blue); border:1.5px solid rgba(126,205,240,0.5); flex:0 0 104px; }
 .ab-eq { background:var(--green); color:#0c2413; }
 .ab-off { background:var(--card); color:var(--muted); border:1.5px solid var(--border); flex:0 0 84px; }
 
 .toast { position:fixed; top:13%; left:50%; transform:translate(-50%,-8px); z-index:90; pointer-events:none;
-  background:rgba(20,30,46,0.97); color:#fde68a; border:1.5px solid rgba(251,191,36,0.5);
+  background:rgba(13,32,52,0.97); color:#dff4ff; border:1.5px solid rgba(126,205,240,0.52);
   border-radius:999px; padding:9px 18px; font-size:12.5px; font-weight:800; opacity:0;
   transition:opacity 0.25s, transform 0.25s; white-space:nowrap; }
 .toast.show { opacity:1; transform:translate(-50%,0); }
+@media (max-width:380px) {
+  .page-head { padding-left:12px; padding-right:12px; }
+  .shop-head { padding-left:12px; padding-right:12px; }
+  .cat-bubble { font-size:14px; }
+  .mirror-wrap { padding-left:12px; padding-right:12px; }
+  .mirror-label { font-size:12.5px; }
+  .mirror-mode { padding:6px 7px; font-size:11.5px; }
+  .rank-row { gap:3px; padding-left:6px; padding-right:7px; }
+  .rank-row .rank-change { min-width:26px; }
+  .rank-tail { gap:4px; }
+  .rank-pts { font-size:14.5px; }
+  .tabs { gap:4px; padding-left:12px; padding-right:12px; }
+  .tab { min-width:0; padding:9px 0; font-size:13px; white-space:nowrap; }
+  .grid { gap:8px; padding-left:12px; padding-right:12px; }
+  .item { padding:10px 9px; }
+}
 </style>
 </head>
 <body>
-<div class="demo-banner">🔍 젤리샵 v3 합본 데모 — 실제 구매·지급 없음 (링크를 아는 사람만 볼 수 있어요)</div>
+<div class="demo-banner">🔍 젤리샵 디자인 미리보기 · 실제 구매는 되지 않아요</div>
 
 <div class="page-head">
   <div class="back-btn">‹</div>
@@ -184,34 +313,42 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 </div>
 
 <div class="shop-head">
-  <div class="cat-face">🐱</div>
-  <div class="cat-bubble" id="catSay">어서오라냥! 아이템을 누르면 <b>사기 전에 입어볼 수 있다냥</b> 👇</div>
+  <span class="cat-wrap"><span class="cat-jelly" aria-hidden="true">🍮</span><img class="cat-face" src="https://oinggame.com/assets/img-03.png" alt="젤리샵 오잉냥" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"></span>
+  <div class="cat-bubble" id="catSay">눌러서 <b>내 랭킹에 먼저 입혀보라냥</b></div>
 </div>
 
-<div class="wallet">
-  <div class="earn-row">
-    <div class="earn-chip done"><span class="t">출석</span><span class="v">+1 ✓</span></div>
-    <div class="earn-chip done"><span class="t">첫 게임</span><span class="v">+1 ✓</span></div>
-    <div class="earn-chip done"><span class="t">오늘의 목표</span><span class="v">+2 ✓</span></div>
-    <div class="earn-chip"><span class="t">연속 3일</span><span class="v">2일차</span></div>
+<div class="today-rewards" aria-label="오늘 받을 젤리">
+  <div class="today-reward done">
+    <div class="reward-top"><span class="reward-head"><span class="ico">🎮</span><span class="name">첫 게임(출석)</span></span><span class="value">✓ +1</span></div>
+    <div class="reward-sub"><span>🔥 3일 연속</span><b>보너스 +2 ✓</b></div>
   </div>
-</div>
-
-<div class="gift-card">
-  <span class="ic">🎁</span>
-  <div><div class="tt">초창기 멤버 선물</div><div class="dd">일찍부터 함께해줘서 고맙다냥 — 최초 1회</div></div>
-  <span class="amt">+20 🍮</span>
+  <div class="today-reward pending">
+    <div class="reward-top"><span class="reward-head"><span class="ico">🎯</span><span class="name">오늘 목표</span></span><span class="value">도전 중</span></div>
+    <div class="reward-sub"><span>달성하면</span><b>+2</b></div>
+  </div>
 </div>
 
 <div class="mirror-wrap">
-  <div class="mirror-label"><span>↓ 내 랭킹 줄 — 누르는 대로 바로 입혀져요</span>
-    <button class="mirror-reset" id="resetBtn">↺ 원래대로</button></div>
+  <div class="mirror-label"><span id="mirrorLabel">내 실제 랭킹에서 미리보기</span>
+    <span class="mirror-tools">
+      <button class="mirror-mode on" data-view="row">내 순위</button>
+      <button class="mirror-mode" data-view="podium">1·2·3위</button>
+      <button class="mirror-reset" id="resetBtn">↺</button>
+    </span></div>
   <div class="rank-row" id="mirror">
-    <span class="num">24</span><span class="delta">▲6</span>
-    <span class="lv">🏠 Lv.5</span>
-    <span class="nick" id="mirrorNick">오잉러</span>
-    <span class="score">6,865pt</span>
+    <span class="rank-num" id="mirrorRank">24</span><span class="rank-change" id="mirrorDelta">▲6</span>
+    <span class="rank-identity"><span class="rank-nick-line"><span class="oing-level-badge" id="mirrorLevel">🏠 Lv.5</span><span class="rank-nick" id="mirrorNick">오잉러</span><span class="rank-title-count" id="mirrorTitles"></span><span class="rank-hot" id="mirrorHot"></span></span></span>
+    <span class="rank-tail"><span class="rank-badge rank-badge-top30" id="mirrorTier">✨ Top30</span><span class="rank-pts" id="mirrorScore">6,865pt</span></span>
   </div>
+  <div class="podium-preview" id="podiumPreview">
+    <div class="podium-stage">
+      <div class="podium-person second" data-podium="2"><div class="podium-crown">♛</div><div class="podium-avatar"><img src="https://oinggame.com/assets/img-04.png" alt="2위 고양이" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"></div><div class="podium-rank-label">2nd <span class="podium-change">—</span></div><div class="podium-meta"><span class="oing-level-badge podium-level">🍃 Lv.7</span></div><div class="podium-demo-nick">쿠앙</div><div class="podium-score">140,433pt</div><div class="podium-base">2</div></div>
+      <div class="podium-person first" data-podium="1"><div class="podium-crown">👑</div><div class="podium-avatar"><img src="https://oinggame.com/assets/img-03.png" alt="1위 고양이" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"></div><div class="podium-rank-label">1st <span class="podium-change">—</span></div><div class="podium-meta"><span class="oing-level-badge podium-level">💎 Lv.11</span></div><div class="podium-demo-nick">제이1</div><div class="podium-score">291,561pt</div><div class="podium-base">1</div></div>
+      <div class="podium-person third" data-podium="3"><div class="podium-crown">♛</div><div class="podium-avatar"><img src="https://oinggame.com/assets/img-05.png" alt="3위 고양이" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"></div><div class="podium-rank-label">3rd <span class="podium-change">—</span></div><div class="podium-meta"><span class="oing-level-badge podium-level">🏠 Lv.5</span></div><div class="podium-demo-nick">제이</div><div class="podium-score">115,885pt</div><div class="podium-base">3</div></div>
+    </div>
+    <div class="podium-floor"></div>
+  </div>
+  <div class="podium-note" id="podiumNote">1·2·3위는 사각 테두리 대신 프로필 원형에 작게 표시해요.</div>
 </div>
 
 <div class="wish-card" id="wishCard">
@@ -230,7 +367,23 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 
 <div id="catalogArea"></div>
 
+<details class="earn-details">
+  <summary>🍮 젤리는 어떻게 모아요?</summary>
+  <div class="earn-list">
+    <div class="earn-line"><span>🎮 오늘 첫 게임 <small>첫 게임이 곧 출석이에요</small></span><b>+1</b></div>
+    <div class="earn-line"><span>🎯 오늘 목표 달성</span><b>+2</b></div>
+    <div class="earn-line"><span>📅 연속 플레이 <small>3일·7일째 보너스</small></span><b>+2 / +5</b></div>
+    <div class="earn-line invite"><span>💌 친구 초대 <small>초대 링크로 친구가 처음 플레이하면 둘 다 받아요</small></span><b>보너스</b></div>
+  </div>
+</details>
+
 <div class="fair-foot">🔒 젤리는 꾸미기에만 사용돼요 — 실력과 랭킹은 언제나 공정해요</div>
+<a class="custom-link" id="customShopLink" href="custom-shop-preview.html">
+  <span class="custom-link-icon">✨</span>
+  <span class="custom-link-copy"><b>기다리지 않고 바로 꾸미고 싶다면?</b><small>커스텀 세트 1,990원 · 고양이 스킨 990원</small></span>
+  <span class="custom-link-arrow">›</span>
+</a>
+<div class="coming-note">🐾 새로운 글자 효과와 테두리, 고양이 꾸미기 아이템도<br>계속 추가될 예정이다냥~</div>
 
 <div class="actionbar" id="actionbar">
   <div class="ab-info"><span class="ab-name" id="abName"></span><span class="ab-price" id="abPrice"></span></div>
@@ -240,28 +393,30 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:110px; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ── 데모 상태 (전부 가짜 — 서버 호출 0) ─────────────────────────
-// key·가격은 서버 shopAction 가격표와 동일. 이름·설명은 코덱스 시안 방식(상품화).
+// ── 데모 상태: 실구매·지급 0. 내 랭킹만 Firestore에서 읽기 ──
+// 가격과 previewOnly 아이템은 최종 선택용 후보. 오픈 전 서버 shopAction 가격표와 함께 확정해야 함.
 const CATALOG = {
   color: [
-    { key:'gold',   nm:'금빛',   ds:'랭킹에 어울리는 금빛', price:20, c:'#fbbf24' },
-    { key:'pink',   nm:'장미',   ds:'생기 있는 분홍빛',     price:20, c:'#f472b6' },
-    { key:'mint',   nm:'민트',   ds:'산뜻한 민트빛',        price:20, c:'#34d399' },
-    { key:'purple', nm:'라일락', ds:'은은한 보랏빛',        price:20, c:'#a78bfa' },
-    { key:'red',    nm:'루비',   ds:'선명하게 붉은빛',      price:20, c:'#f87171' },
-    { key:'sky',    nm:'하늘',   ds:'맑은 하늘빛',          price:20, c:'#38bdf8' },
+    { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:30, c:'#ff9e91' },
+    { key:'lemon',  nm:'레몬',   ds:'밝고 산뜻한 노란빛', price:30, c:'#ffd866', previewOnly:true },
+    { key:'mint',   nm:'민트',   ds:'맑고 산뜻한 민트', price:30, c:'#69dfb8' },
+    { key:'purple', nm:'라일락', ds:'포근한 라일락 빛', price:30, c:'#b69cff' },
+    { key:'sky',    nm:'하늘',   ds:'맑은 구름 하늘빛', price:30, c:'#73c7ff' },
+    { key:'apricot',nm:'살구',   ds:'따뜻하고 귀여운 살구빛', price:30, c:'#ffb36b', previewOnly:true },
   ],
   fx: [
-    { key:'rainbow',   nm:'무지개',   ds:'글자에 무지개빛이 흐름',  price:60,  cls:'fx-rainbow', badge:'hot' },
-    { key:'goldshine', nm:'골드샤인', ds:'금빛이 물결치며 반짝임',  price:80,  cls:'fx-goldshine' },
-    { key:'diamond',   nm:'다이아',   ds:'보석빛이 시리게 빛남',    price:100, cls:'fx-diamond' },
+    { key:'star',      nm:'반짝별',   ds:'닉네임 옆에 별빛이 톡톡', price:85,  cls:'fx-star', previewOnly:true },
+    { key:'auroraglow',nm:'오로라빛', ds:'민트와 보랏빛이 은은하게 흐름', price:100, cls:'fx-auroraglow', previewOnly:true },
+    { key:'cherry',    nm:'벚꽃비',   ds:'닉네임 곁에 꽃잎이 살랑', price:120, cls:'fx-cherry', previewOnly:true },
+    { key:'goldshine', nm:'골드샤인', ds:'금빛이 물결치며 반짝임',  price:140, cls:'fx-goldshine' },
   ],
   frame: [
-    { key:'moon',   nm:'달빛',    ds:'차분하게 빛나는 은빛 테두리', price:100, c:'#cbd5e1' },
-    { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:130, c:'#22d3ee' },
-    { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:160, c:'#fda4af' },
-    { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:180, c:'#5eead4' },
-    { key:'royal',  nm:'👑 로얄', ds:'최고를 위한 보랏빛 왕관',     price:250, c:'#e879f9', badge:'rec' },
+    { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:110, c:'#22d3ee' },
+    { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:140, c:'#fda4af' },
+    { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:160, c:'#5eead4' },
+    { key:'paw',    nm:'발바닥',  ds:'포근한 고양이 살구빛 테두리', price:190, c:'#e5a06d', previewOnly:true },
+    { key:'royal',  nm:'👑 로얄', ds:'최고를 위한 보랏빛 왕관',     price:220, c:'#a88cff' },
+    { key:'crown',  nm:'황금왕관',ds:'오래 모아 갖는 황금 테두리',  price:280, c:'#f1c75b', previewOnly:true },
   ],
 };
 const SECT = {
@@ -271,35 +426,170 @@ const SECT = {
 };
 const state = {
   bal: 47,
-  owned: { color:['gold'], fx:[], frame:[] },
-  equipped: { nick:'gold', frame:null },
-  trying: { nick:'gold', frame:null },
+  owned: { color:[], fx:[], frame:[] },
+  equipped: { nick:null, frame:null },
+  trying: { nick:null, frame:null },
   tab: 'all',
   selected: null,
   wish: null,
   dailyRate: 3,
+  view: 'row',
+  profile: { nickname:'오잉러', rank:24, previousRank:30, level:5, score:6865, ts:0, titles:0 },
+  top3: [
+    { nickname:'제이1', score:291561, level:11 },
+    { nickname:'쿠앙', score:140433, level:7 },
+    { nickname:'제이', score:115885, level:5 },
+  ],
 };
 const $ = (id) => document.getElementById(id);
 const findItem = (type, key) => CATALOG[type].find(i => i.key === key);
 const nickType = (key) => CATALOG.fx.some(i => i.key === key) ? 'fx' : 'color';
 
+function levelIcon(lv) {
+  if (lv >= 20) return '🌟';
+  if (lv >= 16) return '👑';
+  if (lv >= 11) return '💎';
+  if (lv >= 7) return '🍃';
+  if (lv >= 4) return '🏠';
+  if (lv >= 3) return '🍯';
+  if (lv >= 2) return '🍡';
+  return '🌱';
+}
+function applyProfile() {
+  const p = state.profile;
+  const m = $('mirror');
+  m.classList.toggle('top10', p.rank >= 4 && p.rank <= 10);
+  m.classList.toggle('top30', p.rank >= 11 && p.rank <= 30);
+  $('mirrorRank').textContent = p.rank || '—';
+  const diff = Number(p.previousRank) > 0 && Number(p.rank) > 0 ? Number(p.previousRank) - Number(p.rank) : 0;
+  const delta = $('mirrorDelta');
+  delta.className = 'rank-change' + (diff < 0 ? ' down' : diff === 0 ? ' same' : '');
+  delta.textContent = diff > 0 ? `▲${diff}` : diff < 0 ? `▼${Math.abs(diff)}` : '—';
+  $('mirrorLevel').textContent = `${levelIcon(p.level)} Lv.${p.level || 1}`;
+  $('mirrorNick').textContent = p.nickname || '오잉러';
+  $('mirrorTitles').textContent = p.titles > 0 ? `👑x${p.titles}` : '';
+  $('mirrorHot').textContent = p.ts && Date.now() - p.ts < 6 * 60 * 60 * 1000 ? '🔥' : '';
+  $('mirrorScore').textContent = `${Number(p.score || 0).toLocaleString() }pt`;
+  const tier = $('mirrorTier');
+  if (p.rank >= 4 && p.rank <= 10) {
+    tier.style.display = '';
+    tier.className = 'rank-badge rank-badge-top10';
+    tier.textContent = '🔥 Top10';
+  } else if (p.rank >= 11 && p.rank <= 30) {
+    tier.style.display = '';
+    tier.className = 'rank-badge rank-badge-top30';
+    tier.textContent = '✨ Top30';
+  } else tier.style.display = 'none';
+  const customParams = new URLSearchParams({
+    nickname:p.nickname || '오잉러', rank:p.rank || 24, previousRank:p.previousRank || p.rank || 24,
+    score:Number(p.score) || 0, level:p.level || 1, titles:p.titles || 0,
+    hot:p.ts && Date.now() - p.ts < 6 * 60 * 60 * 1000 ? '1' : '0'
+  });
+  const customLink = $('customShopLink');
+  if (customLink) customLink.href = `custom-shop-preview.html?${customParams}`;
+  renderMirror();
+}
+function applyPodiumProfile() {
+  const order = [state.top3[1], state.top3[0], state.top3[2]];
+  document.querySelectorAll('.podium-person').forEach((el, idx) => {
+    const entry = order[idx] || {};
+    const level = Math.max(1, Number(entry.oingLevel || entry.level) || 1);
+    el.querySelector('.podium-demo-nick').textContent = entry.nickname || '—';
+    el.querySelector('.podium-score').textContent = `${Number(entry.score || 0).toLocaleString()}pt`;
+    el.querySelector('.podium-level').textContent = `${levelIcon(level)} Lv.${level}`;
+  });
+  renderMirror();
+}
+function setMirrorView(view) {
+  state.view = view;
+  const podium = view === 'podium';
+  document.querySelector('.mirror-wrap').classList.toggle('podium-active', podium);
+  $('mirror').style.display = podium ? 'none' : 'flex';
+  $('podiumPreview').classList.toggle('show', podium);
+  $('podiumNote').classList.toggle('show', podium);
+  $('mirrorLabel').textContent = podium ? '1·2·3위에서 프레임이 보이는 방식' : '내 실제 랭킹에서 미리보기';
+  document.querySelectorAll('.mirror-mode').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+}
+async function loadLiveProfile() {
+  let nickname = '';
+  try { nickname = localStorage.getItem('oeing_nickname_v1') || ''; } catch {}
+  if (nickname) state.profile.nickname = nickname;
+  try {
+    const localRows = JSON.parse(localStorage.getItem('oeing_rankings_v1') || '[]');
+    const idx = Array.isArray(localRows) ? localRows.findIndex(x => x.nickname === nickname) : -1;
+    if (idx >= 0) {
+      const e = localRows[idx] || {};
+      state.profile = { ...state.profile, rank:idx + 1, score:Number(e.score) || 0,
+        level:Number(e.oingLevel) || state.profile.level, ts:Number(e.ts) || 0 };
+    }
+  } catch {}
+  applyProfile();
+  if (!nickname) return;
+  try {
+    const [appSdk, fsSdk] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js'),
+    ]);
+    const app = appSdk.initializeApp({
+      apiKey:'AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg', authDomain:'oing-game.firebaseapp.com',
+      projectId:'oing-game', storageBucket:'oing-game.firebasestorage.app',
+      messagingSenderId:'974542803508', appId:'1:974542803508:web:0b01327dd02c9b08b23061'
+    }, 'oing-shop-preview');
+    const db = fsSdk.getFirestore(app);
+    const rowsSnap = await fsSdk.getDocs(fsSdk.query(fsSdk.collection(db,'rankings'), fsSdk.orderBy('score','desc'), fsSdk.limit(500)));
+    const rows = rowsSnap.docs.map(d => ({ nickname:d.id, ...d.data() }));
+    state.top3 = rows.slice(0, 3);
+    applyPodiumProfile();
+    const idx = rows.findIndex(x => x.nickname === nickname);
+    if (idx < 0) return;
+    const entry = rows[idx];
+    let previousRank = idx + 1, titles = 0;
+    const [rankSnapResult, champResult] = await Promise.allSettled([
+      fsSdk.getDoc(fsSdk.doc(db,'meta','rankSnapshot')),
+      fsSdk.getDoc(fsSdk.doc(db,'champions',nickname)),
+    ]);
+    if (rankSnapResult.status === 'fulfilled' && rankSnapResult.value.exists()) {
+      previousRank = Number((rankSnapResult.value.data().ranks || {})[nickname]) || previousRank;
+    }
+    if (champResult.status === 'fulfilled' && champResult.value.exists()) titles = Number(champResult.value.data().count) || 0;
+    state.profile = { nickname, rank:idx + 1, previousRank, score:Number(entry.score) || 0,
+      level:Number(entry.oingLevel) || state.profile.level, ts:Number(entry.ts) || 0, titles };
+    applyProfile();
+  } catch (e) {
+    console.warn('랭킹 미리보기 실시간 로드 실패 — 로컬 표시를 유지합니다.', e);
+  }
+}
+
 // ── 거울 ──
 function renderMirror() {
   const nick = $('mirrorNick');
+  const podiumNicks = [...document.querySelectorAll('.podium-demo-nick')];
   const t = state.trying;
-  nick.className = 'nick';
-  nick.style.color = '';
+  [nick, ...podiumNicks].forEach(el => {
+    el.className = el === nick ? 'rank-nick' : 'podium-demo-nick';
+    el.style.color = '';
+  });
   if (t.nick) {
-    if (nickType(t.nick) === 'fx') nick.classList.add('fx', findItem('fx', t.nick).cls);
-    else nick.style.color = findItem('color', t.nick).c;
+    if (nickType(t.nick) === 'fx') {
+      const cls = findItem('fx', t.nick).cls;
+      [nick, ...podiumNicks].forEach(el => el.classList.add('fx', cls));
+    } else {
+      const color = findItem('color', t.nick).c;
+      [nick, ...podiumNicks].forEach(el => { el.style.color = color; });
+    }
   }
   const m = $('mirror');
+  const p = $('podiumPreview');
   if (t.frame) {
     m.classList.add('has-frame');
     m.style.setProperty('--frame-color', findItem('frame', t.frame).c);
+    p.classList.add('has-frame');
+    p.style.setProperty('--frame-color', findItem('frame', t.frame).c);
   } else {
     m.classList.remove('has-frame');
     m.style.removeProperty('--frame-color');
+    p.classList.remove('has-frame');
+    p.style.removeProperty('--frame-color');
   }
 }
 
@@ -313,9 +603,7 @@ function cardHtml(type, it) {
   if (type === 'color') pv = `<span class="card-nick" style="color:${it.c};">오잉러</span>`;
   else if (type === 'fx') pv = `<span class="card-nick fx ${it.cls}">오잉러</span>`;
   else pv = `<span class="pv-rank" style="--frame-color:${it.c};"><span class="n">24</span><span class="k">오잉러</span><span class="s">6,865pt</span></span>`;
-  const badge = equipped ? '' : wished ? '<span class="badge wish">🎯 찜</span>'
-    : it.badge === 'hot' ? '<span class="badge hot">인기</span>'
-    : it.badge === 'rec' ? '<span class="badge rec">추천</span>' : '';
+  const badge = equipped ? '' : wished ? '<span class="badge wish">🎯 찜</span>' : '';
   return `<div class="item ${trying ? 'trying' : ''}" data-type="${type}" data-key="${it.key}">
     ${badge}
     <div class="pvbox">${pv}</div>
@@ -447,13 +735,14 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   state.selected = null;
   renderCatalog(); renderActionbar();
 }));
+document.querySelectorAll('.mirror-mode').forEach(b => b.addEventListener('click', () => setMirrorView(b.dataset.view)));
 $('resetBtn').addEventListener('click', () => {
   state.trying = { nick: state.equipped.nick, frame: state.equipped.frame };
   state.selected = null;
   renderMirror(); renderCatalog(); renderActionbar();
   say('지금 장착한 모습으로 되돌렸다냥');
 });
-renderMirror(); renderCatalog();
+applyProfile(); applyPodiumProfile(); setMirrorView('row'); renderCatalog(); loadLiveProfile();
 </script>
 </body>
 </html>
