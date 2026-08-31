@@ -17,7 +17,7 @@ import {
 import { setLoading, setEmpty, setError, guardBtn, resultMsg } from './admin.js';
 
 const SOURCE_KO = {
-  submitScore: '🎮 게임 지급', claimDaily: '📅 출석', earlyMember: '🎁 기존 회원 선물',
+  submitScore: '🎮 게임 지급', claimDaily: '📅 출석', earlyMember: '🎁 초기 멤버 선물',
   buySkin: '🎨 스킨 구매', buyFrame: '🖼 프레임 구매', buyBubble: '💬 말풍선 구매',
   renameEarly: '✏️ 조기 닉변', restore: '🔗 계정 합산', admin: '🛠 운영자 조정',
   friendReferral: '💌 친구초대',
@@ -154,7 +154,7 @@ async function lookupJelly() {
         w.streakDays ? `연속 ${w.streakDays}일` : '',
         w.lastPlayDate ? `마지막 플레이 ${w.lastPlayDate}` : '',
         w.welcomeGranted ? '환영 지급됨' : '환영 미지급',
-        w.earlyMemberGrantedAt ? '기존 회원 선물 지급됨' : '',
+        w.earlyMemberGrantedAt ? '초기 멤버 선물 지급됨' : '',
         typeof w.seededAmount === 'number' ? `레거시 흡수 ${w.seededAmount}` : '',
       ].filter(Boolean).join(' · ');
     } else {

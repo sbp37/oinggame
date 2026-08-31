@@ -12980,7 +12980,7 @@ function showOingLevelInfoPreview() {
 
 const MY_JELLY_LABELS = Object.freeze({
   welcome: '🎁 기본 선물',
-  earlyMember: '🎁 기존 멤버 선물',
+  earlyMember: '🎁 초기 멤버 선물',
   firstGame: '🎮 오늘 첫 게임',
   goal: '🎯 오늘 목표 달성',
   streak: '🔥 연속 플레이 보너스',
@@ -13016,7 +13016,7 @@ function expandMyJellyHistory(wallet, logs) {
     const amount = Number(log.amount) || 0;
     if (!amount) continue;
     let label = MY_JELLY_LABELS[log.source] || (amount > 0 ? '🍮 젤리 지급' : '🍮 젤리 사용');
-    if (log.source === 'earlyMember') label = '🎁 기존 멤버 선물';
+    if (log.source === 'earlyMember') label = '🎁 초기 멤버 선물';
     if (log.source === 'friendReferral') label = '💌 친구초대 보너스';
     if (log.reason) label += ` · ${String(log.reason).slice(0, 30)}`;
     rows.push({ label, amount, ts });
@@ -14378,7 +14378,7 @@ function showSkinAppliedToast() {
 
 // 🍮 게임 종료 젤리 지급 토스트 — 서버(submitScore)가 확정 지급한 것만 표시
 function showJellyGrantToast(jelly) {
-  const names = { welcome: '환영 선물', firstGame: '오늘 첫 게임', goal: '오늘의 목표 달성', streak: '연속 플레이', earlyMember: '기존 멤버 선물' };
+  const names = { welcome: '환영 선물', firstGame: '오늘 첫 게임', goal: '오늘의 목표 달성', streak: '연속 플레이', earlyMember: '초기 멤버 선물' };
   const parts = [];
   for (const k of Object.keys(jelly.granted || {})) {
     parts.push(`${names[k] || k} +${jelly.granted[k]}`);
@@ -14408,10 +14408,10 @@ function showEarlyMemberGiftPopup(amount) {
   overlay.style.display = 'flex';
   overlay.style.zIndex = '520';
   overlay.innerHTML = `
-    <div class="overlay-card" role="dialog" aria-modal="true" aria-label="기존 멤버 선물" style="max-width:350px;text-align:center;padding:24px 20px 18px;">
+    <div class="overlay-card" role="dialog" aria-modal="true" aria-label="초기 멤버 선물" style="max-width:350px;text-align:center;padding:24px 20px 18px;">
       <div style="font-size:42px;line-height:1;margin-bottom:10px;">🎁</div>
       <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:7px;">함께해줘서 고맙다냥!</div>
-      <div style="font-size:14px;font-weight:700;line-height:1.55;color:var(--muted);">기존 멤버 선물로<br><b style="font-size:19px;color:#f3cf91;">🍮 젤리 +${Number(amount) || 20}개</b>를 드렸어요.</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.55;color:var(--muted);">초기 멤버 선물로<br><b style="font-size:19px;color:#f3cf91;">🍮 젤리 +${Number(amount) || 20}개</b>를 드렸어요.</div>
       <button type="button" class="action-btn" style="margin-top:18px;width:100%;">선물 받기</button>
     </div>`;
   const close = () => overlay.remove();

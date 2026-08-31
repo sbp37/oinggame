@@ -45,7 +45,7 @@ test('내 정보에서 본인 젤리 잔액과 선물 출처를 분리해 보여
     '젤리 원장은 로그인한 본인 UID로만 조회해야 함');
   assert.match(src, /welcome: '🎁 기본 선물'/,
     '환영 10개는 기본 선물로 표시해야 함');
-  assert.match(src, /earlyMember: '🎁 기존 멤버 선물'/,
+  assert.match(src, /earlyMember: '🎁 초기 멤버 선물'/,
     '기존 멤버 20개는 별도 선물로 표시해야 함');
   assert.match(src, /seededAmount[\s\S]{0,220}기본 선물/,
     '원장 도입 전 기본 10개도 지갑 seed에서 복원해 표시해야 함');
