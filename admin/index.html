@@ -88,6 +88,7 @@
       </div>
       <div class="seg" id="inboxSeg">
         <button class="seg-btn active" data-sub="verdicts">🚨 점수 검토</button>
+        <button class="seg-btn" data-sub="orders">🛍 주문</button>
         <button class="seg-btn" data-sub="feedback">💬 문의</button>
         <button class="seg-btn" data-sub="reviews">📝 리뷰</button>
         <button class="seg-btn" data-sub="done">✅ 처리 완료</button>
@@ -101,6 +102,19 @@
             <button id="verdictAckBtn" class="btn btn-ghost btn-sm" style="display:none;">✓ 모두 확인</button>
           </div>
           <div id="verdictList" class="list"></div>
+        </div>
+      </div>
+
+      <!-- 커스텀샵 주문 -->
+      <div class="sub-panel" data-subpanel="orders" style="display:none;">
+        <div class="card">
+          <div class="card-head">
+            <h3>🛍 커스텀샵 주문</h3>
+            <button id="customOrdersLoadBtn" class="btn btn-primary btn-sm">주문 불러오기</button>
+          </div>
+          <div class="card-note" style="margin-bottom:8px;">카카오페이 입금내역을 직접 확인한 뒤에만 ‘입금 확인·발송’을 눌러주세요.</div>
+          <div id="customOrdersResultMsg"></div>
+          <div id="customOrdersResult" class="custom-order-list"></div>
         </div>
       </div>
 
@@ -278,6 +292,13 @@
         <summary>🍮 젤리 관리</summary>
         <div class="tool-body">
           <div class="card">
+            <div class="card-head"><h3>👥 전체 젤리 현황</h3><button id="jellyWalletsLoadBtn" class="btn btn-primary btn-sm">불러오기</button></div>
+            <div class="card-note" style="margin-bottom:8px;">게임을 한 번 이상 완료해 지갑이 만들어진 유저를 잔액순으로 최대 100명 보여줘요.</div>
+            <input id="jellyWalletFilter" type="search" placeholder="닉네임·UID로 목록 안에서 찾기" style="display:none; width:100%; margin-bottom:8px;">
+            <div id="jellyWalletsSummary"></div>
+            <div id="jellyWalletsList" class="economy-list"></div>
+          </div>
+          <div class="card">
             <div class="card-head"><h3>👤 유저 젤리 조회 · 지급/차감</h3></div>
             <div style="display:flex; gap:8px; margin-bottom:8px;">
               <input id="jellyNick" type="text" placeholder="닉네임" style="flex:1; min-width:0;">
@@ -299,6 +320,12 @@
             <div class="card-head"><h3>📜 최근 지급·차감 내역 (전체)</h3><button id="jellyLogLoadBtn" class="btn btn-ghost btn-sm">불러오기</button></div>
             <div class="card-note" style="margin-bottom:8px;">서버가 기록한 젤리 원장 최근 30건 — 획득(게임·출석·선물)과 사용(구매·닉변)이 모두 남아요.</div>
             <div id="jellyGlobalLog" class="list"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>💌 친구초대 현황</h3><button id="referralOverviewLoadBtn" class="btn btn-ghost btn-sm">불러오기</button></div>
+            <div class="card-note" style="margin-bottom:8px;">정상 한 판까지 끝나 양쪽에 +3이 지급된 내역과, 아직 조건을 기다리는 초대를 구분해 보여줘요.</div>
+            <div id="referralOverviewSummary"></div>
+            <div id="referralOverviewList" class="economy-list"></div>
           </div>
         </div>
       </details>

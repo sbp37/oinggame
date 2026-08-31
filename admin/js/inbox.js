@@ -9,9 +9,11 @@
 import { guardBtn } from './admin.js';
 import { loadVerdicts, ackAllVerdicts } from './security.js';
 import { initFeedbackUI, loadFeedback } from './operations.js';
+import { initCustomOrdersUI, loadCustomOrders } from './orders.js';
 
 const sub = {
   verdicts: { inited: false, loaded: false },
+  orders:   { inited: false, loaded: false },
   feedback: { inited: false, loaded: false },
   reviews:  { inited: false, loaded: false },
   done:     { inited: false, loaded: false },
@@ -32,6 +34,10 @@ async function openSub(name, { force = false } = {}) {
     if (!st.inited) { initFeedbackUI(); st.inited = true; }
     await loadFeedback({ reset: force });
     st.loaded = true;
+  } else if (name === 'orders') {
+    if (!st.inited) { initCustomOrdersUI(); st.inited = true; }
+    // 주문함은 입금 확인 전 운영자가 버튼을 눌러 불러오는 방식(진입만으로 조회 0).
+    st.loaded = true;
   } else if (name === 'reviews') {
     // 리뷰는 '리뷰 불러오기' 버튼을 눌렀을 때만 조회한다(서브탭 진입만으로는 조회 0).
     st.loaded = true;
@@ -48,7 +54,11 @@ export function initInbox() {
 }
 
 export async function loadInbox({ force = false } = {}) {
-  if (force) { sub.verdicts.loaded = false; sub.feedback.loaded = false; sub.reviews.loaded = false; sub.done.loaded = false; }
+  if (force) {
+    sub.verdicts.loaded = false; sub.orders.loaded = false; sub.feedback.loaded = false;
+    sub.reviews.loaded = false; sub.done.loaded = false;
+    if (currentSub === 'orders') await loadCustomOrders();
+  }
   await openSub(currentSub, { force });
 }
 

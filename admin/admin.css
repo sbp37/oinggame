@@ -429,6 +429,33 @@ button.online-chip.more { cursor: pointer; font-family: inherit; font-size: 12.5
 .rw-revoke { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
 .rw-revoke-link { background: none; border: none; color: #c98a8a; font-size: 11.5px; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 2px; }
 .rw-revoke-link:hover { color: #e0a0a0; }
+
+/* 커스텀샵 주문함 — 입금 확인이 필요한 항목을 한눈에 구분 */
+.custom-order-list { display:flex; flex-direction:column; gap:9px; }
+.custom-order-item { padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface2); }
+.custom-order-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.custom-order-user { font-size:14px; font-weight:800; color:var(--ivory); }
+.custom-order-status { flex:0 0 auto; padding:4px 7px; border-radius:999px; font-size:10.5px; font-weight:800; background:var(--surface); border:1px solid var(--border2); color:var(--muted); }
+.custom-order-status.pending { color:#ffe4a3; border-color:rgba(244,199,102,.45); }
+.custom-order-status.fulfilled { color:#a9efd0; border-color:rgba(101,210,160,.42); }
+.custom-order-status.cancelled { color:#efaaaa; border-color:rgba(220,110,110,.4); }
+.custom-order-choice { margin-top:7px; font-size:13.5px; font-weight:800; color:var(--text); }
+.custom-order-meta { margin-top:4px; font-size:11.5px; line-height:1.5; color:var(--muted); }
+.custom-order-actions { display:flex; gap:7px; margin-top:10px; }
+.custom-order-actions .btn { flex:1; }
+.economy-list { display:flex; flex-direction:column; gap:7px; }
+.economy-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; padding:10px 11px; border:1px solid var(--border); border-radius:11px; background:var(--surface2); }
+.economy-main { min-width:0; }
+.economy-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ivory); font-size:13.5px; font-weight:850; }
+.economy-meta { margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:10.5px; }
+.economy-balance { color:#f2cf88; font-size:13px; font-weight:900; white-space:nowrap; }
+.economy-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:9px; }
+.economy-summary > div { padding:9px 7px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); text-align:center; }
+.economy-summary b { display:block; color:var(--ivory); font-size:15px; }
+.economy-summary span { display:block; margin-top:2px; color:var(--muted); font-size:10px; font-weight:750; }
+.economy-section-title { margin:12px 1px 7px; color:var(--text); font-size:12.5px; font-weight:900; }
+.economy-note { margin:0 0 9px; padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:11px; line-height:1.45; }
+.economy-open-user { padding:5px 8px; border:1px solid var(--border2); border-radius:8px; background:var(--surface); color:var(--text); font-size:11px; font-weight:800; cursor:pointer; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── 2026-07 개편: 서브탭/아코디언/데이터 상태 ── */

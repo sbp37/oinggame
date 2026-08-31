@@ -23,9 +23,13 @@ function isHiddenById(id) {
   return /display\s*:\s*none/.test(src.slice(start, end));
 }
 
-test('현금 결제 오버레이(donateOverlay) 진입 버튼이 전부 숨겨져 있다', () => {
-  // 상단 "스킨샵 🐱" — donateOverlay 를 직접 여는 유일한 상시 노출 버튼이었음
-  assert.ok(isHiddenById('supportTopBtn'), '스킨샵(상단) 버튼이 열려 있으면 안 됨');
+test('예전 스킨샵 자리의 젤리 입구는 초기 깜빡임 없이 JS 게이트로만 열린다', () => {
+  assert.ok(isHiddenById('supportTopBtn'), '초기 마크업은 숨겨 앱·로딩 중 노출을 막아야 함');
+  assert.match(src, /const ENABLE_JELLY_SHOP = true;/, '웹 젤리샵 오픈 플래그가 켜져야 함');
+  assert.match(src, /if \(ENABLE_JELLY_SHOP && !IS_APP\)[\s\S]{0,220}supportTopBtn[\s\S]{0,120}inline-flex/,
+    '웹에서만 예전 스킨샵 자리의 버튼을 표시해야 함');
+  assert.match(src, /supportTopBtn'\)\.addEventListener\('click', openJellyShop\)/,
+    '상단 젤리 잔액을 누르면 젤리샵으로 가야 함');
 });
 
 test('젤리샵 안 서포터팩(990원) 박스가 숨겨져 있다', () => {
@@ -36,13 +40,13 @@ test('젤리샵 안 서포터팩(990원) 박스가 숨겨져 있다', () => {
   assert.ok(/display\s*:\s*none/.test(src.slice(i, end)), '서포터팩 박스가 열려 있으면 안 됨');
 });
 
-test('젤리샵 직접 진입 버튼들도 닫힌 상태 유지', () => {
+test('중복 젤리샵 진입 버튼들은 숨기고 상단 잔액 입구 하나만 쓴다', () => {
   for (const id of ['jellyShopBtn', 'jellyBalanceBtn', 'skinOpenBtn']) {
     assert.ok(isHiddenById(id), `#${id} 이 열려 있으면 안 됨`);
   }
 });
 
-test('상점 비활성 중에는 +말풍선과 함수 직접 호출도 신규 구매 진입을 막는다', () => {
+test('상점 진입·구매 함수의 이중 게이트는 오픈 후에도 유지한다', () => {
   assert.match(src, /if \(!text && !ENABLE_JELLY_SHOP\) return '';/,
     '상점 비활성 시 +말풍선을 렌더하지 않아야 함');
   assert.match(src, /if \(!ENABLE_JELLY_SHOP && !JSHOP_PREVIEW\) return;/,
@@ -84,7 +88,9 @@ test('openDonateOverlay 호출부는 숨겨진 두 버튼뿐', () => {
 
 test('독립 커스텀 미리보기는 기본 URL에서 실제 결제를 차단한다', () => {
   const custom = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'custom-shop-preview.html'), 'utf8');
-  assert.match(custom, /if\(params\.get\('checkout'\)!=='1'\)/,
+  assert.match(custom, /const checkoutMode=params\.get\('checkout'\)==='1'/,
+    '운영 모드 여부를 명시적으로 계산해야 함');
+  assert.match(custom, /if\(!checkoutMode\)/,
     '명시적 운영 모드가 아니면 결제를 막아야 함');
   assert.doesNotMatch(custom, /data-frame-key="crown"/,
     '황금왕관은 젤리 전용이므로 유료 신규 선택지에 있으면 안 됨');
@@ -92,6 +98,8 @@ test('독립 커스텀 미리보기는 기본 URL에서 실제 결제를 차단�
 
 test('젤리샵의 커스텀샵 링크는 미리보기 안전 모드를 유지한다', () => {
   const preview = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'shop-v2-preview.html'), 'utf8');
+  assert.match(preview, /const ENABLE_LIVE_SHOP = true;/,
+    '독립 젤리샵 운영 플래그가 켜져야 함');
   assert.match(preview, /custom-shop-preview\.html\?preview=1/,
     '정적 링크가 커스텀 미리보기 안전 모드를 유지해야 함');
   assert.match(preview, /preview:'1'/,
@@ -104,4 +112,13 @@ test('젤리샵은 글자색·효과를 닉네임 한 카테고리로 보여준�
   assert.doesNotMatch(preview, /data-tab="(?:color|fx)"/);
   assert.match(preview, /nicknameSectionHtml\(nicknameEntries\(\)\)/,
     '전체 화면에서도 단색과 효과를 한 닉네임 섹션으로 묶어야 함');
+});
+
+test('구매 프레임은 등급 바를 덮지 않고 내 랭킹에 두 겹 선을 만들지 않는다', () => {
+  assert.doesNotMatch(src, /\.rank-row\[class\*="frame-"\]::before/,
+    '프레임이 ::before를 쓰면 Top10·Top30 등급 바와 충돌함');
+  assert.match(src, /\.rank-row\.me\[class\*="frame-"\]::after\s*\{\s*content\s*:\s*none/,
+    '내 랭킹은 기존 하늘색 링을 끄고 구매 프레임 외곽 효과만 보여야 함');
+  assert.match(src, /0 0 13px color-mix\(/,
+    '구매 프레임 효과는 기본 테두리 바깥 글로우로 표현해야 함');
 });

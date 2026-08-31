@@ -14,7 +14,7 @@
 body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-height:100vh;padding-bottom:142px;background:radial-gradient(circle at 82% 5%,rgba(104,77,183,.2),transparent 28%),linear-gradient(180deg,#07162b,#061326 55%,#07101f);overflow:hidden}
 .demo{height:31px;display:grid;place-items:center;background:#174361;color:#dff4ff;border-bottom:1px solid #39749a;font-size:12.5px;font-weight:800}
 .head{display:flex;align-items:center;gap:12px;padding:16px}.back{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;color:#dbeeff;text-decoration:none;font-size:27px;background:#102842;border:1px solid #315778}.headcopy{flex:1}.headcopy small{display:block;color:#9db4cb;font-size:12px;font-weight:800}.headcopy h1{font-family:'Jua',sans-serif;font-size:24px;font-weight:400;margin:0}.tag{font-size:12px;font-weight:900;color:#c9b5ff;border:1px solid rgba(192,162,255,.45);background:rgba(160,119,238,.12);border-radius:999px;padding:7px 10px}
-.shop-nav{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 16px 14px;padding:4px;border:1px solid #31506f;border-radius:14px;background:#0b1b31}.shop-nav a{min-height:44px;display:grid;place-items:center;padding:7px 8px;border-radius:10px;color:#c8daec;text-decoration:none;text-align:center;font-size:12.5px;line-height:1.25;font-weight:900}.shop-nav a:first-child{color:#061524;background:#7ed5ff}.shop-nav small{display:block;font-size:10.5px;opacity:.76}
+.shop-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 16px 14px;padding:4px;border:1px solid #31506f;border-radius:14px;background:#0b1b31}.shop-nav button{min-width:0;min-height:52px;display:grid;place-items:center;padding:7px 5px;border:0;border-radius:10px;color:#c8daec;background:transparent;text-align:center;font-size:12.5px;line-height:1.2;font-weight:900;cursor:pointer}.shop-nav button.on{color:#061524;background:#7ed5ff}.shop-nav button:focus-visible{outline:2px solid #fff;outline-offset:2px}.shop-nav small{display:block;font-size:10.5px;opacity:.8}
 .hero{margin:0 16px 18px;padding:17px;border-radius:21px;background:linear-gradient(145deg,rgba(22,51,83,.98),rgba(13,32,57,.98));border:1px solid #3d6180;box-shadow:0 14px 32px rgba(0,5,16,.3)}
 .hero-top{display:flex;align-items:center;gap:12px}.hero-cat{width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 5px 10px rgba(0,0,0,.3))}.hero h2{font-family:'Jua',sans-serif;font-size:21px;font-weight:400;margin:0}.hero p{font-size:13.5px;font-weight:700;color:#c9d8e8;line-height:1.55;margin:4px 0 0}
 .preview-label{display:flex;align-items:center;justify-content:space-between;margin:17px 0 9px;font-size:13px;font-weight:900;color:#cfe0f2}.preview-label em{font-style:normal;font-size:11.5px;color:#8fdcff}
@@ -22,20 +22,21 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 .rank:before{content:"";position:absolute;left:-3px;top:13px;width:6px;height:38px;border-radius:999px;background:var(--frame);box-shadow:0 0 10px var(--frame)}.no{font-size:17px;font-weight:900}.up{font-size:13px;font-weight:900;color:#67e29c}.up.down{color:#f8836f}.lv{font-size:10.5px;font-weight:900;padding:4px 6px;border-radius:999px;color:#ffe49b;background:#25354b;border:1px solid #51637a}.nick{font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.titles{font-size:11px;white-space:nowrap}.tail{margin-left:auto;display:flex;align-items:center;gap:7px}.badge{font-size:10.5px;font-weight:900;padding:5px 8px;border-radius:999px;background:linear-gradient(135deg,#6553bc,#786bd1);border:1px solid #ad9cff}.pts{font-size:15px;font-weight:900;white-space:nowrap}
 .fx{color:transparent!important;background-size:300% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative;display:inline-block;animation:nickShine 3s linear infinite}.fx-rainbow{background-image:linear-gradient(90deg,#ff718c 0 14%,#ffd76d 14% 29%,#65ddb8 29% 44%,#73c7ff 44% 60%,#b69cff 60% 77%,#ff88c8 77% 91%,#ff718c 91%);background-size:180% 100%}.fx-goldshine{background-image:linear-gradient(90deg,#9c6f24,#fff0b8,#f2ca73,#fff0b8,#9c6f24)}.fx-bluewave{background-image:linear-gradient(90deg,#2f8cff,#83dcff,#c3efff,#68b8ff,#2f8cff);filter:drop-shadow(0 0 4px rgba(74,174,255,.35))}.fx-auroraglow{background-image:linear-gradient(90deg,#62e6c4,#89b9ff,#d7a7ff,#62e6c4);filter:drop-shadow(0 0 4px rgba(99,240,215,.45))}.fx-cherry{background-image:linear-gradient(90deg,#ff7fae,#ffd1df,#ff9fc4,#ffe0e8,#ff7fae)}
 .section{padding:0 16px;margin-top:22px;scroll-margin-top:12px}.sec-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:11px}.sec-head h2{font-family:'Jua',sans-serif;font-size:20px;font-weight:400;margin:0}.sec-head span{font-size:12px;color:#9eb6ce;font-weight:800}.product{padding:15px;border:1px solid #385979;border-radius:19px;background:rgba(16,36,62,.92)}.product-top{display:flex;align-items:center;gap:11px}.ico{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;font-size:23px;background:rgba(132,180,225,.1);border:1px solid #416588}.product-title{flex:1}.product-title b{display:block;font-size:16px}.product-title small{display:block;margin-top:3px;font-size:12.5px;color:#b9ccdf;font-weight:700}.price{font-family:'Jua',sans-serif;font-size:21px;color:#aee6ff}.pick-title{font-size:13px;font-weight:900;color:#d6e7f8;margin:15px 0 8px}.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.choice{min-height:59px;padding:9px;border:1px solid #385a79;border-radius:13px;color:#dcecff;background:#0d2039;cursor:pointer;text-align:center}.choice b{display:block;font-size:14px}.choice small{display:block;color:#9fb7ce;font-size:11.5px;font-weight:700;margin-top:2px;text-align:center}.choice.on{border-color:#83dcff;box-shadow:0 0 0 2px rgba(126,213,255,.16);background:#12304d}.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}.frame-dot{display:inline-block;width:17px;height:11px;border:2px solid var(--c);border-radius:5px;margin-right:5px;vertical-align:-1px;box-shadow:0 0 5px var(--c)}
-.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.cat-choice{position:relative;min-width:0;border:1px solid #385a79;border-radius:15px;padding:9px 5px 8px;background:#0d2039;color:#dcecff;text-align:center;cursor:pointer}.cat-choice.on{border-color:#83dcff;box-shadow:0 0 0 2px rgba(126,213,255,.16)}.cat-choice img{width:74px;height:74px;object-fit:contain}.cat-choice[data-cat-key="mint"] img{width:86px;height:86px;margin:-6px 0}.cat-choice b{display:block;font-size:12.5px;margin-top:3px}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.cat-choice{position:relative;min-width:0;border:1px solid #385a79;border-radius:15px;padding:9px 5px 8px;background:#0d2039;color:#dcecff;text-align:center;cursor:pointer}.cat-choice.on{border-color:#83dcff;box-shadow:0 0 0 2px rgba(126,213,255,.16)}.cat-choice img{display:block;width:74px;height:74px;margin:0 auto;object-fit:contain}.cat-choice[data-cat-key="mint"] img{transform:scaleX(1.12);transform-origin:center}.cat-choice b{display:block;font-size:12.5px;margin-top:3px}
 .apply-note{margin:14px 16px 0;padding:11px 13px;border-radius:14px;background:rgba(103,210,178,.08);border:1px solid rgba(103,210,178,.28);font-size:12.5px;line-height:1.55;color:#c7dfeb;font-weight:800;text-align:center}.links{display:flex;justify-content:center;margin:18px}.links a{color:#9ddfff;font-size:13px;font-weight:900;text-underline-offset:4px}
 .split-pay-note{margin:13px 0 0;padding:10px 12px;border-radius:12px;background:rgba(126,213,255,.07);border:1px solid rgba(126,213,255,.22);color:#c8d9e9;font-size:12px;line-height:1.5;font-weight:800;text-align:center}
-.buybar{position:fixed;z-index:20;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(6,16,32,.97);border-top:1px solid #2e4b6a;backdrop-filter:blur(10px)}.summary{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:13px;font-weight:900}.summary span:last-child{color:#bee8ff}.fulfillment{display:block;margin-bottom:8px;color:#a9bfd5;font-size:11.5px;font-weight:800}.buy{display:block;width:100%;border:1px solid #58bde9;border-radius:14px;padding:13px;color:#061524;background:linear-gradient(135deg,#84dcff,#55bce9);font-size:15px;font-weight:900;text-align:center;text-decoration:none}.buy:active{transform:scale(.985)}
-@keyframes nickShine{to{background-position:-300% center}}@media(prefers-reduced-motion:reduce){.fx{animation:none}}@media(max-width:370px){.head{padding-left:12px;padding-right:12px}.hero,.section{margin-left:12px;margin-right:12px}.section{padding:0}.hero-cat{width:54px;height:54px}.hero-top{gap:8px}.rank{gap:4px;padding-left:8px;padding-right:8px}.nick{font-size:14.5px}.pts{font-size:13.5px}.badge{padding-left:6px;padding-right:6px}.cats{gap:6px}.cat-choice img{width:65px;height:65px}.cat-choice[data-cat-key="mint"] img{width:76px;height:76px;margin:-5.5px 0}}
+.buybar{position:fixed;z-index:20;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(6,16,32,.97);border-top:1px solid #2e4b6a;backdrop-filter:blur(10px)}.summary{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:13px;font-weight:900}.summary span:first-child{min-width:0;margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.summary span:last-child{flex:none;color:#bee8ff}.fulfillment{display:block;margin-bottom:8px;color:#a9bfd5;font-size:11.5px;font-weight:800}.buy{display:block;width:100%;border:1px solid #58bde9;border-radius:14px;padding:13px;color:#061524;background:linear-gradient(135deg,#84dcff,#55bce9);font-size:15px;font-weight:900;text-align:center;text-decoration:none}.buy:active{transform:scale(.985)}
+@keyframes nickShine{to{background-position:-300% center}}@media(prefers-reduced-motion:reduce){.fx{animation:none}}@media(max-width:370px){.head{padding-left:12px;padding-right:12px}.hero,.section{margin-left:12px;margin-right:12px}.section{padding:0}.shop-nav{margin-left:12px;margin-right:12px;gap:4px}.shop-nav button{padding-left:3px;padding-right:3px;font-size:11.5px}.shop-nav small{font-size:9.5px}.hero-cat{width:54px;height:54px}.hero-top{gap:8px}.rank{gap:4px;padding-left:8px;padding-right:8px}.nick{font-size:14.5px}.pts{font-size:13.5px}.badge{padding-left:6px;padding-right:6px}.cats{gap:6px}.cat-choice img{width:65px;height:65px}}
 </style>
 </head>
 <body><main class="app">
-<div class="demo">🔎 커스텀샵 디자인 미리보기</div>
-<header class="head"><a class="back" href="shop-v2-preview.html?preview=1" aria-label="젤리샵으로 돌아가기">‹</a><div class="headcopy"><small>오잉게임 꾸미기방</small><h1>커스텀샵</h1></div><span class="tag">PREVIEW</span></header>
+<div class="demo" id="modeBanner">🔎 커스텀샵 디자인 미리보기</div>
+<header class="head"><a class="back" id="backToShop" href="shop-v2-preview.html?preview=1" aria-label="젤리샵으로 돌아가기">‹</a><div class="headcopy"><small>오잉게임 꾸미기방</small><h1>커스텀샵</h1></div><span class="tag" id="modeTag">PREVIEW</span></header>
 
-<nav class="shop-nav" aria-label="커스텀샵 상품 바로가기">
-  <a href="#customSet">꾸미기 세트<small>1,990원</small></a>
-  <a href="#catSkins">고양이 스킨<small>990원</small></a>
+<nav class="shop-nav" aria-label="결제할 상품 선택">
+  <button type="button" class="on" data-order-type="custom" aria-pressed="true">꾸미기<small>효과 + 테두리 · 1,990원</small></button>
+  <button type="button" data-order-type="cat" aria-pressed="false">고양이<small>스킨 1개 · 990원</small></button>
+  <button type="button" data-order-type="bundle" aria-pressed="false">모두 담기<small>3종 세트 · 2,980원</small></button>
 </nav>
 
 <section class="hero">
@@ -45,7 +46,7 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 </section>
 
 <section class="section" id="customSet"><div class="sec-head"><h2>꾸미기 세트</h2><span>영구 소장</span></div>
-<div class="product"><div class="product-top"><span class="ico">🎨</span><div class="product-title"><b>닉네임 효과 1개 + 랭킹 테두리 1개</b><small>두 가지를 한 번에 골라요</small></div><strong class="price">1,990원</strong></div>
+<div class="product"><div class="product-top"><span class="ico">🎨</span><div class="product-title"><b>닉네임 효과 + 랭킹 테두리</b><small>각 1개씩 한 번에 골라요</small></div><strong class="price">1,990원</strong></div>
 <div class="pick-title">1. 닉네임 스타일</div><div class="choices" id="nickChoices">
   <button class="choice on" data-nick-key="rainbow" data-nick-class="fx-rainbow"><b class="fx fx-rainbow">무지개</b><small>커스텀 전용 프리미엄</small></button>
   <button class="choice" data-nick-key="bluewave" data-nick-class="fx-bluewave"><b class="fx fx-bluewave">블루웨이브</b><small>맑은 푸른빛이 천천히 흐름</small></button>
@@ -63,7 +64,7 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 
 <section class="section" id="catSkins"><div class="sec-head"><h2>고양이 스킨</h2><span>1개 990원 · 영구 소장</span></div>
 <div class="product"><div class="product-top"><span class="ico">🐱</span><div class="product-title"><b>게임 속 고양이 얼굴 고르기</b><small>게임의 기본 고양이 🐱 얼굴이 바뀌어요</small></div></div>
-<div class="split-pay-note">꾸미기 세트와 고양이 스킨은 카카오페이 금액이 달라<br>원하는 상품을 하나씩 선택해 각각 결제해요.</div>
+<div class="split-pay-note">효과 + 테두리 + 고양이를 모두 원하면<br><b>모두 담기 2,980원</b>으로 한 번에 결제해요.</div>
 <div class="cats" id="catChoices">
   <button class="cat-choice on" data-cat="파란 목도리냥" data-cat-key="blue-scarf"><img src="https://oinggame.com/assets/img-03.png" alt="파란 목도리 고양이 얼굴" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"><b>파란 목도리냥</b></button>
   <button class="cat-choice" data-cat="회색냥" data-cat-key="gray"><img src="https://oinggame.com/assets/img-04.png" alt="회색 고양이 얼굴" onerror="this.onerror=null;this.src='https://oinggame.com/assets/02-icon.png'"><b>회색냥</b></button>
@@ -74,34 +75,50 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 </div></div></section>
 
 <div class="apply-note">결제 확인 후 선택한 꾸미기를 운영자가 적용해드려요.</div>
-<div class="links"><a href="shop-v2-preview.html?preview=1">🍮 젤리로 모아서 꾸미기</a></div>
+<div class="links"><a id="jellyShopLink" href="shop-v2-preview.html?preview=1">🍮 젤리로 모아서 꾸미기</a></div>
 
-<div class="buybar"><div class="summary"><span id="summaryName">꾸미기 세트 · 무지개 + 네온</span><span id="summaryPrice">1,990원</span></div><small class="fulfillment">결제 확인 후 운영자가 선택한 꾸미기를 적용해요</small><a class="buy" id="kakaoPayBtn" href="https://qr.kakaopay.com/Ej8cZUTdG3e307903" target="_blank" rel="noopener">꾸미기 세트 1,990원 결제하기</a></div>
+<div class="buybar"><div class="summary" aria-live="polite"><span id="summaryName">꾸미기 세트 · 무지개 + 네온</span><span id="summaryPrice">1,990원</span></div><small class="fulfillment">결제 확인 후 운영자가 선택한 꾸미기를 적용해요</small><a class="buy" id="kakaoPayBtn" href="https://qr.kakaopay.com/Ej8cZUTdG3e307903" target="_blank" rel="noopener">꾸미기 세트 1,990원 결제하기</a></div>
 </main>
 <script>
 const preview=document.getElementById('rankPreview');const nick=document.getElementById('previewNick');const summary=document.getElementById('summaryName');const summaryPrice=document.getElementById('summaryPrice');const payBtn=document.getElementById('kakaoPayBtn');
-const CUSTOM_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG3e307903';const CAT_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG1ef07932';
+const CUSTOM_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG3e307903';const CAT_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG1ef07932';const BUNDLE_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG5d204014';
 const CUSTOM_ORDER_PENDING_KEY='oeing_custom_order_pending_v1';
 let nickName='무지개',nickKey='rainbow',frameName='네온',frameKey='neon',catName='파란 목도리냥',catKey='blue-scarf',orderType='custom',paymentWindowOpenedAt=0;
-function showCustomOrder(){summary.textContent='꾸미기 세트 · '+nickName+' + '+frameName;summaryPrice.textContent='1,990원';payBtn.href=CUSTOM_PAY_URL;payBtn.textContent='꾸미기 세트 1,990원 결제하기'}
-const params=new URLSearchParams(location.search);const rank=Math.max(1,Number(params.get('rank'))||24);const prev=Math.max(1,Number(params.get('previousRank'))||rank);const level=Math.max(1,Number(params.get('level'))||5);const diff=prev-rank;
+function showOrder(){
+  if(orderType==='cat'){summary.textContent='고양이 스킨 · '+catName;summaryPrice.textContent='990원';payBtn.href=CAT_PAY_URL;payBtn.textContent='고양이 스킨 990원 결제하기';return}
+  if(orderType==='bundle'){summary.textContent='모두 담기 · '+nickName+' + '+frameName+' + '+catName;summaryPrice.textContent='2,980원';payBtn.href=BUNDLE_PAY_URL;payBtn.textContent='모두 담기 2,980원 결제하기';return}
+  summary.textContent='꾸미기 세트 · '+nickName+' + '+frameName;summaryPrice.textContent='1,990원';payBtn.href=CUSTOM_PAY_URL;payBtn.textContent='꾸미기 세트 1,990원 결제하기'
+}
+function setOrderType(next){orderType=next;document.querySelectorAll('[data-order-type]').forEach(btn=>{const selected=btn.dataset.orderType===orderType;btn.classList.toggle('on',selected);btn.setAttribute('aria-pressed',String(selected))});showOrder()}
+const params=new URLSearchParams(location.search);const checkoutMode=params.get('checkout')==='1';
+document.getElementById('modeBanner').textContent=checkoutMode?'🛍️ 원하는 꾸미기를 고르고 카카오페이로 결제해요':'🔎 커스텀샵 디자인 미리보기';
+document.title=checkoutMode?'오잉게임 커스텀샵':'오잉게임 커스텀샵 미리보기';
+document.getElementById('modeTag').textContent=checkoutMode?'ORDER':'PREVIEW';
+document.getElementById('backToShop').href=checkoutMode?'shop-v2-preview.html?live=1':'shop-v2-preview.html?preview=1';
+document.getElementById('jellyShopLink').href=checkoutMode?'shop-v2-preview.html?live=1':'shop-v2-preview.html?preview=1';
+const rank=Math.max(1,Number(params.get('rank'))||24);const prev=Math.max(1,Number(params.get('previousRank'))||rank);const level=Math.max(1,Number(params.get('level'))||5);const diff=prev-rank;
 const levelIcon=level>=16?'👑':level>=11?'💎':level>=7?'🍃':level>=4?'🏠':level>=3?'🍯':level>=2?'🍡':'🌱';
 document.getElementById('previewRank').textContent=rank;const delta=document.getElementById('previewDelta');delta.textContent=diff>0?'▲'+diff:diff<0?'▼'+Math.abs(diff):'—';delta.classList.toggle('down',diff<0);document.getElementById('previewLevel').textContent=levelIcon+' Lv.'+level;
 nick.textContent=params.get('nickname')||localStorage.getItem('oeing_nickname_v1')||'오잉러';document.getElementById('previewTitles').textContent=(Number(params.get('titles'))||0)>0?'👑x'+Number(params.get('titles')):'';document.getElementById('previewScore').textContent=(Number(params.get('score'))||6865).toLocaleString()+'pt';
 const badge=document.getElementById('previewBadge');badge.textContent=rank<=10?'🔥 Top10':rank<=30?'✨ Top30':'';badge.style.display=rank<=30?'':'none';
-document.querySelectorAll('[data-nick-key]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-nick-key]').forEach(x=>x.classList.remove('on'));btn.classList.add('on');nick.className='nick fx '+btn.dataset.nickClass;nickName=btn.querySelector('b').textContent;nickKey=btn.dataset.nickKey;orderType='custom';showCustomOrder();}));
-document.querySelectorAll('[data-frame]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-frame]').forEach(x=>x.classList.remove('on'));btn.classList.add('on');preview.style.setProperty('--frame',btn.dataset.frame);frameName=btn.querySelector('b').textContent.trim();frameKey=btn.dataset.frameKey;orderType='custom';showCustomOrder();}));
-document.querySelectorAll('.cat-choice').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.cat-choice').forEach(x=>x.classList.remove('on'));btn.classList.add('on');catName=btn.dataset.cat;catKey=btn.dataset.catKey;orderType='cat';summary.textContent='고양이 스킨 · '+catName;summaryPrice.textContent='990원';payBtn.href=CAT_PAY_URL;payBtn.textContent='고양이 스킨 990원 결제하기';}));
+document.querySelectorAll('[data-order-type]').forEach(btn=>btn.addEventListener('click',()=>setOrderType(btn.dataset.orderType)));
+document.querySelectorAll('[data-nick-key]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-nick-key]').forEach(x=>x.classList.remove('on'));btn.classList.add('on');nick.className='nick fx '+btn.dataset.nickClass;nickName=btn.querySelector('b').textContent;nickKey=btn.dataset.nickKey;showOrder();}));
+document.querySelectorAll('[data-frame]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-frame]').forEach(x=>x.classList.remove('on'));btn.classList.add('on');preview.style.setProperty('--frame',btn.dataset.frame);frameName=btn.querySelector('b').textContent.trim();frameKey=btn.dataset.frameKey;showOrder();}));
+document.querySelectorAll('.cat-choice').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.cat-choice').forEach(x=>x.classList.remove('on'));btn.classList.add('on');catName=btn.dataset.cat;catKey=btn.dataset.catKey;showOrder();}));
 function newCheckoutId(){try{return 'order_'+crypto.randomUUID().replaceAll('-','')}catch{return 'order_'+Date.now().toString(36)+Math.random().toString(36).slice(2,18)}}
+function createCustomOrder(){
+  const common={checkoutId:newCheckoutId(),orderType,createdAt:Date.now()};
+  if(orderType==='cat')return{...common,catSkin:catKey,label:catName,price:990};
+  if(orderType==='bundle')return{...common,effect:nickKey,frame:frameKey,catSkin:catKey,label:nickName+' + '+frameName+' + '+catName,price:2980};
+  return{...common,effect:nickKey,frame:frameKey,label:nickName+' + '+frameName,price:1990};
+}
 payBtn.addEventListener('click',(event)=>{
-  if(params.get('checkout')!=='1'){
+  if(!checkoutMode){
     event.preventDefault();
     alert('디자인 미리보기에서는 실제 결제가 진행되지 않아요.');
     return;
   }
-  const order=orderType==='cat'
-    ?{checkoutId:newCheckoutId(),orderType:'cat',catSkin:catKey,label:catName,price:990,createdAt:Date.now()}
-    :{checkoutId:newCheckoutId(),orderType:'custom',effect:nickKey,frame:frameKey,label:nickName+' + '+frameName,price:1990,createdAt:Date.now()};
+  const order=createCustomOrder();
   try{localStorage.setItem(CUSTOM_ORDER_PENDING_KEY,JSON.stringify(order))}catch{}
   paymentWindowOpenedAt=Date.now();
 });

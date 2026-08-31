@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:,">
-<title>젤리샵 v3 — 합본 디자인 데모</title>
+<title>오잉게임 젤리샵</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
@@ -15,8 +15,8 @@
     재현(순위변동·레벨·Top 배지), 신뢰 문구, 보유 탭
   · 클로드 v2에서: 시착 거울(컬러+효과+프레임 조합이 사기 전에 실시간 적용),
     오늘 획득 체크리스트, 찜+D-day 진행바, 오잉냥이 점원 멘트
-  · 실서비스 아님 — 실구매·지급 0 (noindex). 내 닉네임·랭킹은 읽기 전용으로만 불러옴.
-  · 가격과 일부 아이템은 최종 선택을 위한 디자인 후보. 오픈 전 서버 가격표와 함께 확정해야 함.
+  · preview=1은 읽기 전용, live=1은 메인 게임의 오픈 플래그와 함께 켰을 때만 실제 구매.
+  · 가격·key는 functions/index.js의 서버 카탈로그와 동일해야 함.
 ═══════════════════════════════════════════════════════════════ -->
 <style>
 :root {
@@ -34,7 +34,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 
 /* ── 페이지 헤더 (코덱스 프레임) ── */
 .page-head { display:flex; align-items:center; gap:10px; padding:12px 16px 8px; }
-.back-btn { width:40px; height:40px; border-radius:13px; border:1px solid var(--border);
+.back-btn { width:40px; height:40px; border-radius:13px; border:1px solid var(--border); cursor:pointer;
   background:var(--card); color:var(--ivory); font-size:15px; display:flex;
   align-items:center; justify-content:center; flex:0 0 auto; }
 .head-title { line-height:1.2; }
@@ -58,11 +58,14 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 .cat-bubble b { color:var(--blue); }
 
 /* 오늘 받을 젤리는 짧은 상태줄로 확인하고, 상세 규칙은 하단에서 펼쳐 봐요. */
-.today-rewards { margin:0 16px 9px; min-height:48px; padding:7px 10px; display:flex; align-items:center;
-  justify-content:space-between; gap:7px; border:1px solid var(--border); border-radius:13px;
-  background:linear-gradient(180deg,rgba(19,45,73,.98),rgba(11,29,51,.98)); }
-.today-reward { min-width:0; display:flex; align-items:center; gap:4px; color:#dfeafa;
+.today-rewards { margin:2px 16px 12px; min-height:44px; padding:9px 0 10px; display:flex; align-items:center;
+  justify-content:stretch; gap:0; border:0; border-radius:0; background:transparent;
+  border-top:1px solid rgba(126,205,240,.12); border-bottom:1px solid rgba(126,205,240,.22); }
+.today-reward { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:3px;
+  position:relative; color:#dfeafa;
   font-size:12px; line-height:1.25; font-weight:850; white-space:nowrap; }
+.today-reward + .today-reward::before { content:''; width:1px; height:18px; margin-right:8px;
+  background:rgba(126,205,240,.18); flex:0 0 1px; }
 .today-reward b { color:var(--green); font-size:12px; font-weight:950; }
 .today-reward.pending b { color:var(--jelly); }
 
@@ -91,13 +94,17 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 .earn-line.invite { margin-top:5px; padding:10px 9px; border:1px solid rgba(126,205,240,.30); border-radius:11px;
   background:rgba(73,175,228,.08); }
 .earn-line.invite b { color:var(--blue); }
+.invite-btn { display:block; margin-top:9px; min-height:40px; padding:0 12px; border-radius:10px;
+  border:1px solid rgba(126,205,240,.48); background:rgba(73,175,228,.14); color:#e4f6ff;
+  font-family:inherit; font-size:12.5px; font-weight:900; cursor:pointer; }
+.invite-btn:disabled { opacity:.55; cursor:default; }
 
 /* ── 거울 + 메뉴가 한 덩어리로 따라와요. 말풍선·보상·찜은 고정하지 않아요. ── */
-.shop-sticky { position:sticky; top:28px; z-index:50; margin-bottom:10px; padding:7px 0 8px;
+.shop-sticky { position:sticky; top:28px; z-index:50; margin-bottom:16px; padding:7px 0 11px;
   background:rgba(7,20,38,.98); border-bottom:1px solid rgba(126,205,240,.20);
   box-shadow:0 12px 18px rgba(3,10,21,.32); backdrop-filter:blur(10px); }
 .shop-sticky.podium-active { position:relative; top:auto; z-index:1; box-shadow:none; backdrop-filter:none; }
-.mirror-wrap { position:static; margin:0; padding:0 16px 7px; background:transparent; border:0; box-shadow:none; }
+.mirror-wrap { position:static; margin:0; padding:0 16px; background:transparent; border:0; box-shadow:none; }
 .mirror-label { font-size:13px; font-weight:800; color:#c0d1e4; letter-spacing:0.1px;
   margin:0 0 9px 2px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .mirror-reset { width:44px; height:44px; display:grid; place-items:center; flex:0 0 44px;
@@ -205,7 +212,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 .wish-sub { font-size:12.5px; line-height:1.45; color:#bdcde0; font-weight:700; margin-top:6px; }
 
 /* ── 탭 ── */
-.tabs { display:flex; gap:2px; margin:0 16px; padding:4px; border:1px solid var(--border);
+.tabs { display:flex; gap:2px; margin:16px 16px 0; padding:4px; border:1px solid var(--border);
   border-radius:13px; background:var(--card2); }
 .tab { flex:1; min-width:0; min-height:44px; text-align:center; padding:0 4px; border-radius:10px;
   font-family:inherit; font-size:13.5px; font-weight:850; color:var(--muted);
@@ -296,9 +303,9 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
   .rank-row .rank-change { min-width:26px; }
   .rank-tail { gap:4px; }
   .rank-pts { font-size:14.5px; }
-  .today-rewards { margin-left:12px; margin-right:12px; padding-left:8px; padding-right:8px; gap:4px; }
-  .today-reward { font-size:11.5px; }
-  .today-reward b { font-size:11.5px; }
+  .today-rewards { margin-left:12px; margin-right:12px; padding-left:0; padding-right:0; }
+  .today-reward, .today-reward b { font-size:11.25px; letter-spacing:-.25px; }
+  .today-reward + .today-reward::before { margin-right:5px; }
   .tabs { margin-left:12px; margin-right:12px; }
   .tab { font-size:13px; white-space:nowrap; }
   .grid { gap:8px; padding-left:12px; padding-right:12px; }
@@ -307,12 +314,12 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 </style>
 </head>
 <body>
-<div class="demo-banner">🔍 젤리샵 디자인 미리보기 · 실제 구매는 되지 않아요</div>
+<div class="demo-banner" id="modeBanner">🔍 젤리샵 디자인 미리보기 · 실제 구매는 되지 않아요</div>
 
 <div class="page-head">
-  <div class="back-btn">‹</div>
+  <button type="button" class="back-btn" id="backBtn" aria-label="게임으로 돌아가기">‹</button>
   <div class="head-title"><div class="sub">오잉게임 꾸미기방</div><div class="main">젤리샵</div></div>
-  <div class="head-bal">🍮 <span id="bal">47</span></div>
+  <div class="head-bal">🍮 <span id="bal">—</span></div>
 </div>
 
 <div class="shop-head">
@@ -320,15 +327,15 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
   <div class="cat-bubble" id="catSay">눌러서 <b>내 랭킹에 먼저 입혀보라냥</b></div>
 </div>
 
-<div class="today-rewards" aria-label="첫 게임으로 1젤리, 3일 연속 보너스로 2젤리를 받았고 오늘 목표는 도전 중이에요">
-  <span class="today-reward">🎮 첫 게임 <b>✓ +1</b></span>
-  <span class="today-reward">🔥 3일 연속 <b>✓ +2</b></span>
-  <span class="today-reward pending">🎯 목표 <b>도전 중 · +2</b></span>
+<div class="today-rewards" id="todayRewards" aria-label="오늘의 젤리 지급 상태">
+  <span class="today-reward pending" id="todayFirst">🎮 첫 게임 <b>+1 대기</b></span>
+  <span class="today-reward pending" id="todayStreak">🔥 연속 0일 <b>보너스 대기</b></span>
+  <span class="today-reward pending" id="todayGoal">🎯 목표 <b>+2 대기</b></span>
 </div>
 
 <div class="shop-sticky" id="shopSticky">
 <div class="mirror-wrap">
-  <div class="mirror-label"><span id="mirrorLabel">내 실제 랭킹에서 미리보기</span>
+  <div class="mirror-label"><span id="mirrorLabel">내 랭킹 미리보기</span>
     <span class="mirror-tools">
       <button class="mirror-mode on" data-view="row">내 순위</button>
       <button class="mirror-mode" data-view="podium">1·2·3위</button>
@@ -377,7 +384,7 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
     <div class="earn-line"><span>🎮 오늘 첫 게임 <small>첫 게임이 곧 출석이에요</small></span><b>+1</b></div>
     <div class="earn-line"><span>🎯 오늘 목표 달성</span><b>+2</b></div>
     <div class="earn-line"><span>📅 연속 플레이 <small>3일·7일째 보너스</small></span><b>+2 / +5</b></div>
-    <div class="earn-line invite"><span>💌 친구 초대 <small>초대 링크 보상은 안전하게 준비하고 있어요</small></span><b>준비 중</b></div>
+    <div class="earn-line invite"><span>💌 친구 초대 <small>친구가 닉네임을 등록하고 정상 한 판을 마치면 둘 다 받아요</small><button type="button" class="invite-btn" id="inviteBtn">초대 링크 보내기</button></span><b>둘 다 +3</b></div>
   </div>
 </details>
 
@@ -397,16 +404,44 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ── 데모 상태: 실구매·지급 0. 내 랭킹만 Firestore에서 읽기 ──
-// 미리보기에서는 잔액과 구매를 브라우저 안에서만 흉내 내며 실제 데이터는 바꾸지 않아요.
+// 실제 오픈은 이 파일과 index.html의 ENABLE_JELLY_SHOP을 함께 켜야 한다.
+// 지금은 직접 live=1을 붙여도 구매가 일어나지 않는 안전 상태다.
+const ENABLE_LIVE_SHOP = true;
+const PAGE_PARAMS = new URLSearchParams(location.search);
+const LIVE_MODE = ENABLE_LIVE_SHOP && PAGE_PARAMS.get('live') === '1';
+const FIREBASE_CONFIG = {
+  apiKey:'AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg', authDomain:'oing-game.firebaseapp.com',
+  projectId:'oing-game', storageBucket:'oing-game.firebasestorage.app',
+  messagingSenderId:'974542803508', appId:'1:974542803508:web:0b01327dd02c9b08b23061'
+};
+let firebaseContextPromise = null;
+async function getFirebaseContext() {
+  if (!firebaseContextPromise) firebaseContextPromise = (async () => {
+    const [appSdk, authSdk, fsSdk, fnSdk] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js'),
+    ]);
+    const app = appSdk.getApps().find(x => x.name === '[DEFAULT]') || appSdk.initializeApp(FIREBASE_CONFIG);
+    const auth = authSdk.getAuth(app);
+    await new Promise(resolve => {
+      let settled = false;
+      const off = authSdk.onAuthStateChanged(auth, () => { if (!settled) { settled = true; off(); resolve(); } });
+      setTimeout(() => { if (!settled) { settled = true; off(); resolve(); } }, 1800);
+    });
+    return { app, auth, db:fsSdk.getFirestore(app), fns:fnSdk.getFunctions(app,'asia-northeast3'), fsSdk, fnSdk };
+  })();
+  return firebaseContextPromise;
+}
 const CATALOG = {
   color: [
-    { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:20, c:'#ff9e91' },
-    { key:'lemon',  nm:'레몬',   ds:'밝고 산뜻한 노란빛', price:20, c:'#ffd866' },
-    { key:'mint',   nm:'민트',   ds:'맑고 산뜻한 민트', price:20, c:'#69dfb8' },
-    { key:'purple', nm:'라일락', ds:'포근한 라일락 빛', price:20, c:'#b69cff' },
-    { key:'sky',    nm:'하늘',   ds:'맑은 구름 하늘빛', price:20, c:'#73c7ff' },
-    { key:'apricot',nm:'살구',   ds:'따뜻하고 귀여운 살구빛', price:20, c:'#ffb36b' },
+    { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:30, c:'#ff9e91' },
+    { key:'lemon',  nm:'레몬',   ds:'밝고 산뜻한 노란빛', price:30, c:'#ffd866' },
+    { key:'mint',   nm:'민트',   ds:'맑고 산뜻한 민트', price:30, c:'#69dfb8' },
+    { key:'purple', nm:'라일락', ds:'포근한 라일락 빛', price:30, c:'#b69cff' },
+    { key:'sky',    nm:'하늘',   ds:'맑은 구름 하늘빛', price:30, c:'#73c7ff' },
+    { key:'apricot',nm:'살구',   ds:'따뜻하고 귀여운 살구빛', price:30, c:'#ffb36b' },
   ],
   fx: [
     { key:'bluewave',  nm:'블루웨이브', ds:'맑은 푸른빛이 천천히 흐름', price:80, cls:'fx-bluewave' },
@@ -415,12 +450,12 @@ const CATALOG = {
     { key:'goldshine', nm:'골드샤인',   ds:'따뜻한 금빛이 물결치며 흐름', price:80, cls:'fx-goldshine' },
   ],
   frame: [
-    { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:110, c:'#22d3ee' },
-    { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:140, c:'#fda4af' },
-    { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:160, c:'#5eead4' },
-    { key:'paw',    nm:'발바닥',  ds:'포근한 고양이 살구빛 테두리', price:190, c:'#e5a06d' },
-    { key:'royal',  nm:'로얄',    ds:'차분하게 빛나는 보랏빛 테두리', price:220, c:'#a88cff' },
-    { key:'crown',  nm:'황금왕관',ds:'오래 모아 갖는 황금 테두리',  price:280, c:'#f1c75b' },
+    { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:120, c:'#22d3ee' },
+    { key:'sakura', nm:'벚꽃',    ds:'봄바람 같은 분홍 테두리',     price:120, c:'#fda4af' },
+    { key:'aurora', nm:'오로라',  ds:'싱그러운 초록빛 테두리',      price:120, c:'#5eead4' },
+    { key:'paw',    nm:'발바닥',  ds:'포근한 고양이 살구빛 테두리', price:120, c:'#e5a06d' },
+    { key:'royal',  nm:'로얄',    ds:'차분하게 빛나는 보랏빛 테두리', price:120, c:'#a88cff' },
+    { key:'crown',  nm:'황금왕관',ds:'선명하게 빛나는 황금 테두리',  price:120, c:'#f1c75b' },
   ],
 };
 const SECT = {
@@ -489,7 +524,10 @@ function applyProfile() {
     hot:p.ts && Date.now() - p.ts < 6 * 60 * 60 * 1000 ? '1' : '0', preview:'1'
   });
   const customLink = $('customShopLink');
-  if (customLink) customLink.href = `custom-shop-preview.html?${customParams}`;
+  if (customLink) {
+    customParams.set(LIVE_MODE ? 'checkout' : 'preview', '1');
+    customLink.href = `custom-shop-preview.html?${customParams}`;
+  }
   renderPodiumPreview();
   renderMirror();
 }
@@ -522,7 +560,7 @@ function setMirrorView(view) {
   $('podiumPreview').classList.toggle('show', podium);
   $('podiumPositionTools').classList.toggle('show', podium);
   $('podiumNote').classList.toggle('show', podium);
-  $('mirrorLabel').textContent = podium ? '내가 시상대에 올라가면 이렇게 보여요' : '내 실제 랭킹에서 미리보기';
+  $('mirrorLabel').textContent = podium ? '내가 시상대에 올라가면 이렇게 보여요' : '내 랭킹 미리보기';
   document.querySelectorAll('.mirror-mode').forEach(b => b.classList.toggle('on', b.dataset.view === view));
   renderPodiumPreview();
   renderMirror();
@@ -549,16 +587,7 @@ async function loadLiveProfile() {
   applyProfile();
   if (!nickname) return;
   try {
-    const [appSdk, fsSdk] = await Promise.all([
-      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js'),
-    ]);
-    const app = appSdk.initializeApp({
-      apiKey:'AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg', authDomain:'oing-game.firebaseapp.com',
-      projectId:'oing-game', storageBucket:'oing-game.firebasestorage.app',
-      messagingSenderId:'974542803508', appId:'1:974542803508:web:0b01327dd02c9b08b23061'
-    }, 'oing-shop-preview');
-    const db = fsSdk.getFirestore(app);
+    const { db, fsSdk } = await getFirebaseContext();
     const rowsSnap = await fsSdk.getDocs(fsSdk.query(fsSdk.collection(db,'rankings'), fsSdk.orderBy('score','desc'), fsSdk.limit(500)));
     const rows = rowsSnap.docs.map(d => ({ nickname:d.id, ...d.data() }));
     state.top3 = rows.slice(0, 3);
@@ -580,6 +609,64 @@ async function loadLiveProfile() {
     applyProfile();
   } catch (e) {
     console.warn('랭킹 미리보기 실시간 로드 실패 — 로컬 표시를 유지합니다.', e);
+  }
+}
+
+function todayKst() {
+  const date = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`;
+}
+function renderTodayRewards(wallet = {}) {
+  const today = todayKst();
+  const firstDone = wallet.firstGameDate === today;
+  const goalDone = wallet.goalRewardDate === today;
+  const streakDays = Math.max(0, Number(wallet.streakDays) || 0);
+  const streakBonus = wallet.lastPlayDate === today && (streakDays === 3 || (streakDays >= 7 && streakDays % 7 === 0));
+  const set = (id, html, done) => {
+    const el = $(id); el.innerHTML = html; el.classList.toggle('pending', !done);
+  };
+  set('todayFirst', `🎮 첫 게임 <b>${firstDone ? '+1 ✓' : '+1 대기'}</b>`, firstDone);
+  set('todayStreak', `🔥 연속 ${streakDays}일 <b>${streakBonus ? (streakDays === 3 ? '+2 ✓' : '+5 ✓') : '보너스 대기'}</b>`, streakBonus);
+  set('todayGoal', `🎯 목표 <b>${goalDone ? '+2 ✓' : '+2 대기'}</b>`, goalDone);
+}
+async function loadShopAccount() {
+  $('bal').textContent = LIVE_MODE ? '…' : String(state.bal);
+  renderTodayRewards({});
+  if (!LIVE_MODE) return;
+  try {
+    const { auth, db, fsSdk } = await getFirebaseContext();
+    const user = auth.currentUser;
+    if (!user) {
+      say('게임에서 닉네임을 등록한 뒤 다시 들어와달라냥');
+      $('bal').textContent = '—';
+      return;
+    }
+    const [walletSnap, skinsSnap] = await Promise.all([
+      fsSdk.getDoc(fsSdk.doc(db,'jelly_wallet',user.uid)),
+      fsSdk.getDoc(fsSdk.doc(db,'nickname_skins',user.uid)),
+    ]);
+    const wallet = walletSnap.exists() ? walletSnap.data() : {};
+    const skins = skinsSnap.exists() ? skinsSnap.data() : {};
+    state.bal = Math.max(0, Number(wallet.balance) || 0);
+    state.owned.color = [];
+    state.owned.fx = [];
+    for (const key of Array.isArray(skins.ownedSkins) ? skins.ownedSkins : []) {
+      if (CATALOG.color.some(item => item.key === key)) state.owned.color.push(key);
+      if (CATALOG.fx.some(item => item.key === key)) state.owned.fx.push(key);
+    }
+    state.owned.frame = (Array.isArray(skins.ownedFrames) ? skins.ownedFrames : [])
+      .filter(key => CATALOG.frame.some(item => item.key === key));
+    state.equipped.nick = typeof skins.skin === 'string' ? skins.skin : null;
+    state.equipped.frame = typeof skins.frame === 'string' ? skins.frame : null;
+    state.trying.nick = state.equipped.nick;
+    state.trying.frame = state.equipped.frame;
+    $('bal').textContent = state.bal;
+    renderTodayRewards(wallet);
+    renderCatalog(); renderMirror(); renderActionbar();
+  } catch (error) {
+    console.warn('젤리샵 계정 로드 실패:', error);
+    $('bal').textContent = '—';
+    say('잔액을 못 불러왔다냥. 잠시 뒤 다시 들어와달라냥');
   }
 }
 
@@ -717,20 +804,72 @@ function renderActionbar() {
   on('abOff', () => unequip(type));
   on('abWish', () => wish(type, item));
 }
-function buy(type, item) {
-  state.bal -= item.price;
-  state.owned[type].push(item.key);
-  $('bal').textContent = state.bal;
-  equip(type, item);
-  toast(`구매 완료! 🍮 ${item.price} 사용 (데모라 진짜 안 나갔어요)`);
-  say(`${item.nm} 데려갔다냥! 🎉 다음부턴 무료로 껐다 켤 수 있다냥`);
+async function buy(type, item) {
+  if (!LIVE_MODE) {
+    state.bal -= item.price;
+    state.owned[type].push(item.key);
+    $('bal').textContent = state.bal;
+    await equip(type, item, { localOnly:true });
+    toast(`구매 완료! 🍮 ${item.price} 사용 (미리보기라 실제 반영은 안 돼요)`);
+    say(`${item.nm} 데려갔다냥! 🎉 다음부턴 무료로 껐다 켤 수 있다냥`);
+    return;
+  }
+  if (!confirm(`🍮 ${item.price}개로 ${item.nm}${type === 'frame' ? ' 프레임' : ''}을 구매하고 바로 장착할까요?`)) return;
+  try {
+    const { auth, fns, fnSdk } = await getFirebaseContext();
+    if (!auth.currentUser) throw new Error('게임에서 닉네임을 등록한 뒤 다시 들어와주세요.');
+    const payload = type === 'frame'
+      ? { action:'buyFrame', frameKey:item.key }
+      : { action:'buySkin', skinKey:item.key };
+    const response = await fnSdk.httpsCallable(fns,'shopAction')(payload);
+    const result = (response && response.data) || {};
+    state.bal = Math.max(0, Number(result.jelly) || 0);
+    if (!state.owned[type].includes(item.key)) state.owned[type].push(item.key);
+    if (type === 'frame') state.equipped.frame = item.key;
+    else state.equipped.nick = item.key;
+    state.trying = { nick:state.equipped.nick, frame:state.equipped.frame };
+    $('bal').textContent = state.bal;
+    renderMirror(); renderCatalog(); renderActionbar();
+    toast(`구매 완료! 🍮 ${item.price}개 사용`);
+    say(`${item.nm} 바로 입혀뒀다냥! 🎉`);
+  } catch (error) {
+    const message = (error && error.message) || '구매하지 못했어요. 잠시 뒤 다시 시도해주세요.';
+    alert(message.replace(/^FirebaseError:\s*/i,''));
+  }
 }
-function equip(type, item) {
+async function equip(type, item, { localOnly = !LIVE_MODE } = {}) {
+  if (!localOnly) {
+    try {
+      const { auth, db, fsSdk } = await getFirebaseContext();
+      if (!auth.currentUser) throw new Error('게임에서 닉네임을 등록한 뒤 다시 들어와주세요.');
+      await fsSdk.setDoc(fsSdk.doc(db,'nickname_skins',auth.currentUser.uid), {
+        uid:auth.currentUser.uid,
+        [type === 'frame' ? 'frame' : 'skin']:item.key,
+      }, { merge:true });
+    } catch (error) {
+      alert((error && error.message) || '장착하지 못했어요.');
+      return;
+    }
+  }
   if (type === 'frame') { state.equipped.frame = item.key; state.trying.frame = item.key; }
   else { state.equipped.nick = item.key; state.trying.nick = item.key; }
   renderMirror(); renderCatalog(); renderActionbar();
+  if (LIVE_MODE) toast(`${item.nm} 장착 완료!`);
 }
-function unequip(type) {
+async function unequip(type) {
+  if (LIVE_MODE) {
+    try {
+      const { auth, db, fsSdk } = await getFirebaseContext();
+      if (!auth.currentUser) throw new Error('로그인이 필요해요.');
+      await fsSdk.setDoc(fsSdk.doc(db,'nickname_skins',auth.currentUser.uid), {
+        uid:auth.currentUser.uid,
+        [type === 'frame' ? 'frame' : 'skin']:null,
+      }, { merge:true });
+    } catch (error) {
+      alert((error && error.message) || '해제하지 못했어요.');
+      return;
+    }
+  }
   if (type === 'frame') { state.equipped.frame = null; state.trying.frame = null; }
   else { state.equipped.nick = null; state.trying.nick = null; }
   renderMirror(); renderCatalog(); renderActionbar();
@@ -775,6 +914,37 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   state.selected = null;
   renderCatalog(); renderActionbar();
 }));
+async function shareInviteFromPreview() {
+  const button = $('inviteBtn');
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = '링크 만드는 중…';
+  try {
+    if (!LIVE_MODE) {
+      toast('정식 오픈 뒤 내 초대 링크가 자동으로 만들어져요');
+      return;
+    }
+    const { auth, fns, fnSdk } = await getFirebaseContext();
+    if (!auth.currentUser) throw new Error('not-linked');
+    const callable = fnSdk.httpsCallable(fns,'referralAction');
+    const response = await callable({ action:'getCode' });
+    const code = String((response.data && response.data.code) || '');
+    if (!/^[A-Za-z0-9_-]{5,20}$/.test(code)) throw new Error('invalid-referral-code');
+    const url = `https://oinggame.com/?r=${encodeURIComponent(code)}`;
+    const text = '🐱 오잉게임 같이 하자냥! 닉네임을 등록하고 첫 게임을 마치면 우리 둘 다 젤리 3개를 받아요.';
+    if (navigator.share) await navigator.share({ title:'오잉게임 친구 초대', text, url });
+    else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      alert('친구 초대 링크를 복사했어요! 카톡에 붙여넣어달라냥 💌');
+    } else window.prompt('이 링크를 친구에게 보내주세요.', url);
+  } catch (e) {
+    if (!(e && e.name === 'AbortError')) alert('게임에서 닉네임을 등록한 뒤 다시 눌러달라냥!');
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+}
+$('inviteBtn').addEventListener('click', shareInviteFromPreview);
 document.querySelectorAll('.mirror-mode').forEach(b => b.addEventListener('click', () => setMirrorView(b.dataset.view)));
 document.querySelectorAll('.podium-position').forEach(button => button.addEventListener('click', () => {
   state.podiumPosition = Number(button.dataset.position) || 1;
@@ -787,7 +957,18 @@ $('resetBtn').addEventListener('click', () => {
   renderMirror(); renderCatalog(); renderActionbar();
   say('지금 장착한 모습으로 되돌렸다냥');
 });
-applyProfile(); applyPodiumProfile(); setMirrorView('row'); renderCatalog(); loadLiveProfile();
+$('backBtn').addEventListener('click', () => {
+  if (history.length > 1) history.back();
+  else location.href = '/';
+});
+if (LIVE_MODE) {
+  $('modeBanner').textContent = '🍮 게임으로 모은 젤리로 내 랭킹을 꾸며보세요';
+  $('modeBanner').style.background = '#123653';
+} else {
+  $('modeBanner').textContent = '🔍 젤리샵 디자인 미리보기 · 실제 구매는 되지 않아요';
+}
+applyProfile(); applyPodiumProfile(); setMirrorView('row'); renderCatalog();
+Promise.allSettled([loadLiveProfile(), loadShopAccount()]);
 </script>
 </body>
 </html>

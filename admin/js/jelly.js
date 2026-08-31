@@ -10,16 +10,17 @@
 //    서버가 나중에 레거시 잔액을 흡수하지 않아 유저 젤리가 증발한다.
 // ══════════════════════════════════════════════════════════════
 import {
-  db, collection, doc, query, where, orderBy, limit, runTransaction,
+  db, fns, collection, doc, query, where, orderBy, limit, runTransaction, httpsCallable,
   fetchDoc, fetchDocs, resolveUserDocId, getUserDocByNick,
   fmtNum, fmtDateTime, escapeHtml, humanError,
 } from './firebase.js';
 import { setLoading, setEmpty, setError, guardBtn, resultMsg } from './admin.js';
 
 const SOURCE_KO = {
-  submitScore: '🎮 게임 지급', claimDaily: '📅 출석', earlyMember: '🎁 초기 멤버',
+  submitScore: '🎮 게임 지급', claimDaily: '📅 출석', earlyMember: '🎁 기존 회원 선물',
   buySkin: '🎨 스킨 구매', buyFrame: '🖼 프레임 구매', buyBubble: '💬 말풍선 구매',
   renameEarly: '✏️ 조기 닉변', restore: '🔗 계정 합산', admin: '🛠 운영자 조정',
+  friendReferral: '💌 친구초대',
 };
 const GRANT_KO = { welcome: '환영', firstGame: '첫판', goal: '목표', streak: '연속' };
 
@@ -55,6 +56,84 @@ async function resolveJellyUid(nick) {
 }
 
 let current = null; // { nick, uid }
+let walletOverviewRows = [];
+
+function walletOverviewHtml(rows) {
+  if (!rows.length) return '<div class="empty">조건에 맞는 지갑이 없어요.</div>';
+  return rows.map(row => `<div class="economy-row">
+    <div class="economy-main"><div class="economy-name">${escapeHtml(row.nickname || '(닉네임 확인 불가)')}</div>
+      <div class="economy-meta">${escapeHtml(row.uid)} · 마지막 변경 ${row.updatedAt ? escapeHtml(fmtDateTime(row.updatedAt)) : '-'}</div></div>
+    <div style="text-align:right;"><div class="economy-balance">🍮 ${fmtNum(row.balance)}개</div>
+      ${row.nickname ? `<button type="button" class="economy-open-user" data-jelly-nick="${escapeHtml(row.nickname)}">조회·지급</button>` : ''}</div>
+  </div>`).join('');
+}
+
+function renderWalletOverview() {
+  const filter = (document.getElementById('jellyWalletFilter').value || '').trim().toLowerCase();
+  const rows = filter ? walletOverviewRows.filter(row => `${row.nickname} ${row.uid}`.toLowerCase().includes(filter)) : walletOverviewRows;
+  document.getElementById('jellyWalletsList').innerHTML = walletOverviewHtml(rows);
+}
+
+async function loadWalletOverview() {
+  const list = document.getElementById('jellyWalletsList');
+  setLoading(list, '전체 지갑을 불러오는 중…');
+  try {
+    const wallets = await fetchDocs(query(collection(db, 'jelly_wallet'), orderBy('balance', 'desc'), limit(100)));
+    const users = await Promise.all(wallets.map(row => fetchDoc(doc(db, 'users', row.id)).catch(() => null)));
+    walletOverviewRows = wallets.map((row, index) => ({
+      uid: row.id,
+      nickname: users[index] && users[index].nickname ? users[index].nickname : '',
+      balance: Number(row.balance || 0),
+      updatedAt: Number(row.updatedAt || 0),
+    }));
+    const total = walletOverviewRows.reduce((sum, row) => sum + row.balance, 0);
+    const holders = walletOverviewRows.filter(row => row.balance > 0).length;
+    document.getElementById('jellyWalletsSummary').innerHTML = `<div class="economy-summary">
+      <div><b>${fmtNum(walletOverviewRows.length)}</b><span>상위 지갑(최대 100)</span></div>
+      <div><b>${fmtNum(holders)}</b><span>표시 중 1개 이상</span></div>
+      <div><b>🍮 ${fmtNum(total)}</b><span>표시 잔액 합계</span></div>
+    </div>`;
+    const filterEl = document.getElementById('jellyWalletFilter');
+    filterEl.style.display = '';
+    renderWalletOverview();
+  } catch (e) { setError(list, humanError(e)); }
+}
+
+function referralRow(row, status) {
+  const when = status === 'granted' ? row.grantedAt : row.capturedAt;
+  const inviter = row.inviterNickname || row.inviterUid || '-';
+  const invitee = row.inviteeNickname || row.inviteeUid || '-';
+  return `<div class="economy-row"><div class="economy-main">
+    <div class="economy-name">${escapeHtml(inviter)} → ${escapeHtml(invitee)}</div>
+    <div class="economy-meta">${escapeHtml(row.code || '-')} · ${escapeHtml(fmtDateTime(when))}</div>
+  </div><div class="economy-balance">${status === 'granted' ? `양쪽 +${fmtNum(row.reward || 3)} ✓` : '조건 대기'}</div></div>`;
+}
+
+async function loadReferralOverview() {
+  const list = document.getElementById('referralOverviewList');
+  setLoading(list, '친구초대 내역을 불러오는 중…');
+  try {
+    const response = await httpsCallable(fns, 'referralAction')({ action:'adminOverview' });
+    const data = (response && response.data) || {};
+    const grants = Array.isArray(data.grants) ? data.grants : [];
+    const pending = Array.isArray(data.pending) ? data.pending : [];
+    const totals = data.totals || {};
+    document.getElementById('referralOverviewSummary').innerHTML = `<div class="economy-summary">
+      <div><b>${fmtNum(totals.granted || 0)}</b><span>지급 완료</span></div>
+      <div><b>${fmtNum(totals.pending || 0)}</b><span>조건 대기</span></div>
+      <div><b>🍮 ${fmtNum((totals.inviterJelly || 0) + (totals.inviteeJelly || 0))}</b><span>총 지급</span></div>
+    </div>`;
+    const parts = [];
+    if (totals.truncated) {
+      parts.push('<div class="economy-note">최근 200건까지만 표시해요. 위 숫자도 현재 불러온 범위 기준이에요.</div>');
+    }
+    parts.push(`<div class="economy-section-title">지급 완료 ${grants.length}건</div>`);
+    parts.push(grants.length ? grants.map(row => referralRow(row, 'granted')).join('') : '<div class="empty">아직 지급 완료된 초대가 없어요.</div>');
+    parts.push(`<div class="economy-section-title">한 판 완료 대기 ${pending.length}건</div>`);
+    parts.push(pending.length ? pending.map(row => referralRow(row, 'pending')).join('') : '<div class="empty">기다리는 초대가 없어요.</div>');
+    list.innerHTML = parts.join('');
+  } catch (e) { setError(list, humanError(e)); }
+}
 
 async function lookupJelly() {
   const nick = document.getElementById('jellyNick').value.trim();
@@ -75,7 +154,7 @@ async function lookupJelly() {
         w.streakDays ? `연속 ${w.streakDays}일` : '',
         w.lastPlayDate ? `마지막 플레이 ${w.lastPlayDate}` : '',
         w.welcomeGranted ? '환영 지급됨' : '환영 미지급',
-        w.earlyMemberGrantedAt ? '초기멤버 지급됨' : '',
+        w.earlyMemberGrantedAt ? '기존 회원 선물 지급됨' : '',
         typeof w.seededAmount === 'number' ? `레거시 흡수 ${w.seededAmount}` : '',
       ].filter(Boolean).join(' · ');
     } else {
@@ -161,6 +240,16 @@ async function loadGlobalLog() {
 }
 
 export function initJellyTab() {
+  const walletsBtn = document.getElementById('jellyWalletsLoadBtn');
+  walletsBtn.addEventListener('click', guardBtn(walletsBtn, loadWalletOverview));
+  const walletFilter = document.getElementById('jellyWalletFilter');
+  walletFilter.addEventListener('input', renderWalletOverview);
+  document.getElementById('jellyWalletsList').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-jelly-nick]');
+    if (!button) return;
+    document.getElementById('jellyNick').value = button.dataset.jellyNick;
+    document.getElementById('jellyLookupBtn').click();
+  });
   const lookupBtn = document.getElementById('jellyLookupBtn');
   lookupBtn.addEventListener('click', guardBtn(lookupBtn, lookupJelly));
   document.getElementById('jellyNick').addEventListener('keydown', (e) => { if (e.key === 'Enter') lookupBtn.click(); });
@@ -168,4 +257,6 @@ export function initJellyTab() {
   adjBtn.addEventListener('click', guardBtn(adjBtn, adjustJelly));
   const logBtn = document.getElementById('jellyLogLoadBtn');
   logBtn.addEventListener('click', guardBtn(logBtn, loadGlobalLog));
+  const referralBtn = document.getElementById('referralOverviewLoadBtn');
+  referralBtn.addEventListener('click', guardBtn(referralBtn, loadReferralOverview));
 }
