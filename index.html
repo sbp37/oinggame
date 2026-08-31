@@ -112,8 +112,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<!-- 웹폰트는 화면을 막지 않게 불러온다.
+     예전엔 평범한 stylesheet 라 렌더 차단이었다 — 폰트 CSS 가 늦으면 그만큼 화면이
+     통째로 비어 있었다(측정: 폰트 CSS 1.5초 → 첫 화면 1.65초, 4초 → 4.14초로 1:1 추종).
+     남의 서버(구글·jsdelivr)라 우리가 빠르게 만들 수도 없다.
+     media="print" 로 받으면 브라우저가 렌더 차단 목록에서 빼고, 다 받은 뒤 all 로 바꿔
+     적용한다. 그 사이엔 대체 글꼴(Malgun Gothic/시스템)로 글자가 바로 보인다.
+     구글 폰트는 display=swap 이라 글자가 안 보이는 구간(FOIT)도 없다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap" media="print" onload="this.media='all';this.onload=null;">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" media="print" onload="this.media='all';this.onload=null;">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</noscript>
 <style>
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -254,6 +265,13 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 .tab-panel.active { display: flex; flex-direction: column; }
+/* 화면이 가려지면(홈으로 나감·다른 앱·화면 잠금) 계속 도는 장식 애니메이션을 멈춘다.
+   안 보이는 동안에도 반짝임·빛번짐이 매 프레임 다시 그려지면 배터리와 발열만 먹는다.
+   브라우저가 알아서 줄여주기도 하지만 카톡 인앱 브라우저처럼 안 줄이는 곳이 있다.
+   (안 보이는 화면은 tab-panel 이 display:none 이라 원래 안 돈다 — 이건 앱 전체용.) */
+body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
+  animation-play-state: paused !important;
+}
 #panelRank {
   position: relative;
   background: radial-gradient(ellipse at 50% 0%, #172c4a 0%, #0d1830 45%, #070d1a 100%);
@@ -5089,7 +5107,7 @@ if (IS_APP) {
 // 닉변 v2 자가복구 — 응답 유실/앱 종료로 pending이 남았을 때만 서버 status로 표시 닉을 맞춤
 setTimeout(() => { try { selfHealRenameIfPending(); } catch {} }, 0);
 // 계정 연결 버튼 초기 표시 상태(닉네임 있고 미연결일 때만) — 인증 초기화 후 반영
-setTimeout(() => { try { updateAccountLinkBtn(); } catch {} }, 1200);
+setTimeout(() => { try { updateAccountLinkBtn(); } catch {} }, 300);
 
 
 // ══════════════════════════════
@@ -5915,7 +5933,14 @@ async function initHomeTicker() {
     rebuildHomeTicker();
   } catch {}
 }
-setTimeout(initHomeTicker, 1200);
+// 전광판은 조회가 끝나야 채워지므로 대기 시간이 그대로 '빈 칸' 시간이 된다.
+// 첫 화면이 뜬 직후 바로 걸어 네트워크 왕복과 나머지 초기화가 겹쳐 돌게 한다.
+setTimeout(initHomeTicker, 200);
+
+// 화면이 가려진 동안 장식 애니메이션을 멈춘다(배터리·발열). 돌아오면 바로 되살린다.
+document.addEventListener('visibilitychange', () => {
+  document.body.classList.toggle('page-hidden', document.hidden);
+});
 
 function getLocalDateStr() {
   const d = new Date();
@@ -6968,6 +6993,40 @@ let myCatSkinKey = '';
 function getCurrentCatAsset() {
   return (myCatSkinKey && CUSTOM_CAT_ASSETS[myCatSkinKey]) || MY_CAT_IMG;
 }
+
+// 내가 쓰는 고양이는 기기에 기억해 둔다.
+//
+// 예전엔 이 값이 메모리에만 있어서, 새로고침할 때마다 인증→Firestore 왕복이 끝나야
+// 알 수 있었다. 그래서 게임을 바로 시작하면 기본 고양이로 몇 초 놀다가 갑자기 내
+// 고양이로 바뀌었다(운영 보고: "3초쯤 뒤에 바뀐다").
+// 마지막으로 확인된 값을 저장해 두고 다음 접속 때 그리기 전에 먼저 적용한다.
+// 서버 조회는 그대로 돌고, 결과가 다르면 그때 바로잡는다(아래 refreshMyCatSkin).
+// 표시 전용이고 내 화면에만 보이는 값이라 잠깐 어긋나도 손해가 없다.
+const CAT_SKIN_CACHE_KEY = 'oeing_cat_skin_v1';
+function saveCatSkinCache(nick) {
+  try {
+    localStorage.setItem(CAT_SKIN_CACHE_KEY, JSON.stringify({
+      nick: nick || '', on: !!myCatSkinEnabled, key: myCatSkinKey || '',
+    }));
+  } catch {}
+}
+function loadCatSkinCache() {
+  try {
+    const raw = localStorage.getItem(CAT_SKIN_CACHE_KEY);
+    if (!raw) return;
+    const v = JSON.parse(raw);
+    // 닉네임이 다르면 남의(혹은 옛) 값이다 — 쓰지 않는다.
+    if (!v || v.nick !== loadNickname()) return;
+    myCatSkinEnabled = !!v.on;
+    myCatSkinKey = (v.on && CUSTOM_CAT_ASSETS[v.key]) ? v.key : '';
+  } catch {}
+}
+loadCatSkinCache();
+// 파일로 된 고양이 그림은 플래그가 켜져도 내려받는 동안 또 빈다 — 미리 받아둔다.
+// (기본 고양이는 data URI 라 이미 문서 안에 있다.)
+if (myCatSkinKey && CUSTOM_CAT_ASSETS[myCatSkinKey]) {
+  try { const im = new Image(); im.decoding = 'async'; im.src = CUSTOM_CAT_ASSETS[myCatSkinKey]; } catch {}
+}
 async function refreshMyCatSkin() {
   const myNick = loadNickname();
   if (!myNick) { myCatSkinEnabled = false; myCatSkinKey = ''; return; }
@@ -7007,6 +7066,8 @@ async function refreshMyCatSkin() {
   if (myCatSkinEnabled !== prevEnabled || myCatSkinKey !== prevKey) {
     try { refreshMyInfoChip(); } catch {}
   }
+  // 다음 접속 때 그리기 전에 바로 쓰도록 확인된 값을 남긴다.
+  saveCatSkinCache(myNick);
 }
 function renderCatCell(el) {
   el.className = 'cell cat';
@@ -13265,7 +13326,7 @@ document.getElementById('myiCopyBtn')?.addEventListener('click', async () => {
 });
 // 칩 표시: 로드 직후 1회 + 스킨 플래그가 늦게 켜지는 경우 아바타 갱신용 1회
 setTimeout(() => { try { refreshMyInfoChip(); } catch {} }, 350);
-setTimeout(() => { try { refreshMyInfoChip(); } catch {} }, 1800);
+setTimeout(() => { try { refreshMyInfoChip(); } catch {} }, 1200);
 // (랭킹탭 '🔑 내 핀번호' 버튼은 👤 내 정보 → 연결 정보 보기로 통합돼 제거 — 옵셔널 체이닝으로 무해화)
 // 로컬에 PIN이 없을 때(저장소 초기화·레거시) 서버에서 회수/발급 — 예전 랭킹탭
 // '🔑 내 핀번호' 버튼의 복구 흐름을 함수화. 👤 내 정보 → 연결 정보 보기에서 사용.
@@ -13695,7 +13756,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788184200; // v4.24 — 배달 팝업 문구 + 랭킹 NEW 중복 제거 + 커스텀샵 좁은화면
+const BUILD = 1788184500; // v4.25 — 첫 화면 로딩 단축 + 고양이 즉시 표시
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -15598,7 +15659,7 @@ setTimeout(() => renderRanking(), 300);
 // 레거시(비연결) 사용자용 초기 고양이 반영. UID 사용자는 initAccountSystem의 account-ready에서
 // 최종 확정되며, refreshMyCatSkin 가드가 인증 전 이른 false를 무시하므로 이 타이머가 최종값을
 // 덮어쓰지 못한다(경합 무해).
-setTimeout(() => refreshMyCatSkin(), 600);
+setTimeout(() => refreshMyCatSkin(), 400);
 setTimeout(() => checkUnreadReply(), 800);
 setTimeout(() => renderStartMyRankLine(), 500);
 setTimeout(() => checkSkinNotification(), 1200);
