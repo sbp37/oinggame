@@ -18,11 +18,30 @@ import { setLoading, setEmpty, setError, guardBtn, resultMsg } from './admin.js'
 
 const SOURCE_KO = {
   submitScore: '🎮 게임 지급', claimDaily: '📅 출석', earlyMember: '🎁 초기 멤버 선물',
-  buySkin: '🎨 스킨 구매', buyFrame: '🖼 프레임 구매', buyBubble: '💬 말풍선 구매',
+  buySkin: '🎨 스킨 구매', buyFrame: '🖼 프레임 구매', buyCat: '🐱 고양이 구매',
+  buyBubble: '💬 말풍선 구매',
   renameEarly: '✏️ 조기 닉변', restore: '🔗 계정 합산', admin: '🛠 운영자 조정',
   friendReferral: '💌 친구초대',
 };
 const GRANT_KO = { welcome: '환영', firstGame: '첫판', goal: '목표', streak: '연속' };
+const ITEM_KO = {
+  // 닉네임 컬러
+  pink: '복숭아', lemon: '레몬', mint: '민트', purple: '라일락', sky: '하늘', apricot: '살구',
+  // 움직이는 글자 효과
+  bluewave: '블루웨이브', auroraglow: '오로라빛', cherry: '벚꽃비', goldshine: '골드샤인',
+  // 랭킹 테두리
+  neon: '네온', sakura: '벚꽃', aurora: '오로라', paw: '발바닥', royal: '로얄', crown: '황금왕관',
+  // 게임 속 고양이
+  'blue-scarf': '파란 목도리냥', gray: '회색냥', calico: '삼색냥',
+  cheese: '치즈냥', pinkcat: '핑크냥', mintcat: '민트냥',
+  // 옛 유료 아이템(지금은 안 팔지만 원장에 남아 있다)
+  gold: '골드', red: '레드', rainbow: '무지개', diamond: '다이아',
+};
+function itemKo(key) {
+  const k = typeof key === 'string' ? key.trim() : '';
+  if (!k) return '';
+  return ITEM_KO[k] || k; // 모르는 키는 원문 그대로 — 새 아이템이 나와도 안 사라진다
+}
 
 function grantsLabel(g) {
   if (!g) return '';
@@ -35,7 +54,7 @@ function logRowHtml(r, { withNick = false } = {}) {
   const src = SOURCE_KO[r.source] || r.source || r.type || '?';
   const extra = [
     r.grants ? grantsLabel(r.grants) : '',
-    r.item ? escapeHtml(r.item) : '',
+    r.item ? escapeHtml(itemKo(r.item)) : '',
     r.reason ? escapeHtml(r.reason) : '',
     (r.from && r.to) ? `${escapeHtml(r.from)}→${escapeHtml(r.to)}` : '',
   ].filter(Boolean).join(' · ');
@@ -301,6 +320,75 @@ async function adjustJelly() {
   } catch (e) { resultMsg('jellyResult', humanError(e), false); }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  🛍 최근 젤리 사용 내역 — "누가 무엇에 썼나"만 모아 본다
+// ══════════════════════════════════════════════════════════════
+// 전체 원장은 게임 지급이 대부분이라, 어쩌다 한 번 있는 구매가 그 사이에 묻힌다.
+// 운영자가 닉네임을 미리 알고 검색해야만 볼 수 있는 것도 불편해서 소비만 따로 모은다.
+//
+// 조회는 ts 내림차순 한 번(단일 필드 인덱스라 복합 인덱스가 필요 없다) 뒤 소비만
+// 골라낸다. type==='spend' 로 거르되, 옛 기록에 type 이 없을 수 있어 금액이 음수인
+// 것도 함께 본다. 다만 운영자 회수(source==='admin')는 유저의 소비가 아니라서 뺀다.
+const SPEND_SCAN_LIMIT = 300;  // 훑을 원장 건수 (하루 30~50건이면 약 일주일치)
+const SPEND_SHOW_LIMIT = 40;   // 화면에 보여줄 소비 건수
+
+function isUserSpend(row) {
+  if (!row) return false;
+  if (row.source === 'admin') return false;            // 운영자 회수는 소비가 아니다
+  if (row.type === 'spend') return true;
+  return typeof row.amount === 'number' && row.amount < 0; // type 없는 옛 기록 대비
+}
+
+async function loadSpendLog() {
+  const list = document.getElementById('jellySpendList');
+  const summaryEl = document.getElementById('jellySpendSummary');
+  setLoading(list, '사용 내역을 불러오는 중…');
+  summaryEl.innerHTML = '';
+  try {
+    const rows = await fetchDocs(query(collection(db, 'jelly_log'), orderBy('ts', 'desc'), limit(SPEND_SCAN_LIMIT)));
+    const spends = rows.filter(isUserSpend);
+    if (!spends.length) {
+      summaryEl.innerHTML = `<div class="card-note">최근 원장 ${fmtNum(rows.length)}건 안에는 사용 기록이 없어요.</div>`;
+      setEmpty(list, '아직 젤리를 쓴 사람이 없어요.');
+      return;
+    }
+    const shown = spends.slice(0, SPEND_SHOW_LIMIT);
+    // 원장은 uid 가 진실이라 닉네임이 없는 줄이 많다 — uid 당 한 번만 이름을 찾아 붙인다.
+    const uids = [...new Set(shown.map(r => r.uid).filter(Boolean))];
+    const users = await Promise.all(uids.map(uid => fetchDoc(doc(db, 'users', uid)).catch(() => null)));
+    const nickByUid = new Map(uids.map((uid, i) => [uid, (users[i] && users[i].nickname) || '']));
+
+    // 어디에 얼마나 썼는지 한눈에 — 표시 중인 건 기준.
+    const spent = shown.reduce((sum, r) => sum + Math.abs(Number(r.amount) || 0), 0);
+    const byItem = new Map();
+    for (const r of shown) {
+      const label = r.item ? itemKo(r.item) : (SOURCE_KO[r.source] || r.source || '기타');
+      byItem.set(label, (byItem.get(label) || 0) + 1);
+    }
+    const top = [...byItem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+      .map(([n, c]) => `${n} ${c}건`).join(' · ');
+    summaryEl.innerHTML = `<div class="economy-summary">
+      <div><b>${fmtNum(shown.length)}</b><span>사용 건수</span></div>
+      <div><b>${fmtNum(new Set(shown.map(r => r.uid)).size)}</b><span>쓴 사람</span></div>
+      <div><b>🍮 ${fmtNum(spent)}</b><span>쓴 젤리 합계</span></div>
+    </div>${top ? `<div class="card-note" style="margin-top:6px;">많이 산 것: ${escapeHtml(top)}</div>` : ''}
+    <div class="card-note" style="margin-top:4px;">최근 원장 ${fmtNum(rows.length)}건에서 골랐어요${spends.length > shown.length ? ` (사용 ${fmtNum(spends.length)}건 중 최신 ${fmtNum(shown.length)}건 표시)` : ''}.</div>`;
+
+    list.innerHTML = shown.map(r => {
+      const nick = r.nickname || nickByUid.get(r.uid) || (r.uid ? `UID ${String(r.uid).slice(0, 6)}…` : '(알 수 없음)');
+      const what = r.item ? itemKo(r.item) : '';
+      const src = SOURCE_KO[r.source] || r.source || '사용';
+      const amt = Math.abs(Number(r.amount) || 0);
+      return `<div class="list-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span class="main"><span class="nick">${escapeHtml(nick)}</span> 님이
+          <b>${escapeHtml(what || src)}</b>${what ? ` <span class="sub" style="color:var(--muted);font-size:11px;">${escapeHtml(src)}</span>` : ''}<br>
+          <span class="sub" style="color:var(--muted);font-size:11px;">${r.ts ? escapeHtml(fmtDateTime(r.ts)) : ''} · 쓰고 남은 잔액 ${fmtNum(r.balanceAfter ?? '?')}</span></span>
+        <span class="badge warn">🍮 -${fmtNum(amt)}</span>
+      </div>`;
+    }).join('');
+  } catch (e) { setError(list, humanError(e)); }
+}
+
 async function loadGlobalLog() {
   const el = document.getElementById('jellyGlobalLog');
   setLoading(el, '원장 불러오는 중...');
@@ -334,6 +422,8 @@ export function initJellyTab() {
   document.getElementById('jellyNick').addEventListener('keydown', (e) => { if (e.key === 'Enter') lookupBtn.click(); });
   const adjBtn = document.getElementById('jellyAdjustBtn');
   adjBtn.addEventListener('click', guardBtn(adjBtn, adjustJelly));
+  const spendBtn = document.getElementById('jellySpendLoadBtn');
+  spendBtn.addEventListener('click', guardBtn(spendBtn, loadSpendLog));
   const logBtn = document.getElementById('jellyLogLoadBtn');
   logBtn.addEventListener('click', guardBtn(logBtn, loadGlobalLog));
   const referralBtn = document.getElementById('referralOverviewLoadBtn');
