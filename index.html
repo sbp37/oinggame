@@ -5019,6 +5019,22 @@ async function migrateRestoreIfNeeded() {
   }
 }
 
+// 단순 재방문마다 users/{uid}를 쓰면 새로고침만으로도 과금 write가 쌓인다.
+// 운영 화면의 "최근 접속"은 분 단위 실시간일 필요가 없으므로 기기별 6시간에 한 번만 갱신한다.
+const LAST_SEEN_TOUCH_TTL = 6 * 60 * 60 * 1000;
+async function touchLastSeenIfDue() {
+  if (!MY_UID) return;
+  const key = `oeing_last_seen_touch_${MY_UID}`;
+  try {
+    const last = Number(localStorage.getItem(key) || 0);
+    if (last && Date.now() - last < LAST_SEEN_TOUCH_TTL) return;
+  } catch {}
+  try {
+    await setDoc(doc(db, 'users', MY_UID), { lastSeenAt: Date.now() }, { merge: true });
+    try { localStorage.setItem(key, String(Date.now())); } catch {}
+  } catch {}
+}
+
 async function initAccountSystem() {
   const uid = await ensureAnonymousAuth();
   if (!uid) return; // 인증 실패 — 기존 방식 그대로 동작
@@ -5029,7 +5045,7 @@ async function initAccountSystem() {
     const nick = loadNickname();
     if (!nick) return; // 신규 방문자 — 닉네임 등록할 때 UID에 연결
     if (isUidLinked()) {
-      try { await setDoc(doc(db, 'users', MY_UID), { lastSeenAt: Date.now() }, { merge: true }); } catch {}
+      await touchLastSeenIfDue();
       // 과거 계정 복구 도중 종료로 "연결된 UID ≠ 표시 닉네임"이 남은 기기 self-heal.
       // 권위 출처 1순위: users/{현재 UID}.nickname — 연결·닉변 때마다 기록 후 재읽기 검증까지
       // 하는 UID 키 기반 매핑. 다만 token 복구로만 연결된 레거시 계정은 이 문서가 없거나
@@ -5207,18 +5223,19 @@ async function getOrCreateRefCode(_nickname) {
 //  STORAGE
 // ══════════════════════════════
 const NICK_KEY = 'oeing_nickname_v1';
-const MAX_RANKS = 500; // 랭킹 화면에서 한 번에 불러오는 최대 인원. 유저가 아직 많지 않아 전부 보이게
-                       // 넉넉히 잡음(전체는 100 + '더보기'로 펼침, 주간·친구는 전부 표시).
-                       // 유저가 크게 늘면 읽기 비용을 보고 다시 조정할 것.
+const MAX_RANKS = 500; // 서버 공개 캐시에 담는 최대 인원. 화면은 기존처럼 100 + 더보기로 표시.
 const RANK_PREVIEW_COUNT = 100; // 랭킹에서 처음에 그려줄 인원(전체·주간·친구 공통, 나머지는 '더보기'로 펼침)
+const PUBLIC_RANK_CACHE_VERSION = 1;
+const PUBLIC_RANK_CACHE_COLLECTION = 'public_rank_cache';
 
 // ══════════════════════════════
 //  방문 세션 로그 (저비용) — visit_sessions
-//  세션당 쓰기 목표: 진입 1회 + heartbeat 최대 3회 + game_start/game_end/hidden/pagehide
+//  세션당 쓰기 목표: 진입 1회 + heartbeat 최대 2회 + game_start/game_end + 종료 이벤트 1회
 // ══════════════════════════════
 const VISIT_SESSION_ID = 'vs_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-const VISIT_MAX_HEARTBEAT = 3;
+const VISIT_MAX_HEARTBEAT = 2;
 const VISIT_MIN_WRITE_GAP = 15000;   // 같은 reason 15초 이내 중복 저장 방지
+const VISIT_EXIT_WRITE_GAP = 5000;   // visibility hidden 직후 pagehide가 연달아 오는 중복 종료 write 제거
 const VISIT_DURATION_CAP_SEC = 7200; // durationSec 최대 2시간
 let visitEnterTs = Date.now();
 let visitPlayStarted = false;
@@ -5244,6 +5261,8 @@ async function writeVisitSession(reason) {
   try {
     const now = Date.now();
     const isPriority = (reason === 'game_start' || reason === 'game_end' || reason === 'hidden' || reason === 'pagehide');
+    const isExit = reason === 'hidden' || reason === 'pagehide';
+    if (isExit && now - visitLastWriteAt < VISIT_EXIT_WRITE_GAP) return;
     if (!isPriority && now - visitLastWriteAt < VISIT_MIN_WRITE_GAP) return;
     let durationSec = Math.round((now - visitEnterTs) / 1000);
     if (durationSec > VISIT_DURATION_CAP_SEC) durationSec = VISIT_DURATION_CAP_SEC;
@@ -5265,7 +5284,7 @@ async function writeVisitSession(reason) {
 }
 writeVisitSession('enter');
 (function scheduleVisitHeartbeat() {
-  const FIRST_DELAY = 60000, INTERVAL = 120000;
+  const FIRST_DELAY = 90000, INTERVAL = 180000;
   function tick() {
     if (visitHeartbeatCount >= VISIT_MAX_HEARTBEAT) return;
     visitHeartbeatCount++;
@@ -5280,17 +5299,70 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', () => { writeVisitSession('pagehide'); });
 
 let _rankingsCache = null, _rankingsCacheTs = 0;
+let _rankingsFromPublicCache = false;
+let _weeklyRankingsFromPublicCache = false;
+let _embeddedChampCounts = null;
 const RANKING_CACHE_TTL = 60000; // 60초 — 탭을 왔다갔다 해도 매번 다시 안 읽게 캐싱.
 // 내 점수 반영 지연 걱정은 없음: 점수 제출 성공 시 아래 endGame에서 랭킹/주간 캐시를 명시적으로
 // 무효화하므로, 제출 직후 랭킹 화면은 항상 새로 읽는다(기존 20초 TTL 시절의 미세한 staleness도 해소).
 
 function invalidateRankingsCache() { _rankingsCache = null; }
 
+function compactPublicRankRows(data, expectedKind, weekId) {
+  if (!data || data.complete !== true || data.version !== PUBLIC_RANK_CACHE_VERSION) return null;
+  if (data.kind !== expectedKind) return null;
+  if (expectedKind === 'week' && data.weekId !== weekId) return null;
+  if (!Array.isArray(data.rows)) return null;
+  return data.rows.slice(0, MAX_RANKS).map((row) => ({
+    nickname: String((row && row.nickname) || ''),
+    uid: row && row.uid,
+    score: Number((row && row.score) || 0),
+    ts: row && row.ts,
+    oingLevel: row && row.oingLevel,
+    oingLevelVersion: row && row.oingLevelVersion,
+    maxGoalStreak: row && row.maxGoalStreak,
+    skin: row && row.skin,
+    frame: row && row.frame,
+    bubble: row && row.bubble,
+    championCount: Number((row && row.championCount) || 0),
+  })).filter((row) => row.nickname);
+}
+
+// 공개 캐시 행에는 랭킹에 필요한 꾸미기·왕관 정보도 같이 들어 있다. 이를 기존 렌더 캐시에
+// 주입하면 nickname_skins/champions 컬렉션 전체 조회가 사라지면서 화면 모양은 그대로다.
+function primeRankDecorations(rows) {
+  const counts = {};
+  (rows || []).forEach((row) => {
+    if (!row || !row.nickname) return;
+    const info = { skin: row.skin || null, frame: row.frame || null, bubble: row.bubble || null };
+    skinsCache[row.nickname] = info;
+    skinsFromUidDoc[row.nickname] = true;
+    if (row.uid) skinsByUid[row.uid] = info;
+    if (row.championCount > 0) counts[row.nickname] = row.championCount;
+  });
+  // 주간 캐시를 뒤늦게 읽어도 전체 캐시에서 이미 받은 왕관 수를 지우지 않는다.
+  // 반대로 주간→전체 순서에서도 전체 값이 자연스럽게 보강된다.
+  _embeddedChampCounts = { ...(_embeddedChampCounts || {}), ...counts };
+}
+
 async function loadRankings() {
   if (_rankingsCache && Date.now() - _rankingsCacheTs < RANKING_CACHE_TTL) {
     return _rankingsCache;
   }
   try {
+    // 정상 경로: 최대 500개 행을 담은 서버 파생 문서 1건만 읽는다.
+    try {
+      const cacheSnap = await getDoc(doc(db, PUBLIC_RANK_CACHE_COLLECTION, 'all'));
+      const cached = cacheSnap.exists() ? compactPublicRankRows(cacheSnap.data(), 'all', null) : null;
+      if (cached) {
+        _rankingsFromPublicCache = true;
+        primeRankDecorations(cached);
+        _rankingsCache = cached; _rankingsCacheTs = Date.now();
+        return cached;
+      }
+    } catch (cacheErr) { console.warn('전체 랭킹 공개 캐시 조회 실패, 원본 폴백:', cacheErr); }
+    // 배포 직후 캐시 백필 전·일시적 캐시 손상 때만 기존 원본 쿼리로 폴백한다.
+    _rankingsFromPublicCache = false;
     const q = query(collection(db, 'rankings'), orderBy('score', 'desc'), limit(MAX_RANKS));
     const snap = await getDocs(q);
     const list = snap.docs.map((d) => {
@@ -5351,15 +5423,29 @@ function getLastWeekId() {
 // 새 주가 시작돼 이번 주 랭킹이 비었을 때 빈 화면에 함께 보여준다.
 // (원래 여기 있던 loadLastWeekRanks() 는 지난주 '순위 번호'만 만들어 돌려줬는데
 //  호출하는 곳이 한 군데도 없는 죽은 코드였다. 같은 쿼리를 실제로 쓰는 이쪽으로 바꿨다.)
+let _lastWeekTop3Cache = null;
 async function loadLastWeekTop3() {
   try {
     const lastWeekId = getLastWeekId();
+    if (_lastWeekTop3Cache && _lastWeekTop3Cache.weekId === lastWeekId) return _lastWeekTop3Cache.rows;
+    try {
+      const cacheSnap = await getDoc(doc(db, PUBLIC_RANK_CACHE_COLLECTION, `week_${lastWeekId}`));
+      const cached = cacheSnap.exists() ? compactPublicRankRows(cacheSnap.data(), 'week', lastWeekId) : null;
+      if (cached) {
+        primeRankDecorations(cached);
+        const rows = cached.slice(0, 3).map((row) => ({ nickname: row.nickname, score: row.score }));
+        _lastWeekTop3Cache = { weekId: lastWeekId, rows };
+        return rows;
+      }
+    } catch (cacheErr) { console.warn('지난주 랭킹 공개 캐시 조회 실패, 원본 폴백:', cacheErr); }
     const q = query(collection(db, 'weekly_rankings', lastWeekId, 'scores'), orderBy('score', 'desc'), limit(3));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({
+    const rows = snap.docs.map((d) => ({
       nickname: d.id,
       score: Number((d.data() || {}).score) || 0,
     })).filter((x) => x.score > 0);
+    _lastWeekTop3Cache = { weekId: lastWeekId, rows };
+    return rows;
   } catch (e) { console.warn('지난주 순위 로드 실패:', e); return []; }
 }
 
@@ -5456,6 +5542,17 @@ async function loadWeeklyRankings() {
     return _weeklyRankingsCache;
   }
   try {
+    try {
+      const cacheSnap = await getDoc(doc(db, PUBLIC_RANK_CACHE_COLLECTION, `week_${weekId}`));
+      const cached = cacheSnap.exists() ? compactPublicRankRows(cacheSnap.data(), 'week', weekId) : null;
+      if (cached) {
+        _weeklyRankingsFromPublicCache = true;
+        primeRankDecorations(cached);
+        _weeklyRankingsCache = cached; _weeklyRankingsCacheTs = Date.now(); _weeklyRankingsCacheWeekId = weekId;
+        return cached;
+      }
+    } catch (cacheErr) { console.warn('주간 랭킹 공개 캐시 조회 실패, 원본 폴백:', cacheErr); }
+    _weeklyRankingsFromPublicCache = false;
     const q = query(collection(db, 'weekly_rankings', weekId, 'scores'), orderBy('score', 'desc'), limit(MAX_RANKS));
     const snap = await getDocs(q);
     const list = snap.docs.map((d) => {
@@ -6959,12 +7056,10 @@ async function checkWeeklyCrownSnapshot() {
     // 방금 넘어간 주(=지난주)의 1등에게 왕관을 줘야 한다. 'rankings'는 전체 누적
     // 랭킹이라 여기서 뽑으면 그 주 실제 1등이 아니라 역대 1등이 매주 왕관을 받는
     // 버그가 된다 — weekly_rankings/{지난주}/scores에서 뽑아야 맞다.
-    const lastWeekId = getLastWeekId();
-    const q = query(collection(db, 'weekly_rankings', lastWeekId, 'scores'), orderBy('score', 'desc'), limit(1));
-    const topSnap = await getDocs(q);
-    if (topSnap.empty) return;
-    const topNick = topSnap.docs[0].id;
-    const topScore = topSnap.docs[0].data().score || 0;
+    const topRows = await loadLastWeekTop3(); // 공개 캐시 1문서(없을 때만 기존 top3 쿼리)
+    if (!topRows.length) return;
+    const topNick = topRows[0].nickname;
+    const topScore = topRows[0].score || 0;
     const MIN_CHAMPION_SCORE = 3000;
     if (topScore < MIN_CHAMPION_SCORE) return;
 
@@ -11078,6 +11173,7 @@ function addHallTitle(nickname) {
 let _champCountsCache = null, _champCountsTs = 0;
 const CHAMP_COUNTS_TTL = 300000; // 5분
 async function getChampCounts() {
+  if (_embeddedChampCounts) return _embeddedChampCounts;
   if (_champCountsCache && Date.now() - _champCountsTs < CHAMP_COUNTS_TTL) return _champCountsCache;
   try {
     const snap = await getDocs(collection(db, 'champions'));
@@ -11100,16 +11196,23 @@ function getTodayDateStr() {
 // 천천히 움직여, 하루·3일 같은 짧은 기준으론 변동이 거의 안 뜬다(다 '－'). '이번 주 초 대비'로
 // 잡아야 그 주에 게임한 사람들의 순위 상승이 ▲로 충분히 뜨고, 매주 월요일 자연히 리셋된다.
 function getRankBucketId() { return getWeekId(); }
+let _rankSnapshotCache = null, _rankSnapshotCacheTs = 0;
+const RANK_META_CACHE_TTL = 5 * 60 * 1000;
 async function getRankSnapshot() {
+  if (_rankSnapshotCache && Date.now() - _rankSnapshotCacheTs < RANK_META_CACHE_TTL) return _rankSnapshotCache;
   try {
     const snap = await getDoc(doc(db, 'meta', 'rankSnapshot'));
-    return snap.exists() ? snap.data() : null;
+    _rankSnapshotCache = snap.exists() ? snap.data() : null;
+    _rankSnapshotCacheTs = Date.now();
+    return _rankSnapshotCache;
   } catch { return null; }
 }
 async function saveRankSnapshot(ranks) {
   try {
     // v:2 = 친구탭 오염 버그가 고쳐진 버전이 저장한 스냅샷이라는 표시 (자가복구 감지용)
-    await setDoc(doc(db, 'meta', 'rankSnapshot'), { date: getRankBucketId(), savedAt: Date.now(), ranks, v: 2 });
+    const value = { date: getRankBucketId(), savedAt: Date.now(), ranks, v: 2 };
+    await setDoc(doc(db, 'meta', 'rankSnapshot'), value);
+    _rankSnapshotCache = value; _rankSnapshotCacheTs = Date.now();
   } catch (e) { console.warn('순위 스냅샷 저장 실패:', e); }
 }
 async function mergeRankSnapshot(partialRanksDotted) {
@@ -11118,6 +11221,12 @@ async function mergeRankSnapshot(partialRanksDotted) {
     // setDoc(...,{merge:true})는 점 포함 키를 문자 그대로의 새 필드로 취급해 rules의
     // hasOnly(['date','savedAt','ranks','v'])에 걸려 매번 permission-denied가 났었음.
     await updateDoc(doc(db, 'meta', 'rankSnapshot'), partialRanksDotted);
+    if (_rankSnapshotCache && _rankSnapshotCache.ranks) {
+      Object.entries(partialRanksDotted).forEach(([key, value]) => {
+        if (key.startsWith('ranks.')) _rankSnapshotCache.ranks[key.slice(6)] = value;
+      });
+      _rankSnapshotCacheTs = Date.now();
+    }
   } catch (e) { console.warn('순위 스냅샷 병합 실패:', e); }
 }
 
@@ -11133,7 +11242,7 @@ function todayDateKST() {
 }
 let _todayNewCache = new Set();
 let _todayNewCacheTs = 0;
-const TODAY_NEW_CACHE_TTL = 60000; // 1분 — 실시간성보다 읽기 비용 절약 우선
+const TODAY_NEW_CACHE_TTL = 5 * 60 * 1000; // 신규 뱃지는 5분 지연을 허용하고 반복 meta read를 줄인다
 async function loadTodayNewUsers() {
   if (_todayNewCacheTs && Date.now() - _todayNewCacheTs < TODAY_NEW_CACHE_TTL) return _todayNewCache;
   try {
@@ -11358,6 +11467,31 @@ async function loadSkinsCache() {
     _skinsCacheTs = Date.now();
   } catch (e) { console.warn('스킨 로드 실패:', e); }
 }
+
+// 공개 캐시 상위 500 밖의 친구만 개별 보완한다. 전체 nickname_skins 컬렉션을 다시
+// 읽지 않고 친구 1명당 UID/레거시 문서 최대 2건만 확인한다.
+async function loadRankStylesForRows(rows) {
+  const missing = (rows || []).filter((row) => row && row.nickname && !skinsCache[row.nickname]);
+  await Promise.all(missing.map(async (row) => {
+    try {
+      const refs = [];
+      if (row.uid) refs.push(doc(db, 'nickname_skins', row.uid));
+      if (!row.uid || row.uid !== row.nickname) refs.push(doc(db, 'nickname_skins', row.nickname));
+      const snaps = await Promise.all(refs.map((ref) => getDoc(ref)));
+      const values = snaps.filter((snap) => snap.exists()).map((snap) => snap.data() || {});
+      const primary = values.find((value) => value.nickname === row.nickname) || values[0] || {};
+      const legacy = values.find((value) => value !== primary) || {};
+      const info = {
+        skin: primary.skin || legacy.skin || null,
+        frame: primary.frame || legacy.frame || null,
+        bubble: primary.bubble || legacy.bubble || null,
+      };
+      skinsCache[row.nickname] = info;
+      skinsFromUidDoc[row.nickname] = true;
+      if (row.uid) skinsByUid[row.uid] = info;
+    } catch (e) { console.warn('친구 꾸미기 개별 조회 실패:', row.nickname, e); }
+  }));
+}
 // 랭킹 행에 실려온 uid 로 "닉네임을 모르는 스킨 문서"를 닉네임에 연결한다.
 // nickname 필드가 있는 문서(게임이 직접 쓴 것)가 이미 있으면 그것을 우선한다.
 //
@@ -11467,12 +11601,11 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
     return;
   }
   try { updateAccountLinkBtn(); } catch {}
-  await loadSkinsCache();
-  if (gen !== _rankRenderGen) return; // 더 최신 렌더가 시작됨 → 이 렌더는 중단(탭 뒤섞임 방지)
   if (currentRankMode === 'week') { await renderWeeklyRanking(gen); return; }
   renderWeekSpurtBanner(false); // 스퍼트 배너는 주간 탭 전용 — 전체/친구 탭에선 숨김
   renderWeeklyThanks();
   let list = await loadRankings();
+  if (!_rankingsFromPublicCache) await loadSkinsCache(); // 캐시 백필 전의 기존 쿼리 폴백에서만 전수 조회
   if (gen !== _rankRenderGen) return;
   linkSkinsByUid(list); // 닉네임 필드 없는 스킨 문서를 이 목록의 uid 로 연결
   const myNick = loadNickname();
@@ -11537,11 +11670,20 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
               }
             } catch {}
           }
-          if (d || sc > 0) return { nickname: nick, score: sc, ts: (d && d.ts) || 0 };
+          if (d || sc > 0) return {
+            nickname: nick,
+            uid: d && d.uid,
+            score: sc,
+            ts: (d && d.ts) || 0,
+            oingLevel: d && d.oingLevel,
+            oingLevelVersion: d && d.oingLevelVersion,
+            maxGoalStreak: d && d.maxGoalStreak,
+          };
         } catch (e) { console.warn('친구 개별 조회 실패:', nick, e); }
         return null;
       }));
       fetched.forEach(e => { if (e) list.push(e); });
+      await loadRankStylesForRows(fetched.filter(Boolean));
     }
     list = list.filter(e => wanted.has(e.nickname));
     // 친구탭은 "전체(역대) 점수"로 겨룬다 — 예전엔 주간 점수를 메인으로 써서 매주 월요일마다
@@ -11784,15 +11926,21 @@ async function renderRankingInner(gen = ++_rankRenderGen) {
 
 // 이번 주 랭킹 — 전체 랭킹과 같은 DOM(시상대/목록/내순위)을 재사용하되
 // 명예의전당 👑 / 순위변동 화살표 없이 간단하게 표시
+let _weeklyRankSnapshotCache = null, _weeklyRankSnapshotCacheTs = 0;
 async function getWeeklyRankSnapshot() {
+  if (_weeklyRankSnapshotCache && Date.now() - _weeklyRankSnapshotCacheTs < RANK_META_CACHE_TTL) return _weeklyRankSnapshotCache;
   try {
     const snap = await getDoc(doc(db, 'meta', 'weeklyRankSnapshot'));
-    return snap.exists() ? snap.data() : null;
+    _weeklyRankSnapshotCache = snap.exists() ? snap.data() : null;
+    _weeklyRankSnapshotCacheTs = Date.now();
+    return _weeklyRankSnapshotCache;
   } catch { return null; }
 }
 async function saveWeeklyRankSnapshot(weekId, ranks) {
   try {
-    await setDoc(doc(db, 'meta', 'weeklyRankSnapshot'), { date: getRankBucketId(), savedAt: Date.now(), weekId, ranks });
+    const value = { date: getRankBucketId(), savedAt: Date.now(), weekId, ranks };
+    await setDoc(doc(db, 'meta', 'weeklyRankSnapshot'), value);
+    _weeklyRankSnapshotCache = value; _weeklyRankSnapshotCacheTs = Date.now();
   } catch (e) { console.warn('주간 순위 스냅샷 저장 실패:', e); }
 }
 async function mergeWeeklyRankSnapshot(partialRanksDotted) {
@@ -11800,6 +11948,12 @@ async function mergeWeeklyRankSnapshot(partialRanksDotted) {
     // updateDoc()만 점(.) 구분 키를 실제 중첩 경로(ranks.닉네임)로 해석한다 — 이유는
     // mergeRankSnapshot 주석 참고. 같은 버그로 새로 참여한 유저가 계속 NEW로 남아있었음.
     await updateDoc(doc(db, 'meta', 'weeklyRankSnapshot'), partialRanksDotted);
+    if (_weeklyRankSnapshotCache && _weeklyRankSnapshotCache.ranks) {
+      Object.entries(partialRanksDotted).forEach(([key, value]) => {
+        if (key.startsWith('ranks.')) _weeklyRankSnapshotCache.ranks[key.slice(6)] = value;
+      });
+      _weeklyRankSnapshotCacheTs = Date.now();
+    }
   } catch (e) { console.warn('주간 순위 스냅샷 병합 실패:', e); }
 }
 
@@ -12011,6 +12165,7 @@ async function appendLastWeekPodium(el, gen) {
 
 async function renderWeeklyRankingInner(gen = ++_rankRenderGen) {
   const list = await loadWeeklyRankings();
+  if (!_weeklyRankingsFromPublicCache) await loadSkinsCache(); // 공개 캐시가 없을 때만 레거시 전수 조회
   if (gen !== _rankRenderGen) return;
   linkSkinsByUid(list); // 주간 목록에도 동일 연결 (주간 문서에도 uid 가 실려 있다)
   renderWeekSpurtBanner(true); // 금~일에만 실제로 표시됨(요일 판정은 함수 안에서)
@@ -13756,7 +13911,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788185400; // v4.28 — 민트냥 흰색·민트 경계 정리
+const BUILD = 1788276577; // v4.29 — Firestore 랭킹·접속 비용 절감
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14446,9 +14601,9 @@ async function refreshReviewEntryChip() {
   let meta = null;
   try {
     const c = JSON.parse(localStorage.getItem(REVIEW_META_CACHE_KEY) || 'null');
-    // 캐시가 "리뷰 0개"면 신뢰하지 않고 항상 다시 확인 — 첫 리뷰가 올라온 순간 "첫 리뷰 남겨달라"가
-    // 오래 남는 걸 방지(리뷰 1개짜리 문서 read라 비용 미미). 1개 이상이면 TTL 동안 캐시 사용.
-    if (c && (c.meta && (c.meta.ratingCount || 0) > 0) && Date.now() - c.ts < REVIEW_META_TTL) meta = c.meta;
+    // 0개 결과도 TTL 동안 신뢰한다. 초기화 타이머·랭킹 재렌더가 겹칠 때 같은 meta 문서를
+    // 한 세션에서 여러 번 읽던 낭비를 막고, 첫 리뷰 반영은 최대 3분만 늦춘다.
+    if (c && c.meta && Date.now() - c.ts < REVIEW_META_TTL) meta = c.meta;
   } catch {}
   if (!meta) {
     try {
