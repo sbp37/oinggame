@@ -90,9 +90,12 @@ console.log(' 잔액:', after.bal);
 console.log(' 팝업 문구:', after.popupText.replace(/\n+/g, ' | '));
 
 const checks = [
-  ['젤리 판매는 3종만', cards.length === 3],
-  ['젤리 판매 목록이 파란·회색·삼색', cards.map(c => c.key).sort().join(',') === 'blue-scarf,calico,gray'],
-  ['치즈·핑크·민트는 젤리샵에 없음(현금 전용)', !cards.some(c => ['cheese','pink','mint'].includes(c.key))],
+  // 2026-09-01 운영 결정 — 젤리로도 6종 전부 판다(이전엔 3종만 열려 있었다).
+  // key 는 현금 카탈로그(customOrders.js CUSTOM_CATS)와 같아야 한다. 어긋나면 서버가
+  // invalid-argument 로 거절하고, 소유 목록(ownedCatSkins)도 갈라진다.
+  ['젤리 판매는 6종', cards.length === 6],
+  ['젤리 판매 목록이 현금 카탈로그와 같은 6종',
+    cards.map(c => c.key).sort().join(',') === 'blue-scarf,calico,cheese,gray,mint,pink'],
   ['고양이 그림이 충분히 큼(80px 이상)', cards.every(c => c.imgW >= 80)],
   ['모두 60젤리', cards.every(c => c.price.includes('60'))],
   ['이미지 전부 로드됨', cards.every(c => c.loaded)],

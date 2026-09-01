@@ -27,6 +27,7 @@ function cut(name, kind = 'function') {
 }
 const build = new Function(`${cut('isUserSpend')}${cut('itemKo')}
   ${src.match(/const ITEM_KO = \{[\s\S]*?\n\};/)[0]}
+  ${src.match(/const CAT_KO = \{[\s\S]*?\n\};/)[0]}
   return { isUserSpend, itemKo };`);
 const { isUserSpend, itemKo } = build();
 
@@ -49,7 +50,7 @@ test('운영자 회수는 소비 목록에 넣지 않는다', () => {
 
 test('아이템 키를 한글 이름으로 바꾼다', () => {
   assert.equal(itemKo('cherry'), '벚꽃비');
-  assert.equal(itemKo('blue-scarf'), '파란 목도리냥');
+  assert.equal(itemKo('blue-scarf', 'buyCat'), '파란 목도리냥');
   assert.equal(itemKo('neon'), '네온');
   // 모르는 키는 지우지 않고 원문을 남긴다 — 새 아이템이 나와도 빈칸이 되면 안 된다.
   assert.equal(itemKo('brand-new-item'), 'brand-new-item');
@@ -57,13 +58,32 @@ test('아이템 키를 한글 이름으로 바꾼다', () => {
   assert.equal(itemKo(undefined), '');
 });
 
+test('고양이와 닉네임 컬러가 key 를 공유해도 헷갈리지 않는다', () => {
+  // pink·mint 는 닉네임 컬러에도, 고양이에도 있는 key 다. 무엇을 산 기록인지(source)로
+  // 갈라 읽지 않으면 '핑크냥'을 산 사람이 '복숭아'를 산 것처럼 보인다.
+  assert.equal(itemKo('pink', 'buyCat'), '핑크냥');
+  assert.equal(itemKo('pink', 'buySkin'), '복숭아');
+  assert.equal(itemKo('mint', 'buyCat'), '민트냥');
+  assert.equal(itemKo('mint', 'buySkin'), '민트');
+});
+
+test('젤리로 살 수 있는 고양이 6종이 모두 한글 이름을 갖는다', () => {
+  // 서버가 CUSTOM_CATS 에서 파생하므로 6종 전부 젤리로 살 수 있다.
+  for (const key of ['blue-scarf', 'gray', 'calico', 'cheese', 'pink', 'mint']) {
+    assert.notEqual(itemKo(key, 'buyCat'), key, `${key} 의 고양이 이름이 없습니다`);
+  }
+});
+
 test('판매 중인 아이템 키가 모두 한글 이름을 갖고 있다', () => {
   // 서버 가격표에 있는 키인데 이름이 없으면 운영자 화면에 영문 키가 그대로 뜬다.
   const shop = readFileSync(new URL('../shop-v2-preview.html', import.meta.url), 'utf8');
   const keys = [...shop.matchAll(/key:'([a-z-]+)',\s*nm:'([^']+)'/g)];
   assert.ok(keys.length >= 15, `상점 카탈로그를 찾지 못했습니다 (${keys.length}건)`);
+  const catKeys = new Set(['blue-scarf', 'gray', 'calico', 'cheese', 'pink', 'mint']);
   for (const [, key, name] of keys) {
-    assert.notEqual(itemKo(key), key, `${key}(${name}) 의 한글 이름이 없습니다`);
+    // 고양이 key 는 buyCat 문맥에서 봐야 한다(pink·mint 가 컬러와 겹친다).
+    const src2 = catKeys.has(key) ? 'buyCat' : 'buySkin';
+    assert.notEqual(itemKo(key, src2), key, `${key}(${name}) 의 한글 이름이 없습니다`);
   }
 });
 

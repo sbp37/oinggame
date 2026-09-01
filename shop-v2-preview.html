@@ -481,12 +481,17 @@ const CATALOG = {
   ],
   // 게임 속 고양이 얼굴 — key 는 게임의 CUSTOM_CAT_ASSETS·서버 JELLY_CAT_KEYS·
   // 현금 주문의 CUSTOM_CATS 와 모두 같아야 한다(같은 소유 목록을 공유한다).
-  // ⚠️ 젤리로는 이 3종만 판다(운영 결정). 치즈·핑크·민트는 현금 상점 전용이라
-  // 여기에 넣으면 서버가 invalid-argument 로 거절한다.
+  // 젤리로 6종 모두 판다(2026-09-01 운영 결정 — 이전엔 3종만 열려 있었다).
+  // key 는 현금 카탈로그(customOrders.js CUSTOM_CATS)와 같은 것을 써야 한다 —
+  // 현금으로 받은 고양이와 젤리로 산 고양이가 같은 ownedCatSkins 를 공유하기 때문이다.
+  // 그림은 -c 자산(200x200 정중앙 정렬본)만 쓴다. 원본은 얼굴마다 여백이 달라 칸에서 튄다.
   cat: [
     { key:'blue-scarf', nm:'파란 목도리냥', ds:'오잉게임의 기본 냥이', price:60, img:'assets/img-03-c.png' },
     { key:'gray',       nm:'회색냥',       ds:'차분한 회색 털',       price:60, img:'assets/img-04-c.png' },
     { key:'calico',     nm:'삼색냥',       ds:'복스러운 삼색 무늬',   price:60, img:'assets/img-05-c.png' },
+    { key:'cheese',     nm:'치즈냥',       ds:'노릇한 치즈색 줄무늬', price:60, img:'assets/cat-cheese-c.png' },
+    { key:'pink',       nm:'핑크냥',       ds:'분홍 리본을 맨 냥이',  price:60, img:'assets/cat-pink-c.png' },
+    { key:'mint',       nm:'민트냥',       ds:'동그란 안경을 쓴 냥이', price:60, img:'assets/cat-mint-v3-c.png' },
   ],
   frame: [
     { key:'neon',   nm:'네온',    ds:'밤거리 네온사인 테두리',      price:80, c:'#22d3ee' },

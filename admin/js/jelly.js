@@ -31,17 +31,23 @@ const ITEM_KO = {
   bluewave: '블루웨이브', auroraglow: '오로라빛', cherry: '벚꽃비', goldshine: '골드샤인',
   // 랭킹 테두리
   neon: '네온', sakura: '벚꽃', aurora: '오로라', paw: '발바닥', royal: '로얄', crown: '황금왕관',
-  // 게임 속 고양이
-  'blue-scarf': '파란 목도리냥', gray: '회색냥', calico: '삼색냥',
-  cheese: '치즈냥', pinkcat: '핑크냥', mintcat: '민트냥',
   // 옛 유료 아이템(지금은 안 팔지만 원장에 남아 있다)
   gold: '골드', red: '레드', rainbow: '무지개', diamond: '다이아',
 };
-function itemKo(key) {
+// 고양이는 key 가 닉네임 컬러와 겹친다(pink·mint 는 양쪽에 다 있다).
+// 그래서 무엇을 산 기록인지(source)로 갈라 읽어야 한다 — 안 그러면 '핑크냥'을 산 사람이
+// '복숭아'(닉네임 컬러)를 산 것처럼 보인다.
+const CAT_KO = {
+  'blue-scarf': '파란 목도리냥', gray: '회색냥', calico: '삼색냥',
+  cheese: '치즈냥', pink: '핑크냥', mint: '민트냥',
+};
+function itemKo(key, source) {
   const k = typeof key === 'string' ? key.trim() : '';
   if (!k) return '';
+  if (source === 'buyCat') return CAT_KO[k] || k;
   return ITEM_KO[k] || k; // 모르는 키는 원문 그대로 — 새 아이템이 나와도 안 사라진다
 }
+
 
 function grantsLabel(g) {
   if (!g) return '';
@@ -54,7 +60,7 @@ function logRowHtml(r, { withNick = false } = {}) {
   const src = SOURCE_KO[r.source] || r.source || r.type || '?';
   const extra = [
     r.grants ? grantsLabel(r.grants) : '',
-    r.item ? escapeHtml(itemKo(r.item)) : '',
+    r.item ? escapeHtml(itemKo(r.item, r.source)) : '',
     r.reason ? escapeHtml(r.reason) : '',
     (r.from && r.to) ? `${escapeHtml(r.from)}→${escapeHtml(r.to)}` : '',
   ].filter(Boolean).join(' · ');
@@ -362,7 +368,7 @@ async function loadSpendLog() {
     const spent = shown.reduce((sum, r) => sum + Math.abs(Number(r.amount) || 0), 0);
     const byItem = new Map();
     for (const r of shown) {
-      const label = r.item ? itemKo(r.item) : (SOURCE_KO[r.source] || r.source || '기타');
+      const label = r.item ? itemKo(r.item, r.source) : (SOURCE_KO[r.source] || r.source || '기타');
       byItem.set(label, (byItem.get(label) || 0) + 1);
     }
     const top = [...byItem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
@@ -376,7 +382,7 @@ async function loadSpendLog() {
 
     list.innerHTML = shown.map(r => {
       const nick = r.nickname || nickByUid.get(r.uid) || (r.uid ? `UID ${String(r.uid).slice(0, 6)}…` : '(알 수 없음)');
-      const what = r.item ? itemKo(r.item) : '';
+      const what = r.item ? itemKo(r.item, r.source) : '';
       const src = SOURCE_KO[r.source] || r.source || '사용';
       const amt = Math.abs(Number(r.amount) || 0);
       return `<div class="list-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
