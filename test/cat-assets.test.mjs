@@ -67,3 +67,32 @@ test('좌우가 정중앙이다', () => {
       `${k} 좌우 여백 ${M[k].left}/${M[k].right}`);
   }
 });
+
+// 민트냥은 손실 압축 얼룩 때문에 따로 정리해서 만든다(tools/normalize-cat-asset.py).
+// 배포본이 그 스크립트의 결과와 같아야 한다 — 손으로 고치거나 다른 방법으로 다시 만들면
+// 8/31 처럼 흰색·민트 경계가 진흙처럼 번진 파일이 그대로 올라간다.
+test('민트냥 배포본은 정리 스크립트가 만든 것과 일치한다', () => {
+  const tmp = join(ROOT, 'assets', '.mint-verify.png');
+  try {
+    execFileSync('python3', [
+      join(ROOT, 'tools/normalize-cat-asset.py'),
+      join(ROOT, 'assets/cat-mint-v3.png'), tmp,
+      '--palette', '255,249,234', '127,197,177', '0,0,0', '21,57,48',
+      '--head', '154', '--head-y', '100',
+    ], { stdio: 'pipe' });
+    const diff = execFileSync('python3', ['-c', `
+import numpy as np
+from PIL import Image
+a = np.asarray(Image.open("${join(ROOT, 'assets/cat-mint-v3-c.png')}").convert('RGBA')).astype(int)
+b = np.asarray(Image.open("${tmp}").convert('RGBA')).astype(int)
+print(0 if a.shape != b.shape else int(np.abs(a-b).max()) if a.shape == b.shape else 999)
+print(1 if a.shape != b.shape else 0)
+`], { encoding: 'utf8' }).trim().split('\n');
+    assert.equal(diff[1], '0', '크기가 달라졌습니다 — 스크립트 인자가 배포본과 안 맞습니다');
+    assert.equal(diff[0], '0',
+      `배포본이 스크립트 결과와 다릅니다(최대 차이 ${diff[0]}). ` +
+      '자산을 바꿨다면 tools/normalize-cat-asset.py 로 다시 만들어 주세요.');
+  } finally {
+    try { execFileSync('rm', ['-f', tmp]); } catch {}
+  }
+});
