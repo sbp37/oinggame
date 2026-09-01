@@ -31,6 +31,7 @@ import {
 // 통째로 들어오고, 넘치면 truncated 표시로 근사치임을 알린다. (2026-08-30 1000 → 400)
 export const SESSION_FETCH_CAP = 400;
 const LS_PREFIX = 'oeing_admin_dailystats_';
+const LS_SYNC_PREFIX = 'oeing_admin_dailystats_synced_v';
 
 // 집계 로직 버전 — 기준이 바뀌면 올린다. 저장된 dailyStats의 v가 다르면 그 날짜만 1회 재집계.
 // v2: 신규 유저 기준을 users.createdAt(=계정 연결 시각, 가입일 아님!)에서
@@ -148,6 +149,13 @@ function lsGet(dateStr) {
 function lsSet(dateStr, stats) {
   try { localStorage.setItem(LS_PREFIX + dateStr, JSON.stringify(stats)); } catch {}
 }
+function lsWasSynced(dateStr) {
+  try { return localStorage.getItem(`${LS_SYNC_PREFIX}${STATS_V}_${dateStr}`) === '1'; }
+  catch { return false; }
+}
+function lsMarkSynced(dateStr) {
+  try { localStorage.setItem(`${LS_SYNC_PREFIX}${STATS_V}_${dateStr}`, '1'); } catch {}
+}
 
 // 지난 하루치 통계 — ① 메모리 → ② localStorage → ③ dailyStats 문서 → ④ 원본 집계(+저장)
 // allowBackfill:false 면 ④(원본 집계)를 하지 않고 null 반환 — 홈 탭용.
@@ -159,13 +167,33 @@ export async function getPastDayStats(dateStr, { allowBackfill = true } = {}) {
 
   // v가 다른(구버전 기준으로 집계된) 캐시는 무시하고 1회 재집계한다
   const isValid = (d) => d && d.final && d.v === STATS_V;
-  const local = lsGet(dateStr);
-  if (isValid(local)) { cache.set(key, local); return local; }
-
   const ref = doc(db, 'dailyStats', dateStr);
+  const local = lsGet(dateStr);
+  if (isValid(local)) {
+    cache.set(key, local);
+    // 과거에는 Security Rules에 dailyStats 허용이 빠져 서버 저장이 거부됐다.
+    // 이 기기에 이미 있는 확정 통계는 원본 세션을 다시 읽지 않고 서버 캐시로 한 번만
+    // 승격한다. 성공 마커가 있으면 다음 관리자 재접속 때 불필요한 write도 하지 않는다.
+    if (!lsWasSynced(dateStr)) {
+      try {
+        await setDoc(ref, local, { merge: true });
+        lsMarkSynced(dateStr);
+      } catch (e) {
+        dailyStatsWriteState.blocked = true;
+        console.warn('dailyStats 기존 캐시 동기화 불가(로컬 캐시는 유지):', e && e.code);
+      }
+    }
+    return local;
+  }
+
   try {
     const existing = await fetchDoc(ref);
-    if (isValid(existing)) { lsSet(dateStr, existing); cache.set(key, existing); return existing; }
+    if (isValid(existing)) {
+      lsSet(dateStr, existing);
+      lsMarkSynced(dateStr);
+      cache.set(key, existing);
+      return existing;
+    }
   } catch { /* 읽기 권한 없으면 아래로 진행 */ }
 
   if (!allowBackfill) return null; // 미집계 — 캐시하지 않음 (분석 탭이 나중에 백필)
@@ -177,7 +205,10 @@ export async function getPastDayStats(dateStr, { allowBackfill = true } = {}) {
   lsSet(dateStr, computed);
   cache.set(key, computed);
   // 다음부터는 문서 1개만 읽으면 되도록 저장 — 실패해도(규칙 차단 등) 기능엔 지장 없음
-  try { await setDoc(ref, computed); }
+  try {
+    await setDoc(ref, computed);
+    lsMarkSynced(dateStr);
+  }
   catch (e) {
     dailyStatsWriteState.blocked = true;
     console.warn('dailyStats 저장 불가(이 기기 localStorage 캐시로 대체):', e && e.code);
@@ -214,7 +245,10 @@ export async function forceRecomputeDay(dateStr) {
   computed.computedAt = Date.now();
   lsSet(dateStr, computed);
   cache.set('shared:dailyStats:' + dateStr, computed);
-  try { await setDoc(doc(db, 'dailyStats', dateStr), computed); }
+  try {
+    await setDoc(doc(db, 'dailyStats', dateStr), computed);
+    lsMarkSynced(dateStr);
+  }
   catch (e) { dailyStatsWriteState.blocked = true; }
   return computed;
 }
