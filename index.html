@@ -5394,6 +5394,37 @@ function compactPublicRankRows(data, expectedKind, weekId) {
   })).filter((row) => row.nickname);
 }
 
+// ── 공개 캐시 신선도 확인 ──────────────────────────────────────
+//  public_rank_cache 는 서버 트리거가 원본 변경을 따라가며 갱신하는 파생 문서다.
+//  트리거가 안 돌거나(배포 누락·권한 문제) 실패하면 캐시가 그 자리에 멈추는데,
+//  화면은 캐시만 보므로 "방금 논 사람이 랭킹에 없다 / 점수가 옛날 값이다"가 된다.
+//  (2026-09-03 실사용 사고: 캐시가 12:27에 멈춰 이후 기록 6명이 통째로 사라지고
+//   5명은 점수가 낮은 옛 값으로 떠서 순위까지 뒤집혔다.)
+//
+//  캐시는 어디까지나 '싸게 보여주기' 위한 것이지 랭킹을 틀리게 만들 권한은 없다.
+//  그래서 쓰기 전에 원본에서 '가장 최근에 갱신된 1건'만 읽어(1 read) 캐시가 그걸
+//  담고 있는지 확인하고, 아니면 원본 쿼리로 폴백한다. 트리거가 정상일 땐 항상 통과해
+//  읽기 절감(1문서)이 그대로 유지되고, 멈추면 즉시 정확한 쪽으로 되돌아간다.
+//
+//  한계(정직하게): 이건 '가장 최근 기록'만 대조하므로, 오래전 행 하나만 조용히
+//  어긋난 경우까지 잡아내지는 못한다. 그건 서버 트리거가 고쳐져야 하는 문제다.
+async function publicRankCacheMatchesSource(collRef, rows) {
+  try {
+    const snap = await getDocs(query(collRef, orderBy('ts', 'desc'), limit(1)));
+    if (snap.empty) return true;               // 원본이 비었으면 대조할 게 없다
+    const d = snap.docs[0];
+    const src = d.data() || {};
+    const newestTs = Number(src.ts) || 0;
+    if (!newestTs) return true;                // ts 가 없는 옛 문서 — 대조 불가, 기존 동작 유지
+    const row = (rows || []).find((r) => r && r.nickname === d.id);
+    if (!row) return false;                    // 최신 기록의 주인이 캐시에 아예 없다
+    return Number(row.ts || 0) >= newestTs && Number(row.score || 0) >= (Number(src.score) || 0);
+  } catch (e) {
+    console.warn('랭킹 캐시 신선도 확인 실패 — 캐시 그대로 사용:', e);
+    return true;                               // 확인 자체가 실패하면 기존 동작(캐시)으로 둔다
+  }
+}
+
 // 공개 캐시 행에는 랭킹에 필요한 꾸미기·왕관 정보도 같이 들어 있다. 이를 기존 렌더 캐시에
 // 주입하면 nickname_skins/champions 컬렉션 전체 조회가 사라지면서 화면 모양은 그대로다.
 function primeRankDecorations(rows) {
@@ -5420,15 +5451,20 @@ async function loadRankings() {
     try {
       const cacheSnap = await getDoc(doc(db, PUBLIC_RANK_CACHE_COLLECTION, 'all'));
       const cached = cacheSnap.exists() ? compactPublicRankRows(cacheSnap.data(), 'all', null) : null;
-      if (cached) {
+      if (cached && await publicRankCacheMatchesSource(collection(db, 'rankings'), cached)) {
         _rankingsFromPublicCache = true;
         primeRankDecorations(cached);
         _rankingsCache = cached; _rankingsCacheTs = Date.now();
         return cached;
       }
+      if (cached) console.warn('전체 랭킹 공개 캐시가 원본보다 뒤처져 있어 원본으로 폴백합니다.');
     } catch (cacheErr) { console.warn('전체 랭킹 공개 캐시 조회 실패, 원본 폴백:', cacheErr); }
-    // 배포 직후 캐시 백필 전·일시적 캐시 손상 때만 기존 원본 쿼리로 폴백한다.
+    // 캐시 백필 전·손상·정지(트리거 미작동) 때 기존 원본 쿼리로 폴백한다.
     _rankingsFromPublicCache = false;
+    // 캐시 행에 실려 오던 꾸미기·왕관이 없는 경로라, 원본에서 다시 채운다.
+    // (primeRankDecorations 가 남긴 값이 그대로 남아 남의 스킨이 잘못 붙는 것도 여기서 정리된다.)
+    _embeddedChampCounts = null;
+    await loadSkinsCache();
     const q = query(collection(db, 'rankings'), orderBy('score', 'desc'), limit(MAX_RANKS));
     const snap = await getDocs(q);
     const list = snap.docs.map((d) => {
@@ -5611,14 +5647,19 @@ async function loadWeeklyRankings() {
     try {
       const cacheSnap = await getDoc(doc(db, PUBLIC_RANK_CACHE_COLLECTION, `week_${weekId}`));
       const cached = cacheSnap.exists() ? compactPublicRankRows(cacheSnap.data(), 'week', weekId) : null;
-      if (cached) {
+      const weekColl = collection(db, 'weekly_rankings', weekId, 'scores');
+      if (cached && await publicRankCacheMatchesSource(weekColl, cached)) {
         _weeklyRankingsFromPublicCache = true;
         primeRankDecorations(cached);
         _weeklyRankingsCache = cached; _weeklyRankingsCacheTs = Date.now(); _weeklyRankingsCacheWeekId = weekId;
         return cached;
       }
+      if (cached) console.warn('주간 랭킹 공개 캐시가 원본보다 뒤처져 있어 원본으로 폴백합니다.');
     } catch (cacheErr) { console.warn('주간 랭킹 공개 캐시 조회 실패, 원본 폴백:', cacheErr); }
     _weeklyRankingsFromPublicCache = false;
+    // 폴백 경로에는 캐시 행의 꾸미기·왕관이 없다 — 원본에서 다시 채운다(위 loadRankings 와 동일).
+    _embeddedChampCounts = null;
+    await loadSkinsCache();
     const q = query(collection(db, 'weekly_rankings', weekId, 'scores'), orderBy('score', 'desc'), limit(MAX_RANKS));
     const snap = await getDocs(q);
     const list = snap.docs.map((d) => {
@@ -14106,7 +14147,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788410900; // v4.29 — 랭킹 닉네임 찾기
+const BUILD = 1788414600; // v4.29 — 랭킹 캐시 신선도 검사 + 닉네임 찾기
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
