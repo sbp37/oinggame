@@ -498,9 +498,10 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(var(--grid-rows, 13), 1fr);
-  gap: 3px;
+  /* 2026-09-03 "숫자가 너무 작다" — 칸 사이 간격·테두리를 줄여 칸 면적을 되찾는다(③). */
+  gap: 2px;
   border-radius: 10px;
-  padding: 3px;
+  padding: 2px;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -508,8 +509,8 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   background-image:
     linear-gradient(rgba(120,170,230,0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120,170,230,0.09) 1px, transparent 1px);
-  background-size: calc((100% - 6px) / 9) calc((100% - 6px) / var(--grid-rows, 13));
-  background-position: 3px 3px;
+  background-size: calc((100% - 4px) / 9) calc((100% - 4px) / var(--grid-rows, 13));
+  background-position: 2px 2px;
   perspective: 700px;
 }
 /* 게임 종료 후 — 스크롤 대신 보드를 세로로 납작하게 압축해서
@@ -560,11 +561,12 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   justify-content: center;
   border-radius: 5px;
   font-size: clamp(14px, 4vw, 22px);
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   background: var(--surface2);
-  border: 1.5px solid #2a4a70;
-  color: var(--blue-light);
+  border: 1px solid #2a4a70;
+  /* 옅은 파랑(#7ec2f0, 대비 8:1)에서 거의 흰색(대비 14:1)으로 — "잘 안 보이고 눈 아프다" 보고(①) */
+  color: #eaf4ff;
   transition: background 0.1s, border-color 0.1s, transform 0.1s;
   -webkit-user-select: none;
   overflow: hidden;
@@ -2137,6 +2139,29 @@ body.light #panelGame .hint-btn.pregame { background: #f5f5f5; border-color: #d0
   .cell { font-size: clamp(17px, 4.6vw, 23px); }
   .cell.cat { font-size: clamp(16.5px, 4.9vw, 22px); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   게임 중 가독성 (2026-09-03 운영 보고: "숫자가 너무 작다, 잘 안 보이고 눈 아프다")
+   재보니 360px 폰에서 칸 35px 에 숫자 글자높이가 12px — 칸의 35%만 채우고 있었다.
+   칸 수를 줄여도 가로 9칸이 크기를 정하므로 칸은 거의 안 커진다(13%). 대신:
+   ① 숫자를 칸 크기의 62%로 — JS(syncCellFont)가 실제 칸 크기를 재서 --cell-px 로 넣는다.
+      vw 기준 clamp 는 세로가 짧은 폰(아이폰 SE: 칸 높이 24px)에서 칸을 넘치므로 쓰지 않는다.
+   ② 게임 중엔 헤더를 납작하게 — 제목 두 줄·큰 카드가 230px(화면의 30%)를 먹고 있었다.
+   ③ 칸 사이 간격 3→2px, 테두리 1.5→1px (위 .grid/.cell 기본 규칙).
+   답지(.ended)는 별도 압축 규칙을 그대로 쓴다. 튜토리얼 보드(.tut-grid)는 대상이 아니다.
+   ══════════════════════════════════════════════════════════════ */
+body.game-active .grid-wrap:not(.ended) #grid .cell { font-size: calc(var(--cell-px, 36px) * 0.62); }
+body.game-active .grid-wrap:not(.ended) #grid .cell.cat { font-size: calc(var(--cell-px, 36px) * 0.55); }
+
+body.game-active .game-header { padding: 6px 14px 6px; }
+body.game-active .title-row { margin-bottom: 5px; align-items: center; }
+body.game-active .game-title { font-size: 16px; white-space: nowrap; }
+body.game-active .game-sub { display: none; }
+body.game-active .stat-box { padding: 3px 6px; border-radius: 7px; }
+body.game-active .stat-label { font-size: 11px; margin-bottom: 0; }
+body.game-active .stat-val { font-size: 18px; }
+body.game-active .combo-wrap { padding: 4px 14px 3px; }
+body.game-active .grid-wrap { padding-top: 2px; }
 
 /* PC에서 셀 크기 제한 */
 @media (min-width: 500px) {
@@ -9921,6 +9946,25 @@ function watchEndedLayout() {
 }
 window.addEventListener('resize', () => updateEndedLayout());
 
+// ── 숫자 크기를 실제 칸 크기에 맞춘다 ──
+// 칸은 폰마다 가로(9칸)나 세로(13줄) 중 좁은 쪽이 정하므로 CSS 만으로는 정확히 못 잰다.
+// 게임판이 그려진 뒤 한 칸의 실제 크기를 재서 --cell-px 로 넘기고, CSS 가 그 62% 를 숫자 크기로 쓴다.
+function syncCellFont() {
+  const g = document.getElementById('grid');
+  if (!g || !document.body.classList.contains('game-active')) return;
+  const r = g.getBoundingClientRect();
+  if (r.width < 50 || r.height < 50) return;
+  const cs = getComputedStyle(g);
+  const gap = parseFloat(cs.columnGap) || 0;
+  const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  const cw = (r.width - pad - gap * (COLS - 1)) / COLS;
+  const ch = (r.height - pad - gap * (ROWS - 1)) / ROWS;
+  const px = Math.max(16, Math.min(cw, ch));
+  g.style.setProperty('--cell-px', px.toFixed(1) + 'px');
+}
+window.addEventListener('resize', () => requestAnimationFrame(syncCellFont));
+window.addEventListener('orientationchange', () => setTimeout(syncCellFont, 250));
+
 function updateTimer() {
   const m = Math.floor(timeLeft/60), s = timeLeft%60;
   const txt = m+':'+String(s).padStart(2,'0');
@@ -10051,6 +10095,8 @@ function startGame() {
   boardResetting = false;
   stopBgm(); // 다시하기 등으로 새로 시작하면 이전 음악을 확실히 끊고, GO! 뒤에 새로 재생
   document.body.classList.add('game-active');
+  // 헤더가 납작해지고 보드가 자리를 잡은 다음 프레임에 칸 크기를 잰다(레이아웃 확정 후).
+  requestAnimationFrame(() => requestAnimationFrame(syncCellFont));
   const gridWrap = document.querySelector('.grid-wrap');
   if (gridWrap) {
     gridWrap.style.paddingBottom = ''; gridWrap.style.marginBottom = ''; gridWrap.classList.remove('ended');
@@ -14147,7 +14193,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788414600; // v4.29 — 랭킹 캐시 신선도 검사 + 닉네임 찾기
+const BUILD = 1788425000; // v4.29 — 게임판 숫자 키움(칸 62%)·헤더 납작·간격 축소
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
