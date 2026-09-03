@@ -119,15 +119,25 @@
      media="print" 로 받으면 브라우저가 렌더 차단 목록에서 빼고, 다 받은 뒤 all 로 바꿔
      적용한다. 그 사이엔 대체 글꼴(Malgun Gothic/시스템)로 글자가 바로 보인다.
      구글 폰트는 display=swap 이라 글자가 안 보이는 구간(FOIT)도 없다. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap" media="print" onload="this.media='all';this.onload=null;">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" media="print" onload="this.media='all';this.onload=null;">
+<!-- 프리텐다드는 '가변 글꼴 + 동적 서브셋' 빌드로 받는다(2026-09-03).
+     예전엔 static/pretendard.css(버전 미고정)였다 — 굵기마다 한글 전체가 든 파일을 따로 받아
+     실제로 쓰는 굵기 4~5개만 해도 수 MB 라, 폰에서는 한참 동안 기본 글꼴(삼성고딕·Apple SD
+     고딕)로 보이다가 뒤늦게 프리텐다드로 바뀌었다. 동적 서브셋은 화면에 실제로 쓰인 글자
+     묶음만 몇 KB 씩 받고, 가변 글꼴 하나로 100~900 굵기를 다 낸다. 버전은 v1.3.9 로 고정.
+     Noto Sans KR 은 뺀다 — 프리텐다드가 있으면 쓰이지 않고, 없을 땐 시스템 고딕이 더 낫다.
+     Jua·Do Hyeon(제목용)은 그대로. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Do+Hyeon&display=swap" media="print" onload="this.media='all';this.onload=null;">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all';this.onload=null;">
 <noscript>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Do+Hyeon&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 </noscript>
 <style>
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+/* 버튼·입력칸은 브라우저 기본 글꼴(시스템 고딕)을 따로 쓴다 — 페이지 글꼴(프리텐다드)을 물려받게 한다.
+   인라인으로 다른 글꼴(Jua 등)을 지정한 곳은 그 지정이 그대로 이긴다. */
+button, input, select, textarea { font-family: inherit; }
 
 :root {
   --bg: #0b0e17;
@@ -191,7 +201,8 @@ body.light #panelGame { background: var(--bg); }
 
 html, body {
   height: 100%;
-  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  /* 프리텐다드 공식 권장 스택. 가변 글꼴이 먼저, 못 받았을 땐 각 OS 의 기본 고딕. */
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   background: var(--outer-bg);
   color: var(--text);
   overflow: hidden;
@@ -392,7 +403,7 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   text-align: center;
 }
 .stat-label { font-size: 13px; color: var(--muted); margin-bottom: 1px; font-weight: 800; }
-.stat-val { font-size: 22px; font-weight: 900; letter-spacing: -1px; color: var(--blue-bright); line-height: 1.1; }
+.stat-val { font-size: 22px; font-weight: 900; letter-spacing: -1px; color: var(--blue-bright); line-height: 1.1; font-variant-numeric: tabular-nums; }
 
 /* ── 남은시간 게이지 바 (숫자 안 읽어도 색으로 대략 파악) ── */
 .time-bar-track {
@@ -507,9 +518,10 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   min-height: 0;
   /* 칸 사이(간격) 색을 밝게 — 칸 구분이 잘 되게(운영 요청 2026-09-03). 예전 #1e3a5f */
   background-color: #2c5586;
+  /* 아래 격자선은 칸이 지워진 빈자리에 드러나는 세로·가로선. 0.09 는 거의 안 보였다(운영 보고) → 0.28 */
   background-image:
-    linear-gradient(rgba(120,170,230,0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120,170,230,0.09) 1px, transparent 1px);
+    linear-gradient(rgba(150,195,245,0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150,195,245,0.28) 1px, transparent 1px);
   background-size: calc((100% - 5px) / 9) calc((100% - 5px) / var(--grid-rows, 13));
   background-position: 2.5px 2.5px;
   perspective: 700px;
@@ -2353,8 +2365,8 @@ body.light #shuffleBtn2 {
             flex: 1;
             min-height: 0;
             background-image:
-              linear-gradient(rgba(120,170,230,0.09) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(120,170,230,0.09) 1px, transparent 1px);
+              linear-gradient(rgba(150,195,245,0.28) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(150,195,245,0.28) 1px, transparent 1px);
             background-size: calc((100% - 6px) / 9) calc((100% - 6px) / 13);
             background-position: 3px 3px;
         }
@@ -14202,7 +14214,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788428000; // v4.29 — 게임 중 점수·시간·콤보 한 줄 배치, 칸 간격 2.5px
+const BUILD = 1788429500; // v4.29 — 프리텐다드 가변·동적서브셋 전환, 격자선 밝게
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
