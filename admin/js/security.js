@@ -30,6 +30,94 @@ function todaysBestScoreClient(s, today) {
   return Math.max(...recent.slice(-n));
 }
 
+// ── 🩺 랭킹 캐시 점검 ──
+//  게임 화면은 읽기 비용 때문에 원본(rankings / weekly_rankings)이 아니라 서버가 만들어 둔
+//  public_rank_cache/{all,week_*} 문서를 읽는다. 그 캐시를 갱신하는 경로가 멈추면 원본은
+//  멀쩡한데 화면만 옛날 순위를 보여준다 — 유저에겐 "오늘 게임했는데 랭킹에 안 나와"로 보인다.
+//  (2026-09-03 실사고: 캐시가 하루 넘게 멈춰 6명이 사라지고 5명은 옛 점수로 떴다.)
+//  자동으로는 못 알아채는 종류라, 여기서 원본과 직접 대조해 눈으로 확인할 수 있게 한다.
+const RANK_CACHE_COLLECTION = 'public_rank_cache';
+
+async function compareRankCache(cacheId, sourceRows, label) {
+  // fetchDoc 은 스냅샷이 아니라 {id, ...data} 또는 null 을 돌려준다.
+  const data = await fetchDoc(doc(db, RANK_CACHE_COLLECTION, cacheId));
+  if (!data) {
+    return { label, missingDoc: true, missing: [], wrong: [], sourceCount: sourceRows.length };
+  }
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const byNick = new Map(rows.map((r) => [r && r.nickname, r]));
+  const missing = [];
+  const wrong = [];
+  for (const src of sourceRows) {
+    const score = Number(src.score) || 0;
+    if (score <= 0) continue;
+    const row = byNick.get(src.id);
+    if (!row) { missing.push({ nick: src.id, score, ts: src.ts }); continue; }
+    if ((Number(row.score) || 0) !== score) wrong.push({ nick: src.id, score, cached: Number(row.score) || 0, ts: src.ts });
+  }
+  return {
+    label, missingDoc: false, updatedAt: Number(data.updatedAt) || 0,
+    cacheCount: rows.length, sourceCount: sourceRows.length, missing, wrong,
+  };
+}
+
+function renderRankCacheReport(reports) {
+  return reports.map((r) => {
+    if (r.missingDoc) {
+      return `<div class="list-row"><b>${escapeHtml(r.label)}</b> — 캐시 문서가 아예 없어요.
+        게임은 원본으로 폴백하니 랭킹은 정확하지만, 읽기 비용이 절감 전으로 돌아갑니다.</div>`;
+    }
+    const bad = r.missing.length + r.wrong.length;
+    const head = `<b>${escapeHtml(r.label)}</b> · 원본 ${fmtNum(r.sourceCount)}명 / 캐시 ${fmtNum(r.cacheCount)}명
+      · 마지막 갱신 ${escapeHtml(fmtDateTime(r.updatedAt))}`;
+    if (bad === 0) return `<div class="list-row">✅ ${head} — 일치합니다</div>`;
+    const lines = [
+      ...r.missing.map((m) => `· <b>${escapeHtml(m.nick)}</b> ${fmtNum(m.score)}점 — 캐시에 없음 (기록 ${escapeHtml(fmtDateTime(m.ts))})`),
+      ...r.wrong.map((w) => `· <b>${escapeHtml(w.nick)}</b> 원본 ${fmtNum(w.score)} ≠ 캐시 ${fmtNum(w.cached)} (기록 ${escapeHtml(fmtDateTime(w.ts))})`),
+    ];
+    return `<div class="list-row">⚠️ ${head}<br><span style="color:var(--danger,#f87171); font-weight:700;">${bad}건 어긋남</span>
+      <div style="margin-top:6px; line-height:1.7; font-size:12.5px;">${lines.slice(0, 20).join('<br>')}
+      ${lines.length > 20 ? `<br>… 외 ${lines.length - 20}건` : ''}</div></div>`;
+  }).join('');
+}
+
+async function checkRankCache() {
+  const el = document.getElementById('rankCacheResult');
+  setLoading(el, '캐시와 원본을 대조하는 중...');
+  try {
+    const weekId = getWeekId();
+    const [allRows, weekRows] = await Promise.all([
+      fetchDocs(query(collection(db, 'rankings'))),
+      fetchDocs(query(collection(db, 'weekly_rankings', weekId, 'scores'))),
+    ]);
+    const reports = [
+      await compareRankCache(`week_${weekId}`, weekRows, `이번주(${weekId})`),
+      await compareRankCache('all', allRows, '전체'),
+    ];
+    const broken = reports.some((r) => r.missingDoc || r.missing.length || r.wrong.length);
+    el.innerHTML = renderRankCacheReport(reports)
+      + (broken
+        ? `<div class="card-note" style="margin-top:10px;">캐시를 새로 만들면 즉시 맞춰집니다. 반복되면 서버 쪽 갱신 경로(랭킹 캐시 트리거)가 도는지 확인이 필요해요.</div>
+           <button id="rankCacheRebuildBtn" class="btn btn-primary btn-sm" style="margin-top:8px;">지금 캐시 재구축</button>
+           <div id="rankCacheRebuildResult" style="margin-top:8px;"></div>`
+        : '');
+    const rebuildBtn = document.getElementById('rankCacheRebuildBtn');
+    if (rebuildBtn) rebuildBtn.addEventListener('click', guardBtn(rebuildBtn, rebuildRankCache));
+  } catch (e) { setError(el, humanError(e)); }
+}
+
+async function rebuildRankCache() {
+  const el = document.getElementById('rankCacheRebuildResult');
+  setLoading(el, '캐시를 다시 만드는 중...');
+  try {
+    // 원본은 읽기만 하고 public_rank_cache/* 만 새로 쓴다(서버 adminRebuildRankingCache).
+    const res = await httpsCallable(fns, 'adminRebuildRankingCache')({});
+    const d = (res && res.data) || {};
+    resultMsg(el, `✅ 재구축 완료 — 전체 ${fmtNum((d.all && d.all.rows) || 0)}명 / 이번주 ${fmtNum((d.week && d.week.rows) || 0)}명`, true);
+    setTimeout(() => { checkRankCache(); }, 600);
+  } catch (e) { setError(el, humanError(e)); }
+}
+
 async function scanRecoverCandidates() {
   const el = document.getElementById('recoverResult');
   setLoading(el, '오늘 플레이한 유저를 확인하는 중...');
@@ -1084,6 +1172,9 @@ export function initSecurityTab() {
 
   const recoverBtn = document.getElementById('recoverScanBtn');
   if (recoverBtn) recoverBtn.addEventListener('click', guardBtn(recoverBtn, scanRecoverCandidates));
+
+  const rankCacheBtn = document.getElementById('rankCacheCheckBtn');
+  if (rankCacheBtn) rankCacheBtn.addEventListener('click', guardBtn(rankCacheBtn, checkRankCache));
 
   // 정렬 토글(최근순/점수순) — 이미 불러온 목록을 클라이언트에서 다시 정렬만 (재조회 없음)
 
