@@ -391,7 +391,7 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   padding: 6px 8px;
   text-align: center;
 }
-.stat-label { font-size: 13px; color: var(--muted); margin-bottom: 1px; }
+.stat-label { font-size: 13px; color: var(--muted); margin-bottom: 1px; font-weight: 800; }
 .stat-val { font-size: 22px; font-weight: 900; letter-spacing: -1px; color: var(--blue-bright); line-height: 1.1; }
 
 /* ── 남은시간 게이지 바 (숫자 안 읽어도 색으로 대략 파악) ── */
@@ -499,9 +499,9 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(var(--grid-rows, 13), 1fr);
   /* 2026-09-03 "숫자가 너무 작다" — 칸 사이 간격·테두리를 줄여 칸 면적을 되찾는다(③). */
-  gap: 2px;
+  gap: 2.5px;
   border-radius: 10px;
-  padding: 2px;
+  padding: 2.5px;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -510,8 +510,8 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   background-image:
     linear-gradient(rgba(120,170,230,0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120,170,230,0.09) 1px, transparent 1px);
-  background-size: calc((100% - 4px) / 9) calc((100% - 4px) / var(--grid-rows, 13));
-  background-position: 2px 2px;
+  background-size: calc((100% - 5px) / 9) calc((100% - 5px) / var(--grid-rows, 13));
+  background-position: 2.5px 2.5px;
   perspective: 700px;
 }
 /* 게임 종료 후 — 스크롤 대신 보드를 세로로 납작하게 압축해서
@@ -566,7 +566,7 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   cursor: pointer;
   background: var(--surface2);
   /* 칸 테두리도 한 단계 밝게 — 칸끼리 구분이 잘 되게(운영 요청) */
-  border: 1px solid #3a679c;
+  border: 1.5px solid #3a679c;
   /* 원래 파랑(#7ec2f0, 대비 8:1)보다 한 단계 밝은 하늘색(대비 10:1) — "잘 안 보이고 눈 아프다" 보고(①).
      흰색은 너무 튄다는 운영 판단이라 파랑 계열을 유지한다. 글꼴·굵기는 원래 그대로. */
   color: #a9dcff;
@@ -2160,9 +2160,15 @@ body.game-active .game-header { padding: 6px 14px 6px; }
 body.game-active .title-row { margin-bottom: 5px; align-items: center; }
 body.game-active .game-title { font-size: 16px; white-space: nowrap; }
 body.game-active .game-sub { display: none; }
-body.game-active .stat-box { padding: 3px 6px; border-radius: 7px; }
-body.game-active .stat-label { font-size: 11px; margin-bottom: 0; }
-body.game-active .stat-val { font-size: 18px; }
+/* 라벨은 왼쪽, 숫자는 오른쪽에 한 줄로 — 위아래로 쌓으면 세로를 줄일수록 숫자만 작아진다.
+   옆으로 두면 같은 높이에서 숫자를 24px 까지 키울 수 있다(운영 요청 2026-09-03). */
+/* 점수 칸만 조금 넓게(1.18fr) — 360px 폰에서 6자리 점수(291,561)가 라벨과 안 겹친다 */
+body.game-active .stat-row { grid-template-columns: 1.18fr 1fr 1fr; }
+body.game-active .stat-box { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 7px; border-radius: 8px; min-width: 0; }
+body.game-active .stat-label { font-size: 12.5px; font-weight: 800; margin-bottom: 0; white-space: nowrap; }
+body.game-active .stat-label-long { display: none; } /* 게임 중엔 점수·시간·콤보 로 짧게 — 360px 폰에서 숫자 자리 확보 */
+/* 22px·자간 -0.8: 360px 폰(칸 107px)에서 6자리 점수(291,561)까지 라벨과 안 겹친다 */
+body.game-active .stat-val { font-size: 22px; letter-spacing: -0.8px; white-space: nowrap; }
 body.game-active .combo-wrap { padding: 4px 14px 3px; }
 body.game-active .grid-wrap { padding-top: 2px; }
 
@@ -2991,8 +2997,8 @@ if ('serviceWorker' in navigator) {
         </div>
         <div class="stat-row">
           <div class="stat-box"><div class="stat-label">점수</div><div class="stat-val" id="scoreDisp">0</div></div>
-          <div class="stat-box"><div class="stat-label">남은 시간</div><div class="stat-val" id="timerDisp">2:00</div></div>
-          <div class="stat-box"><div class="stat-label">최고 콤보</div><div class="stat-val" id="clearDisp">×0</div></div>
+          <div class="stat-box"><div class="stat-label"><span class="stat-label-long">남은 </span>시간</div><div class="stat-val" id="timerDisp">2:00</div></div>
+          <div class="stat-box"><div class="stat-label"><span class="stat-label-long">최고 </span>콤보</div><div class="stat-val" id="clearDisp">×0</div></div>
         </div>
         <div class="time-bar-track"><div class="time-bar-fill" id="timeBarFill"></div></div>
       </div>
@@ -14196,7 +14202,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788426500; // v4.29 — 게임판 숫자 하늘색·칸 간격 밝게
+const BUILD = 1788428000; // v4.29 — 게임 중 점수·시간·콤보 한 줄 배치, 칸 간격 2.5px
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
