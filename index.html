@@ -505,7 +505,8 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   width: 100%;
   flex: 1;
   min-height: 0;
-  background-color: #1e3a5f;
+  /* 칸 사이(간격) 색을 밝게 — 칸 구분이 잘 되게(운영 요청 2026-09-03). 예전 #1e3a5f */
+  background-color: #2c5586;
   background-image:
     linear-gradient(rgba(120,170,230,0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120,170,230,0.09) 1px, transparent 1px);
@@ -561,12 +562,14 @@ body.page-hidden *, body.page-hidden *::before, body.page-hidden *::after {
   justify-content: center;
   border-radius: 5px;
   font-size: clamp(14px, 4vw, 22px);
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
   background: var(--surface2);
-  border: 1px solid #2a4a70;
-  /* 옅은 파랑(#7ec2f0, 대비 8:1)에서 거의 흰색(대비 14:1)으로 — "잘 안 보이고 눈 아프다" 보고(①) */
-  color: #eaf4ff;
+  /* 칸 테두리도 한 단계 밝게 — 칸끼리 구분이 잘 되게(운영 요청) */
+  border: 1px solid #3a679c;
+  /* 원래 파랑(#7ec2f0, 대비 8:1)보다 한 단계 밝은 하늘색(대비 10:1) — "잘 안 보이고 눈 아프다" 보고(①).
+     흰색은 너무 튄다는 운영 판단이라 파랑 계열을 유지한다. 글꼴·굵기는 원래 그대로. */
+  color: #a9dcff;
   transition: background 0.1s, border-color 0.1s, transform 0.1s;
   -webkit-user-select: none;
   overflow: hidden;
@@ -14193,7 +14196,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788425000; // v4.29 — 게임판 숫자 키움(칸 62%)·헤더 납작·간격 축소
+const BUILD = 1788426500; // v4.29 — 게임판 숫자 하늘색·칸 간격 밝게
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
