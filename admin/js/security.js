@@ -118,6 +118,103 @@ async function rebuildRankCache() {
   } catch (e) { setError(el, humanError(e)); }
 }
 
+// ── 🗓 이번주 랭킹 검증 ──
+//  운영 보고(2026-09-03): "지난 기록 미승인된 걸 올렸는데 그게 이번 주에 표시됐다."
+//  보류 승인(adminApproveScore)이 예전엔 '승인한 때'가 속한 주에 넣었다. 그래서 지난주에
+//  친 판을 이번 주에 승인하면 치지도 않은 점수가 이번 주 랭킹에 얹혀 순위가 뒤집혔다.
+//  서버는 고쳤지만(이제 '플레이한 주'로 간다) 이미 잘못 올라간 줄은 남아 있으므로,
+//  여기서 세션 기록과 대조해 찾아내고 실제 이번 주 기록으로 바로잡는다.
+//
+//  판별 근거는 game_sessions.submittedAt — 어드민만 읽을 수 있는 서버 기록이다.
+//  주간 문서의 ts 는 승인 시각이라 근거로 쓸 수 없다(그게 이 사고의 원인이었다).
+function weekRangeKst(weekId) {
+  // weekId 는 그 주 월요일(KST). KST 하루 = UTC 전날 15:00 ~ 당일 15:00.
+  const [y, m, d] = weekId.split('-').map(Number);
+  const startMs = Date.UTC(y, m - 1, d) - 9 * 3600 * 1000;
+  return { startMs, endMs: startMs + 7 * 24 * 3600 * 1000 };
+}
+
+async function scanWeekRankingMismatch() {
+  const el = document.getElementById('weekVerifyResult');
+  setLoading(el, '이번주 랭킹을 세션 기록과 대조하는 중...');
+  try {
+    const weekId = getWeekId();
+    const { startMs, endMs } = weekRangeKst(weekId);
+    const rows = await fetchDocs(query(collection(db, 'weekly_rankings', weekId, 'scores')));
+    // 근거가 되는 sessionId 가 있는 줄만 확인한다(없는 줄은 대조할 방법이 없다).
+    const withSession = rows.filter((r) => r.sessionId);
+    const bad = [];
+    for (const r of withSession) {
+      const s = await fetchDoc(doc(db, 'game_sessions', r.sessionId)).catch(() => null);
+      const at = s && typeof s.submittedAt === 'number' ? s.submittedAt : 0;
+      if (!at) continue;                       // 세션이 지워졌으면 판단 보류(건드리지 않음)
+      if (at >= startMs && at < endMs) continue; // 이번 주에 친 판 — 정상
+      bad.push({ nick: r.id, score: r.score || 0, uid: r.uid || (s && s.uid) || '', playedAt: at });
+    }
+    if (!bad.length) {
+      el.innerHTML = `<div class="list-empty">✅ 이번주 ${fmtNum(rows.length)}명 확인 — 다른 주 기록이 얹힌 줄은 없어요</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="card-note" style="margin-bottom:8px;">
+        이번주 랭킹에 <b style="color:var(--danger,#f87171);">다른 주에 친 기록 ${bad.length}건</b>이 올라와 있어요.
+        '바로잡기'를 누르면 그 사람의 <b>이번 주 실제 최고점</b>으로 되돌립니다(이번 주 기록이 없으면 이번 주 랭킹에서 내립니다).
+        전체(누적) 랭킹의 최고점은 건드리지 않아요.
+      </div>` + bad.map((b, i) => `
+        <div class="list-row" data-fix-idx="${i}">
+          <b>${escapeHtml(b.nick)}</b> ${fmtNum(b.score)}점
+          — 실제 플레이 ${escapeHtml(fmtDateTime(b.playedAt))}
+          <button class="btn btn-sm btn-danger week-fix-btn" data-idx="${i}" style="margin-left:8px;">바로잡기</button>
+          <div class="week-fix-msg" style="margin-top:6px;"></div>
+        </div>`).join('');
+    el.querySelectorAll('.week-fix-btn').forEach((btn) => {
+      btn.addEventListener('click', guardBtn(btn, () => fixWeekRankingRow(bad[Number(btn.dataset.idx)], weekId, btn)));
+    });
+  } catch (e) { setError(el, humanError(e)); }
+}
+
+async function fixWeekRankingRow(target, weekId, btn) {
+  const box = btn.parentElement.querySelector('.week-fix-msg');
+  if (!confirm(`"${target.nick}" 님의 이번주 기록을 실제 플레이 기준으로 되돌릴까요?\n(전체 랭킹의 누적 최고점은 그대로 유지됩니다)`)) return;
+  setLoading(box, '이번 주 실제 기록을 확인하는 중...');
+  try {
+    const { startMs, endMs } = weekRangeKst(weekId);
+    // 이 사람이 이번 주에 실제로 친 정상 판 중 최고점 — 근거는 서버가 쓴 game_sessions 뿐이다.
+    let best = 0, bestAt = 0, bestSession = '';
+    if (target.uid) {
+      const sessions = await fetchDocs(query(
+        collection(db, 'game_sessions'),
+        where('uid', '==', target.uid),
+        where('submittedAt', '>=', startMs),
+        where('submittedAt', '<', endMs),
+      ));
+      for (const s of sessions) {
+        if (!s.official || s.official.decision !== 'accepted') continue;
+        const sc = s.client && s.client.finalScore;
+        if (!Number.isInteger(sc) || sc <= best) continue;
+        best = sc; bestAt = s.submittedAt; bestSession = s.sessionId || s.id;
+      }
+    }
+    const wkRef = doc(db, 'weekly_rankings', weekId, 'scores', target.nick);
+    if (best > 0) {
+      // 레벨 뱃지가 사라지지 않게 전체 문서의 표시값을 함께 옮긴다.
+      const rkDoc = await fetchDoc(doc(db, 'rankings', target.nick)).catch(() => null);
+      const payload = { score: best, ts: bestAt, uid: target.uid, sessionId: bestSession };
+      for (const k of ['oingLevel', 'oingLevelVersion', 'maxGoalStreak']) {
+        if (rkDoc && typeof rkDoc[k] === 'number' && rkDoc[k] > 0) payload[k] = rkDoc[k];
+      }
+      await setDoc(wkRef, payload);
+      resultMsg(box, `✅ ${target.nick} — 이번주 실제 최고점 ${fmtNum(best)}점으로 되돌렸어요.`, true);
+    } else {
+      await deleteDoc(wkRef);
+      resultMsg(box, `✅ ${target.nick} — 이번 주엔 기록이 없어 이번주 랭킹에서 내렸어요(누적 기록은 유지).`, true);
+    }
+    // 화면이 읽는 파생 캐시도 다시 만들어야 유저에게 바로 반영된다.
+    try { await httpsCallable(fns, 'adminRebuildRankingCache')({}); } catch (e) {
+      resultMsg(box, `기록은 고쳤지만 랭킹 캐시 재구축에 실패했어요(${humanError(e)}). '랭킹 캐시 점검'에서 다시 눌러주세요.`, false);
+    }
+  } catch (e) { setError(box, humanError(e)); }
+}
+
 async function scanRecoverCandidates() {
   const el = document.getElementById('recoverResult');
   setLoading(el, '오늘 플레이한 유저를 확인하는 중...');
@@ -1175,6 +1272,9 @@ export function initSecurityTab() {
 
   const rankCacheBtn = document.getElementById('rankCacheCheckBtn');
   if (rankCacheBtn) rankCacheBtn.addEventListener('click', guardBtn(rankCacheBtn, checkRankCache));
+
+  const weekVerifyBtn = document.getElementById('weekVerifyBtn');
+  if (weekVerifyBtn) weekVerifyBtn.addEventListener('click', guardBtn(weekVerifyBtn, scanWeekRankingMismatch));
 
   // 정렬 토글(최근순/점수순) — 이미 불러온 목록을 클라이언트에서 다시 정렬만 (재조회 없음)
 
