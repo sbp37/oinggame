@@ -1401,6 +1401,58 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   font-weight: 800;
 }
 
+/* ── 🔎 닉네임 찾기 ── */
+.rank-find {
+  display: flex; align-items: stretch; gap: 6px;
+  max-width: 360px; margin: -10px auto 14px;
+}
+.rank-find-input {
+  flex: 1 1 auto; min-width: 0;
+  height: 30px; padding: 0 12px; box-sizing: border-box;
+  border: 1.5px solid rgba(120,145,180,0.28);
+  border-radius: 15px;
+  background: rgba(10,14,26,0.45);
+  color: var(--text);
+  font-family: inherit; font-size: 13px; font-weight: 600;
+}
+.rank-find-input::placeholder { color: rgba(160,180,205,0.55); font-weight: 600; }
+.rank-find-input:focus { outline: none; border-color: rgba(120,145,180,0.6); }
+.rank-find-btn {
+  flex: 0 0 auto;
+  height: 30px; padding: 0 14px; box-sizing: border-box;
+  border: 1.5px solid rgba(120,145,180,0.35); border-radius: 15px;
+  background: rgba(10,14,26,0.55); color: rgba(200,215,235,0.85);
+  font-family: inherit; font-size: 13px; font-weight: 800;
+  cursor: pointer; white-space: nowrap;
+}
+.rank-find-btn:active { background: rgba(120,145,180,0.22); }
+.rank-find-result {
+  max-width: 360px; margin: -8px auto 14px; padding: 9px 12px;
+  border: 1px solid rgba(120,145,180,0.28); border-radius: 12px;
+  background: rgba(10,14,26,0.45);
+  color: rgba(205,220,240,0.9);
+  font-size: 12.5px; font-weight: 600; line-height: 1.5; text-align: center;
+}
+.rank-find-result .rank-find-strong { color: var(--blue-bright); font-weight: 800; }
+.rank-find-result .rank-find-go {
+  display: inline-block; margin-top: 7px; padding: 5px 12px;
+  border: 1.5px solid rgba(120,145,180,0.45); border-radius: 13px;
+  background: rgba(10,14,26,0.6); color: rgba(210,225,245,0.95);
+  font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer;
+}
+/* 찾은 줄을 잠깐 밝혀준다 — 목록이 길어서 스크롤만으로는 어디로 갔는지 놓치기 쉽다. */
+.rank-row.rank-found, .podium-item.rank-found {
+  animation: rankFoundGlow 2.4s ease-out 1;
+  border-radius: 12px;
+}
+@keyframes rankFoundGlow {
+  0%, 55% { box-shadow: 0 0 0 2px var(--blue-bright), 0 0 16px rgba(90,160,255,0.55); }
+  100% { box-shadow: 0 0 0 0 rgba(90,160,255,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-row.rank-found, .podium-item.rank-found { animation: none; box-shadow: 0 0 0 2px var(--blue-bright); }
+}
+
 /* ── 시상대 ── */
 .podium-wrap {
   display: flex; align-items: flex-end; justify-content: center;
@@ -3089,6 +3141,20 @@ if ('serviceWorker' in navigator) {
           <button class="rank-mode-btn" id="rankModeAll">전체</button>
           <button class="rank-mode-btn" id="rankModeFriends">친구</button>
         </div>
+
+        <!-- 🔎 닉네임 찾기
+             '이번주' 탭에는 이번 주에 실제로 논 사람만 올라온다. 그래서 한동안 안 논 사람을
+             찾으면 목록에 없고, 그게 "사라진 건지 / 아직 안 논 건지" 알 방법이 없었다.
+             (2026-09-03 운영 보고: "랭킹에 로로님이 안 보여" — 확인해보니 그 주에 아직 기록이
+              없었을 뿐, 전체 랭킹엔 멀쩡히 있었다.)
+             전체 탭도 100등까지만 펼쳐두기 때문에 아래쪽 사람은 '더보기'를 눌러야 보인다.
+             이제 이름을 넣으면 접힌 것까지 펼쳐서 그 자리로 데려가고, 이 탭에 없으면 왜
+             없는지(이번 주 기록 없음 / 아예 기록 없음 / 친구 아님)를 알려준다. -->
+        <div class="rank-find">
+          <input id="rankFindInput" class="rank-find-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="닉네임으로 찾기" aria-label="랭킹에서 닉네임 찾기">
+          <button id="rankFindBtn" class="rank-find-btn" type="button">찾기</button>
+        </div>
+        <div class="rank-find-result" id="rankFindResult" style="display:none;"></div>
 
         <!-- 랭킹 타이틀 (월계관 스타일) -->
         <div class="rank-title-block">
@@ -12506,6 +12572,132 @@ function applyRankModeChrome(mode) {
   // 페어플레이 랜덤멘트 노출 여부는 모드에 따라 setFairplayNotice가 판단('이번주'만 표시)
   try { setFairplayNotice(); } catch {}
 }
+
+// ══════════════════════════════
+//  🔎 랭킹에서 닉네임 찾기
+//  "○○님이 랭킹에 안 보여" 문의의 실제 원인은 대부분 버그가 아니라 아래 셋 중 하나다.
+//   ① 기본 탭인 '이번주'에는 이번 주에 실제로 논 사람만 올라온다(전체 233명 중 35명 수준).
+//   ② '전체' 탭은 100등까지만 펼쳐 두고 나머지는 '더보기' 뒤에 접혀 있다.
+//   ③ '친구' 탭은 내가 추가한 친구만 나온다.
+//  셋 다 정상 동작인데, 화면에는 "그냥 없음"으로만 보여서 구분할 수가 없었다.
+//  그래서 찾기를 넣는다 — 있으면 접힌 것까지 펼쳐서 데려가고, 없으면 왜 없는지 말해준다.
+// ══════════════════════════════
+const RANK_MODE_KO = { week: '이번 주 랭킹', all: '전체 랭킹', friends: '친구 랭킹' };
+function clearRankFind() {
+  const box = document.getElementById('rankFindResult');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  document.querySelectorAll('.rank-found').forEach((el) => el.classList.remove('rank-found'));
+}
+function showRankFindMsg(html) {
+  const box = document.getElementById('rankFindResult');
+  if (!box) return;
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+// 지금 그려져 있는 화면(시상대 + 목록)에서 찾는다. 정규화 완전일치 우선, 없으면 부분일치.
+function findRenderedRankEl(norm) {
+  const cands = [
+    ...document.querySelectorAll('#podiumWrap .podium-item[data-nick]'),
+    ...document.querySelectorAll('#rankList .rank-row[data-nick]'),
+  ];
+  let partial = null;
+  for (const el of cands) {
+    const n = normalizeNickname(el.dataset.nick || '');
+    if (!n) continue;
+    if (n === norm) return el;
+    if (!partial && n.includes(norm)) partial = el;
+  }
+  return partial;
+}
+function rankLabelOf(el) {
+  if (el.classList.contains('podium-item')) {
+    const base = el.querySelector('.podium-base');
+    return base ? `${base.textContent.trim()}위` : '';
+  }
+  const num = el.querySelector('.rank-num');
+  return num ? `${num.textContent.trim()}위` : '';
+}
+function revealRankEl(el) {
+  // 접어둔 하위 순위 안에 있으면 '더보기'를 대신 눌러 펼친다(안 그러면 찾아도 안 보인다).
+  if (el.classList.contains('rank-extra-hidden')) {
+    const more = document.querySelector('#rankList .rank-more-btn');
+    if (more) more.click();
+    else document.querySelectorAll('#rankList .rank-extra-hidden').forEach((e) => e.classList.remove('rank-extra-hidden'));
+  }
+  document.querySelectorAll('.rank-found').forEach((e) => e.classList.remove('rank-found'));
+  // 같은 사람을 연달아 찾아도 강조가 다시 켜지도록 한 프레임 뒤에 클래스를 붙인다.
+  requestAnimationFrame(() => {
+    el.classList.add('rank-found');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch { el.scrollIntoView(); }
+  });
+}
+async function runRankFind() {
+  const input = document.getElementById('rankFindInput');
+  if (!input) return;
+  const raw = String(input.value || '').trim();
+  clearRankFind();
+  if (!raw) return;
+  // 닉네임을 바꾼 사람도 옛 이름으로 찾을 수 있게 tombstone 체인을 따라간다(공개 문서만 읽음).
+  let target = raw;
+  try { target = await resolveCurrentNickname(raw); } catch {}
+  const norm = normalizeNickname(target);
+  if (!norm) return;
+
+  const el = findRenderedRankEl(norm);
+  if (el) {
+    revealRankEl(el);
+    showRankFindMsg(`<span class="rank-find-strong">${escapeHtml(el.dataset.nick)}</span>님 · ${RANK_MODE_KO[currentRankMode] || '랭킹'} ${escapeHtml(rankLabelOf(el))}`);
+    return;
+  }
+
+  // 이 탭엔 없다 → 전체 랭킹(캐시 사용, 추가 읽기 없음)에서 왜 없는지 확인해 알려준다.
+  const all = await loadRankings().catch(() => []);
+  const idx = (all || []).findIndex((e) => normalizeNickname(e.nickname) === norm);
+  const found = idx >= 0 ? all[idx] : null;
+  if (!found) {
+    showRankFindMsg(`<span class="rank-find-strong">${escapeHtml(raw)}</span>님은 랭킹에 아직 기록이 없어요.<br><span style="opacity:.75">닉네임을 정확히 적었는지 확인해보라냥 🐾</span>`);
+    return;
+  }
+  const where = `전체 랭킹 ${idx + 1}위 · ${Number(found.score || 0).toLocaleString()}pt`;
+  if (currentRankMode === 'friends') {
+    showRankFindMsg(`<span class="rank-find-strong">${escapeHtml(found.nickname)}</span>님은 아직 내 친구가 아니라 이 탭엔 안 나와요.<br>${where}<br><span style="opacity:.75">랭킹 줄을 꾹 누르면 친구로 추가할 수 있다냥 🐾</span>`);
+    return;
+  }
+  if (currentRankMode === 'week') {
+    showRankFindMsg(`<span class="rank-find-strong">${escapeHtml(found.nickname)}</span>님은 <b>이번 주엔 아직 기록이 없어요.</b><br>${where}<button type="button" class="rank-find-go" id="rankFindGoAll">전체 랭킹에서 보기</button>`);
+    const go = document.getElementById('rankFindGoAll');
+    if (go) {
+      go.addEventListener('click', () => {
+        const btn = document.getElementById('rankModeAll');
+        if (btn) btn.click();
+        setTimeout(() => { runRankFind(); }, 800);
+      });
+    }
+    return;
+  }
+  // 전체 탭인데 화면에 없다 = 아직 목록을 다시 그리는 중(드묾)
+  showRankFindMsg(`<span class="rank-find-strong">${escapeHtml(found.nickname)}</span>님 · ${where}<br><span style="opacity:.75">목록을 불러오는 중이라 잠시 뒤 다시 찾아보라냥 🐾</span>`);
+}
+(function wireRankFind() {
+  const input = document.getElementById('rankFindInput');
+  const btn = document.getElementById('rankFindBtn');
+  // 앱 랭킹은 Play 게임즈 목록이라 rankings 컬렉션과 대상이 다르다 — 찾기 자체를 노출하지 않는다.
+  if (IS_APP) {
+    const row = document.querySelector('.rank-find');
+    if (row) row.style.display = 'none';
+    const box = document.getElementById('rankFindResult');
+    if (box) box.style.display = 'none';
+    return;
+  }
+  if (btn) btn.addEventListener('click', () => { runRankFind(); });
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); runRankFind(); }
+    });
+    input.addEventListener('input', () => { if (!input.value.trim()) clearRankFind(); });
+  }
+})();
+
 document.getElementById('rankModeAll').addEventListener('click', () => {
   if (currentRankMode === 'all') return;
   currentRankMode = 'all';
@@ -12513,6 +12705,7 @@ document.getElementById('rankModeAll').addEventListener('click', () => {
   document.getElementById('panelRank').classList.remove('week-mode', 'friends-mode');
   document.getElementById('panelRank').classList.add('all-mode');
   applyRankModeChrome('all');
+  clearRankFind(); // 탭이 바뀌면 이전 탭 기준의 찾기 결과·강조는 의미가 없다
   // 비동기 renderRanking이 끝나기 전까지 이전 탭 목록이 남아 "다른 탭이 보이는" 것을 막기 위해 즉시 비움
   try { document.getElementById('podiumWrap').innerHTML = ''; } catch {}
   try { document.getElementById('podiumFloor').innerHTML = ''; } catch {}
@@ -12526,6 +12719,7 @@ document.getElementById('rankModeWeek').addEventListener('click', () => {
   document.getElementById('panelRank').classList.add('week-mode');
   document.getElementById('panelRank').classList.remove('friends-mode', 'all-mode');
   applyRankModeChrome('week');
+  clearRankFind(); // 탭이 바뀌면 이전 탭 기준의 찾기 결과·강조는 의미가 없다
   // 비동기 renderRanking이 끝나기 전까지 이전 탭 목록이 남아 "다른 탭이 보이는" 것을 막기 위해 즉시 비움
   try { document.getElementById('podiumWrap').innerHTML = ''; } catch {}
   try { document.getElementById('podiumFloor').innerHTML = ''; } catch {}
@@ -12540,6 +12734,7 @@ document.getElementById('rankModeFriends').addEventListener('click', () => {
   document.getElementById('panelRank').classList.remove('week-mode', 'all-mode');
   document.getElementById('panelRank').classList.add('friends-mode');
   applyRankModeChrome('friends');
+  clearRankFind(); // 탭이 바뀌면 이전 탭 기준의 찾기 결과·강조는 의미가 없다
   // 비동기 renderRanking이 끝나기 전까지 이전 탭(전체/이번주)의 목록이 잠깐 남아
   // "친구 탭에 전체가 뜬 것처럼" 보이는 것을 막기 위해 전환 즉시 목록을 비운다.
   try { document.getElementById('podiumWrap').innerHTML = ''; } catch {}
@@ -13911,7 +14106,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788276577; // v4.29 — Firestore 랭킹·접속 비용 절감
+const BUILD = 1788410900; // v4.29 — 랭킹 닉네임 찾기
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
