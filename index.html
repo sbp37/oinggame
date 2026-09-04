@@ -1966,19 +1966,23 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
      · 바깥 1px 링   : 어두운 배경과 만나는 경계를 또렷하게
      · 가까운 광 10px + 넓은 광 24px : 빛이 퍼져 나가는 느낌
      · 왼쪽 옅은 색조 : 줄 전체가 '그 색을 입은' 것처럼 보이게 (등급 바와 같은 방향)
-   프레임을 산 사람은 소수(현재 8명)라 무거운 그림자가 쌓이는 줄 자체가 몇 개 안 된다. */
+   프레임을 산 사람은 소수(현재 8명)라 무거운 그림자가 쌓이는 줄 자체가 몇 개 안 된다.
+
+   세기는 한 번 더 낮췄다(2026-09-04 2차: "라인이 너무 튄다. 아이템 안 쓴 닉이랑 차이가
+   너무 크다"). 바깥 1px 딱딱한 링을 아예 빼고(그게 3px 밴드처럼 보이게 만든 주범),
+   나머지 농도도 한 단계씩 내렸다. 원래(단일 12px 글로우)보다는 또렷하고, 직전 버전보다는
+   눈에 덜 튄다. 색·구조는 그대로라 되돌리거나 더 조절하기 쉽다. */
 .rank-row[class*="frame-"] {
   position: relative;
   border-color: var(--frame-color, var(--border));
   background-image: linear-gradient(90deg,
-    color-mix(in srgb, var(--frame-color, transparent) 14%, transparent),
+    color-mix(in srgb, var(--frame-color, transparent) 9%, transparent),
     transparent 46%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--frame-color, transparent) 50%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.07),
-    0 0 0 1px color-mix(in srgb, var(--frame-color, transparent) 34%, transparent),
-    0 0 10px color-mix(in srgb, var(--frame-color, transparent) 46%, transparent),
-    0 0 24px 3px color-mix(in srgb, var(--frame-color, transparent) 20%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--frame-color, transparent) 30%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 9px color-mix(in srgb, var(--frame-color, transparent) 32%, transparent),
+    0 0 18px 1px color-mix(in srgb, var(--frame-color, transparent) 13%, transparent),
     0 2px 5px rgba(0,0,0,0.22);
 }
 /* 프레임을 산 내 행도 남의 행과 똑같이 프레임 색으로만 빛난다 — 내 행 특례 없음. */
@@ -14231,7 +14235,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788500000; // v4.29 — 랭킹 닉네임 키움 + 프레임 빛 강화
+const BUILD = 1788501500; // v4.29 — 프레임 빛 세기 한 단계 낮춤
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
