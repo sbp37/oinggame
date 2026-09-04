@@ -1635,12 +1635,15 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-row {
   display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
   min-height: 46px; box-sizing: border-box;
-  background: rgba(47,126,201,0.13); border: 1px solid rgba(47,126,201,0.22);
+  /* 30위 밖(등급 없는) 행 테두리 — 어두운 배경에서 거의 안 보인다는 피드백(2026-09-04).
+     파란기를 밝은 쪽으로 옮기고 불투명도를 0.22→0.34 로. 위쪽 인셋 하이라이트를 더해
+     Top10/Top30 행처럼 카드 윗면이 살짝 잡히게 한다. 색을 새로 넣지 않고 밝기만 올린 것. */
+  background: rgba(47,126,201,0.13); border: 1px solid rgba(124,180,243,0.34);
   /* 왼쪽 여백 8→4: 순위 숫자 앞이 비어 보인다는 피드백(2026-08-31). 등급 바(::before,
      left:0·너비 5px)와 숫자 칸이 딱 붙지만, 숫자는 오른쪽 정렬이라 글자와 바 사이는
      한 자리 순위에서도 15px 넘게 떨어져 있다. */
   border-radius: 12px; padding: 8px 10px 8px 4px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.055), 0 2px 5px rgba(0,0,0,0.2);
 }
 /* 내 행(.rank-row.me) 은 이제 아무 강조도 하지 않는다 — 일반 행과 똑같이 보인다.
    (2026-08-31 운영 결정) 젤리샵이 열리면서 '빛나는 테두리'는 사 입는 것이 됐다.
@@ -1694,7 +1697,9 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-nick-line .oing-level-badge { margin:0; flex-shrink:0; font-size:9.5px; padding:1.5px 4.5px; }
 .rank-nick-line .oing-level-badge .olv-icon { font-size:10.5px; }
 .rank-nick-line .rank-title-count, .rank-nick-line .rank-hot { margin-left:0; flex-shrink:0; }
-.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(16px, 4.6vw, 17.5px); line-height:1.18; }
+/* 랭킹 닉네임 크기: 원래 14.5px → 한 번 키웠더니(16~17.5) 이번엔 너무 커졌다는 피드백.
+   그 사이값으로 내린다. 그래도 원래보다는 크다. */
+.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(15.2px, 4.2vw, 16.4px); line-height:1.18; }
 .rank-meta { display:flex; align-items:center; gap:3px; max-width:100%; min-height:14px; overflow:hidden; white-space:nowrap; }
 .rank-meta:empty { display:none; }
 .rank-title-count { color:#DA9845; font-size:9.5px; line-height:1; font-weight:800; white-space:nowrap; flex-shrink:0; }
@@ -1833,7 +1838,7 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 }
 /* 1~3위 행 — 골드 라인만 살짝 */
 .rank-row.top3 {
-  border-color: rgba(234,194,117,0.35);
+  border-color: rgba(234,194,117,0.48);
 }
 .rank-row.top3 .rank-num {
   color: #EAC275;
@@ -1853,8 +1858,8 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
   background:
     linear-gradient(90deg, rgba(244,215,126,0.10) 0%, rgba(244,215,126,0.04) 20%, rgba(244,215,126,0.012) 45%, rgba(0,0,0,0) 70%),
     linear-gradient(180deg, #1C2F4E 0%, #11223B 100%);
-  border: 1px solid rgba(244,215,126,0.48);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  border: 1px solid rgba(244,215,126,0.60);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .rank-row.top10::before {
   background: linear-gradient(180deg, #FFE9A8 0%, #F4D77E 48%, #C99B35 100%);
@@ -1867,8 +1872,8 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
   background:
     linear-gradient(90deg, rgba(142,151,255,0.10) 0%, rgba(142,151,255,0.04) 20%, rgba(142,151,255,0.012) 45%, rgba(0,0,0,0) 70%),
     linear-gradient(180deg, #1A2D4B 0%, #11213A 100%);
-  border: 1px solid rgba(183,191,255,0.42);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  border: 1px solid rgba(183,191,255,0.56);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.075);
 }
 .rank-row.top30::before {
   background: linear-gradient(180deg, #B7BFFF 0%, #8E97FF 50%, #5D63B8 100%);
@@ -14234,7 +14239,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788504800; // v4.29 — 프레임: 원래 얇은 라인 + 글로우만 확대
+const BUILD = 1788506900; // v4.29 — 닉네임 크기 하향, 등급 없는 행 테두리 밝기 상향
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

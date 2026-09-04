@@ -72,14 +72,25 @@ test('모든 랭킹은 레벨·닉네임·왕관·불꽃을 같은 줄에 표시
   assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{rankHotHtml\(entry\.ts\)\}/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{titleHtml\}\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
-  // 닉네임 크기는 운영 피드백에 따라 조정되므로 값을 박지 않고 '읽히는 크기인지'만 고정한다.
-  // ("닉네임이 작아 보인다" 2026-09-04 → 하한 14.5→16px). 다시 작아지면 여기서 걸린다.
+  // 닉네임 크기는 운영 피드백에 따라 계속 조정되므로 값을 박지 않고 '범위'만 고정한다.
+  //  · 원래 14.5px → "작아 보인다"(2026-09-04) → 16~17.5px → "너무 커졌다"(같은 날) → 15.2~16.4px.
+  // 위아래를 다 막아 둔다: 원래만큼 작아져도, 지나치게 커져도 여기서 걸린다.
   {
     const m = src.match(/\.rank-identity \.rank-nick \{[^}]*font-size:clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\)/);
     assert.ok(m, '랭킹 닉네임은 화면 폭에 따라 늘어나는 clamp 크기여야 한다');
     const [min, , max] = [Number(m[1]), Number(m[2]), Number(m[3])];
-    assert.ok(min >= 15.5, `닉네임 최소 크기가 ${min}px — 작은 폰에서 읽기 어렵다`);
-    assert.ok(max >= 17, `닉네임 최대 크기가 ${max}px — 큰 폰에서 여백만 남는다`);
+    assert.ok(min > 14.5, `닉네임 최소 크기가 ${min}px — 키우기 전(14.5px)으로 되돌아갔다`);
+    assert.ok(max >= 16 && max <= 17, `닉네임 최대 크기가 ${max}px — 16~17px 사이여야 한다`);
+  }
+  // 30위 밖(Top10/Top30 배지가 없는) 행 테두리 — "넘 안 보인다"(2026-09-04).
+  // 색 값을 박으면 톤을 못 바꾸므로, 어두운 배경 위에서 실제로 구분되는 밝기인지만 잰다.
+  // 옛 값 rgba(47,126,201,0.22) 는 유효 밝기 25 로 여기서 떨어진다.
+  {
+    const m = src.match(/\.rank-row \{[\s\S]*?border: 1px solid rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+    assert.ok(m, '.rank-row 기본 테두리 선언을 찾지 못했다');
+    const [r, g, b, a] = m.slice(1).map(Number);
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) * a;
+    assert.ok(lum >= 45, `등급 없는 행 테두리 유효 밝기가 ${lum.toFixed(1)} — 30위 아래 행이 배경에 묻힌다`);
   }
   assert.match(src, /\.rank-nick-line \.oing-level-badge \{[^}]*font-size:9\.5px/);
   assert.match(src, /<span class="rank-tail">\$\{badgeHtml\}[\s\S]{0,180}<span class="rank-pts">/);
