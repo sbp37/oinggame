@@ -1694,7 +1694,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-nick-line .oing-level-badge { margin:0; flex-shrink:0; font-size:9.5px; padding:1.5px 4.5px; }
 .rank-nick-line .oing-level-badge .olv-icon { font-size:10.5px; }
 .rank-nick-line .rank-title-count, .rank-nick-line .rank-hot { margin-left:0; flex-shrink:0; }
-.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(14.5px, 4.1vw, 16px); line-height:1.18; }
+.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(16px, 4.6vw, 17.5px); line-height:1.18; }
 .rank-meta { display:flex; align-items:center; gap:3px; max-width:100%; min-height:14px; overflow:hidden; white-space:nowrap; }
 .rank-meta:empty { display:none; }
 .rank-title-count { color:#DA9845; font-size:9.5px; line-height:1; font-weight:800; white-space:nowrap; flex-shrink:0; }
@@ -1955,13 +1955,30 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 
 /* 구매 프레임은 기본 테두리 바깥쪽에만 빛난다.
    ::before는 Top10/Top30의 등급 바가 이미 쓰므로 건드리지 않는다. 이렇게 해야
-   등급 표시를 보존하면서도 두 겹 테두리·겹치는 애니메이션이 생기지 않는다. */
+   등급 표시를 보존하면서도 두 겹 테두리·겹치는 애니메이션이 생기지 않는다.
+
+   2026-09-04 운영 요청: "너무 얇은 라인처럼 보인다. 색은 그대로 두고 더 존재감 있게,
+   빛이 퍼지는 느낌으로. 단 발열·느려짐 없이."
+   그래서 애니메이션은 하나도 넣지 않았다(빛이 계속 움직이면 그 줄들이 매 프레임 다시
+   그려져 스크롤이 무거워지고 발열로 이어진다). 대신 정지 상태 그림자를 여러 겹 쌓았다 —
+   한 번 그리고 나면 스크롤·터치에 추가 비용이 없다.
+     · 안쪽 1px 링   : 1px 테두리가 2px 처럼 보이게 하는 두께감
+     · 바깥 1px 링   : 어두운 배경과 만나는 경계를 또렷하게
+     · 가까운 광 10px + 넓은 광 24px : 빛이 퍼져 나가는 느낌
+     · 왼쪽 옅은 색조 : 줄 전체가 '그 색을 입은' 것처럼 보이게 (등급 바와 같은 방향)
+   프레임을 산 사람은 소수(현재 8명)라 무거운 그림자가 쌓이는 줄 자체가 몇 개 안 된다. */
 .rank-row[class*="frame-"] {
   position: relative;
   border-color: var(--frame-color, var(--border));
+  background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--frame-color, transparent) 14%, transparent),
+    transparent 46%);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    0 0 12px color-mix(in srgb, var(--frame-color, transparent) 48%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--frame-color, transparent) 50%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 0 0 1px color-mix(in srgb, var(--frame-color, transparent) 34%, transparent),
+    0 0 10px color-mix(in srgb, var(--frame-color, transparent) 46%, transparent),
+    0 0 24px 3px color-mix(in srgb, var(--frame-color, transparent) 20%, transparent),
     0 2px 5px rgba(0,0,0,0.22);
 }
 /* 프레임을 산 내 행도 남의 행과 똑같이 프레임 색으로만 빛난다 — 내 행 특례 없음. */
@@ -14214,7 +14231,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788429500; // v4.29 — 프리텐다드 가변·동적서브셋 전환, 격자선 밝게
+const BUILD = 1788500000; // v4.29 — 랭킹 닉네임 키움 + 프레임 빛 강화
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

@@ -160,10 +160,21 @@ test('구매 프레임은 등급 바를 덮지 않고 내 랭킹에 두 겹 선�
     '등급 행의 내 행 특례도 되살아나면 안 됨');
   assert.match(src, /const meBadgeHtml = isMe \?/,
     '내 행은 고양이 배지로만 알아본다 — 모든 유저에게 보여야 함');
-  // 13px 짜리는 삭제된 '내 행 전용' 프레임 규칙의 값이었다. 이제 내 행/남의 행이
-  // 같은 규칙(12px)을 쓴다 — 산 프레임은 누구 행이든 똑같이 빛난다.
-  assert.match(src, /0 0 12px color-mix\(/,
-    '구매 프레임 효과는 기본 테두리 바깥 글로우로 표현해야 함');
+  // 내 행/남의 행이 같은 규칙을 쓴다 — 산 프레임은 누구 행이든 똑같이 빛난다.
+  // 글로우 반경은 운영 피드백에 따라 조정되므로(2026-09-04 "너무 얇은 라인 같다") 값을
+  // 박지 않고, 프레임 규칙 안에 '바깥으로 퍼지는 빛'이 실제로 있는지만 고정한다.
+  {
+    const i = src.indexOf('.rank-row[class*="frame-"] {');
+    assert.ok(i > 0, '구매 프레임 규칙이 있어야 한다');
+    const block = src.slice(i, src.indexOf('}', i));
+    const outerGlow = block.match(/\n\s+0 0 (\d+)px[^\n]*var\(--frame-color/g) || [];
+    assert.ok(outerGlow.length >= 1,
+      '구매 프레임 효과는 기본 테두리 바깥 글로우로 표현해야 함');
+    // 애니메이션이 붙으면 그 줄들이 매 프레임 다시 그려져 스크롤이 무거워지고 발열로 이어진다.
+    // "발열이나 느림 없게" 는 운영 요구사항이므로 정지 그림자로만 표현한다.
+    assert.doesNotMatch(block, /animation/,
+      '프레임 효과에 애니메이션을 넣으면 스크롤이 무거워지고 발열이 생긴다');
+  }
   assert.doesNotMatch(src, /\.rank-row\.me\[class\*="frame-"\]/,
     '프레임 착용 시 내 행만 다르게 보이는 특례가 되살아나면 안 됨');
 });

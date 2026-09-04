@@ -72,7 +72,15 @@ test('모든 랭킹은 레벨·닉네임·왕관·불꽃을 같은 줄에 표시
   assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{rankHotHtml\(entry\.ts\)\}/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{titleHtml\}\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
-  assert.match(src, /\.rank-identity \.rank-nick \{[^}]*font-size:clamp\(14\.5px, 4\.1vw, 16px\)/);
+  // 닉네임 크기는 운영 피드백에 따라 조정되므로 값을 박지 않고 '읽히는 크기인지'만 고정한다.
+  // ("닉네임이 작아 보인다" 2026-09-04 → 하한 14.5→16px). 다시 작아지면 여기서 걸린다.
+  {
+    const m = src.match(/\.rank-identity \.rank-nick \{[^}]*font-size:clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\)/);
+    assert.ok(m, '랭킹 닉네임은 화면 폭에 따라 늘어나는 clamp 크기여야 한다');
+    const [min, , max] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    assert.ok(min >= 15.5, `닉네임 최소 크기가 ${min}px — 작은 폰에서 읽기 어렵다`);
+    assert.ok(max >= 17, `닉네임 최대 크기가 ${max}px — 큰 폰에서 여백만 남는다`);
+  }
   assert.match(src, /\.rank-nick-line \.oing-level-badge \{[^}]*font-size:9\.5px/);
   assert.match(src, /<span class="rank-tail">\$\{badgeHtml\}[\s\S]{0,180}<span class="rank-pts">/);
   assert.match(src, /#panelRank \.podium-nick-text \{ overflow:visible; text-overflow:clip; \}/);
