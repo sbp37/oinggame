@@ -14217,7 +14217,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788611400; // v4.30 — 상점 깔때기 로그 + 🍮 입구 "· 꾸미기" 라벨·첫 젤리 안내
+const BUILD = 1788612600; // v4.30 — 상점 깔때기 로그 + 🍮 입구 "· 꾸미기" 라벨·첫 젤리 안내
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14672,29 +14672,33 @@ async function loadJellyBalance() {
   } catch (e) { console.warn('젤리 잔액 로드 실패:', e); }
 }
 
-async function openJellyShop() {
-  // (v4) 앱도 젤리샵을 쓴다. 젤리는 출석·초대·환영으로만 얻는 무료 재화라 Play 결제 정책과 무관하고,
-  //  현금 상품(커스텀샵)만 앱에서는 PLATFORM.iap(Play 결제)로 간다 — custom-shop-preview.html 참고.
-  if (!ENABLE_JELLY_SHOP) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
-  // 미연결 레거시 계정이면 들어가기 전에 자동 연결부터 끝낸다. 연결 없이 사면
-  // 산 아이템이 랭킹에 안 붙는다(rankings/{닉} 에 uid 가 없어 매칭 실패) — 돈이
-  // 오가는 화면이라 여기서만큼은 시작 시도(3초)를 못 탄 경우까지 한 번 더 챙긴다.
-  await autoAdoptLegacy();
-  // 젤리샵의 실제 화면은 독립 모바일 페이지 하나뿐이다. 예전 인게임 오버레이는
-  // 서버 가격표와 어긋난 채 죽은 코드로 남아 있어 2026-08-31 검수에서 제거했다.
-  // 🛒 상점 깔때기 첫 단계 — 상점 페이지의 logFunnel 과 같은 문서 형식·같은 세션 id(sessionStorage).
+// 🛒 상점 깔때기 첫 단계 — 상점 페이지(shop-v2-preview.html)의 logFunnel 과 같은 문서 형식·
+//  같은 세션 id(sessionStorage) 라 게임→상점이 한 세션으로 이어진다. 한 세션에 1회. 실패해도 조용히.
+function logShopEntryFunnel() {
   try {
     const SID_KEY = 'oeing_shop_funnel_sid';
     let sid = sessionStorage.getItem(SID_KEY);
     if (!sid) { sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(SID_KEY, sid); }
-    if (!sessionStorage.getItem(SID_KEY + ':entry') && MY_UID) {
-      sessionStorage.setItem(SID_KEY + ':entry', '1');
-      addDoc(collection(db, 'shop_funnel'), {
-        step: 'entry', ts: Date.now(), date: getTodayDateStr(),
-        platform: IS_APP ? 'app' : 'web', sid,
-      }).catch(() => {});
-    }
+    if (sessionStorage.getItem(SID_KEY + ':entry') || !MY_UID) return;
+    sessionStorage.setItem(SID_KEY + ':entry', '1');
+    addDoc(collection(db, 'shop_funnel'), {
+      step: 'entry', ts: Date.now(), date: getTodayDateStr(),
+      platform: IS_APP ? 'app' : 'web', sid,
+    }).catch(() => {});
   } catch {}
+}
+// (v4) 앱도 젤리샵을 쓴다 — IS_APP 가드 없음. 젤리는 출석·초대·환영으로만 얻는 무료 재화라
+//  Play 결제 정책과 무관하고, 현금 상품(커스텀샵)만 앱에서는 PLATFORM.iap(Play 결제)로 간다.
+//  · 미연결 레거시 계정이면 들어가기 전에 자동 연결부터 끝낸다(autoAdoptLegacy). 연결 없이 사면
+//    산 아이템이 랭킹에 안 붙는다(rankings/{닉} 에 uid 가 없어 매칭 실패) — 돈이 오가는 화면이라
+//    여기서만큼은 시작 시도(3초)를 못 탄 경우까지 한 번 더 챙긴다.
+//  · 젤리샵의 실제 화면은 독립 모바일 페이지 하나뿐이다. 예전 인게임 오버레이는 서버 가격표와
+//    어긋난 채 죽은 코드로 남아 있어 2026-08-31 검수에서 제거했다.
+//  · 본문은 짧게 유지한다 — paid-shop-closed 테스트가 "플래그 게이트 → 상점 이동" 사이를 400자로 잰다.
+async function openJellyShop() {
+  if (!ENABLE_JELLY_SHOP) return; // 숨겨진 버튼·콘솔 호출로도 오픈 전 진입 금지
+  await autoAdoptLegacy();
+  logShopEntryFunnel(); // 🛒 깔때기 첫 단계(entry)
   location.href = 'shop-v2-preview.html?live=1';
 }
 document.getElementById('jellyShopBtn').addEventListener('click', openJellyShop);
