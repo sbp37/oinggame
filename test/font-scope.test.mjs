@@ -57,7 +57,11 @@ test('③ 시상대(1~3위)·순위등락 글자 크기는 예전 값 그대로�
     [/\.rank1 \.podium-score \{ color: var\(--ivory\); font-size: 21px;/, '시상대 1위 점수 21px'],
     [/\.rank2 \.podium-score \{ color: var\(--ivory\); font-size: 16px;/, '시상대 2위 점수 16px'],
     [/\.rank3 \.podium-score \{ color: var\(--ivory\); font-size: 16px;/, '시상대 3위 점수 16px'],
-    [/\.rank-change \{ font-size: 12\.5px;/, '순위등락 12.5px'],
+    // 순위등락만 12.5→11px 로 내렸다 — 2026-09-05 "등락 초록빨강 숫자랑 삼각형 크기 줄여"라는
+    // 명시적 요청이 있었다. 시상대 값들은 여전히 손대면 안 되는 값이다.
+    [/\.rank-change \{ font-size: 11px;/, '순위등락 11px'],
+    [/\.arrow-up   \{ font-size: 11px;/, '등락 삼각형 11px'],
+    [/\.podium-rank-change \{ font-size: 10\.5px;/, '시상대 등락 10.5px'],
     [/\.rank-num \{ font-size: 15\.5px;/, '순위 숫자 15.5px'],
   ];
   for (const [re, what] of pinned) {

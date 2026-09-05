@@ -1649,10 +1649,10 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-mode-btn.week.active { background: var(--blue-bright); border-color: var(--blue-bright); }
 #panelRank.week-mode #myRankInfo strong { color: var(--blue-light); }
 
-/* 화살표 */
-.arrow-up   { font-size: 13px; color: #ef4444; font-weight: 900; }
-.arrow-down { font-size: 13px; color: #3b82f6; font-weight: 900; }
-.arrow-same { font-size: 13px; color: #3a5a7a; }
+/* 화살표 — 순위등락 표시. 13→11px (2026-09-05 "등락 초록빨강 숫자랑 삼각형 크기 줄여") */
+.arrow-up   { font-size: 11px; color: #ef4444; font-weight: 900; }
+.arrow-down { font-size: 11px; color: #3b82f6; font-weight: 900; }
+.arrow-same { font-size: 11px; color: #3a5a7a; }
 
 /* 4등 이하 목록 */
 .rank-list { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
@@ -1679,7 +1679,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-num { font-size: 15.5px; font-weight: 700; color: #c3d2ea; min-width: 23px; max-width: 23px; text-align: right; flex-shrink: 0; letter-spacing:-0.4px; }
 /* 변동 칸 30→25px. 가장 넓은 표시인 '▲12' 가 23.4px 라 25px 로도 잘리지 않는다.
    (순위 숫자 칸 23px 은 3자리 '500' 이 22.1px 이라 더 줄일 수 없어 그대로 둔다.) */
-.rank-change { font-size: 12.5px; font-weight: 800; min-width: 25px; max-width: 25px; text-align: center; flex-shrink: 0; letter-spacing:-0.5px; }
+.rank-change { font-size: 11px; font-weight: 800; min-width: 25px; max-width: 25px; text-align: center; flex-shrink: 0; letter-spacing:-0.5px; }
 /* NEW 는 순위변동 칸(25px) 안에 들어가야 닉네임 자리를 뺏지 않는다. 예전엔 인라인 스타일
    10px + 좌우 4px 패딩이라 칸을 넘겨 닉이 잘렸다(운영 보고: "고..." 로 잘림). */
 .rank-change.is-new { display: inline-flex; align-items: center; justify-content: center; }
@@ -1712,7 +1712,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   color: var(--blue-light); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .rank-more-btn:active { transform: scale(0.99); }
-.podium-rank-change { font-size: 12px; font-weight: 900; margin-left: 2px; -webkit-text-stroke: 0.5px rgba(0,0,0,0.4); }
+.podium-rank-change { font-size: 10.5px; font-weight: 900; margin-left: 2px; -webkit-text-stroke: 0.5px rgba(0,0,0,0.4); }
 .podium-rank-change.up { color: var(--accent-green-light); }
 .podium-rank-change.down { color: var(--accent-orange); }
 .podium-rank-change.same { color: var(--muted); font-weight: 700; -webkit-text-stroke: 0; }
@@ -11634,18 +11634,34 @@ async function showMyRankCardIfBelowCut(myNick, isWeek) {
 //  · 사고: 1위가 198409pt 가 되자 "19840…" 으로 잘렸다(.podium-score 는 text-overflow:ellipsis).
 //  · 순위별 기본 크기(1위 21px, 2·3위 16px)는 그대로 둔다 — 안 넘치면 아무것도 안 한다.
 //    운영에서 "1~3등 글씨 크기는 건드리지 말라"고 했으므로, 잘릴 때만 그 칸을 줄인다.
-//  · 6자리(999,999pt)까지는 14px 이면 들어간다. 그 아래로는 안 내려간다.
-function fitPodiumScores(podiumEl) {
+//  · 1위 칸은 98px 이라 7자리(1,984,079pt)까지 들어가려면 12px 까지는 열어 둬야 한다.
+//
+//  ⚠️ 한 번만 재면 안 된다 (2026-09-05, 1차 수정이 실제로 안 먹은 이유):
+//   ① 랭킹 패널이 아직 안 보이는 상태에서 그리면 clientWidth 가 0 이라 '넘침'을 못 재고,
+//      나중에 화면에 뜨면 그대로 잘린 채 남는다.
+//   ② 웹폰트(Noto Sans KR)가 늦게 도착하면 글자 폭이 커져서, 먼저 잰 결과가 무의미해진다.
+//  그래서 폭이 0 이면 건너뛰고, 다음 프레임과 폰트 로드 완료 시점에 한 번씩 더 잰다.
+function fitPodiumScoresOnce(podiumEl) {
   if (!podiumEl) return;
   podiumEl.querySelectorAll('.podium-score').forEach((el) => {
     el.style.fontSize = '';
+    if (!el.clientWidth) return; // 아직 화면에 없다 — 다음 기회에 잰다
     const base = parseFloat(getComputedStyle(el).fontSize) || 16;
     // scrollWidth 는 넘친 실제 너비, clientWidth 는 보이는 폭. 1px 여유를 둔다.
-    // size > 14 (>= 아님): 14 에서 한 번 더 돌면 13.5px 이 돼 하한선을 넘는다.
-    for (let size = base; size > 14 && el.scrollWidth > el.clientWidth + 1; size -= 0.5) {
+    // size > 12 (>= 아님): 12 에서 한 번 더 돌면 11.5px 이 돼 하한선을 넘는다.
+    for (let size = base; size > 12 && el.scrollWidth > el.clientWidth + 1; size -= 0.5) {
       el.style.fontSize = (size - 0.5) + 'px';
     }
   });
+}
+function fitPodiumScores(podiumEl) {
+  fitPodiumScoresOnce(podiumEl);
+  try {
+    requestAnimationFrame(() => fitPodiumScoresOnce(podiumEl));
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => fitPodiumScoresOnce(podiumEl)).catch(() => {});
+    }
+  } catch (e) {}
 }
 try { window.fitPodiumScores = fitPodiumScores; } catch (e) {} // test/podium-score-fit.test.mjs 가 같은 함수를 직접 태운다
 
@@ -14293,7 +14309,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788576900; // v4.29 — 시작 카드 문구 한 줄로, 시상대 점수 잘림 방지
+const BUILD = 1788581200; // v4.29 — 순위등락 축소, 시상대 점수 재측정 보강
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
