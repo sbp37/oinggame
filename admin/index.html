@@ -195,6 +195,15 @@
           <div class="card-head"><h3>🎮 최근 14일 플레이 판수</h3><span id="sumPlays" class="card-note"></span></div>
           <div id="chartPlays" class="chart"></div>
         </div>
+        <!-- 🔁 신규 유저 재방문 — "왜 다시 안 오는지"를 숫자로. 계산: js/retention.js -->
+        <div class="card">
+          <div class="card-head">
+            <h3>🔁 신규 유저 재방문</h3>
+            <button id="retentionLoadBtn" class="btn btn-ghost btn-sm">불러오기</button>
+          </div>
+          <div class="card-note" style="margin-bottom:8px;">최신 신규 유저 통계를 읽어야 해서(최대 1,000명) 버튼을 눌렀을 때만 조회합니다. 첫 플레이한 주(월요일 시작)로 묶어 다시 온 비율을 봅니다.</div>
+          <div id="retentionResult"></div>
+        </div>
         <button id="statsDetailToggle" class="btn btn-ghost btn-block">상세 통계 보기 ▾</button>
         <div id="statsDetailBox" style="display:none;">
           <div class="card">

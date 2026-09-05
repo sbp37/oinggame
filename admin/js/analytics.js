@@ -17,9 +17,14 @@ import {
   countTodayCached, todayNewUsersCount, forceRecomputeRange, SESSION_FETCH_CAP,
 } from './stats.js';
 import { setLoading, setError, guardBtn } from './admin.js';
+import { computeRetention } from './retention.js';
 
 const DAYS = 14;
 const REFERRER_FETCH_CAP = 500;
+// 재방문 코호트 — 최신 신규순 user_stats. 활동순(유입 분석)과 달리 '떠난 사람'도 들어와야
+// 재방문율이 정직해진다. 6주 코호트 × 주당 신규가 100명을 넘지 않는 규모라 1000 이면 충분.
+const RETENTION_FETCH_CAP = 1000;
+const RETENTION_WEEKS = 6;
 
 // 14일 막대 — 데이터 14개는 그대로, 모바일 가독성을 위해
 // 날짜 라벨은 오늘 기준 3일 간격만 표시하고, 모바일에서는 값 숫자를
@@ -188,9 +193,83 @@ async function loadReferrerData({ force = false } = {}) {
   }
 }
 
+// ── 🔁 신규 유저 재방문 (주간 코호트) — 버튼 클릭 시에만 조회 ──
+//  "왜 다시 안 오는지"를 숫자로. 계산은 retention.js(순수 함수, 테스트 있음).
+//  · 신규순(firstPlayed desc)으로 읽는다 — 활동순으로 읽으면 떠난 사람이 빠져 재방문율이 부풀려진다.
+//  · D1/D7 은 playDates 를 기록하기 시작한(2026-09-05 빌드) 이후 신규만 잴 수 있다. 그 전은 '—'.
+async function loadRetentionData({ force = false } = {}) {
+  const el = document.getElementById('retentionResult');
+  setLoading(el, `user_stats 최신 신규 ${RETENTION_FETCH_CAP}명 조회 중...`);
+  try {
+    if (force) cache.bust('analytics:retention');
+    const rows = await cache.get('analytics:retention', () =>
+      fetchDocs(query(collection(db, 'user_stats'), orderBy('firstPlayed', 'desc'), limit(RETENTION_FETCH_CAP))));
+    const r = computeRetention(rows, Date.now(), { weeks: RETENTION_WEEKS });
+
+    const p = (v) => (v == null ? '—' : `${v}%`);
+    const frac = (n, d) => (d > 0 ? `${fmtNum(n)}/${fmtNum(d)}` : '—');
+    const f = r.last28;
+    const tiles = [
+      ['최근 28일 신규', `${fmtNum(f.n)}명`, `초대로 ${fmtNum(f.invited)}명`],
+      ['2판 이상 함', p(f.multiPct), frac(f.multi, f.n)],
+      ['다른 날 다시 옴', p(f.returnedPct), frac(f.returned, f.n)],
+      ['최근 7일 활동', p(f.active7Pct), `${frac(f.active7, f.active7Denom)} · 가입 7일↑만`],
+      ['다음날 재방문 D1', p(f.d1Pct), f.d1Tracked ? `${frac(f.d1, f.d1Tracked)} · 추적 가능한 신규만` : '아직 데이터 없음'],
+      ['7일 안 재방문 D7', p(f.d7Pct), f.d7Tracked ? `${frac(f.d7, f.d7Tracked)} · 추적 가능한 신규만` : '아직 데이터 없음'],
+      ['초대 유입 재방문', p(f.invitedReturnedPct), frac(f.invitedReturned, f.invited)],
+      ['그 외 유입 재방문', p(f.otherReturnedPct), frac(f.otherReturned, f.n - f.invited)],
+    ];
+
+    const rowsHtml = r.cohorts.map((c, i) => `
+      <tr>
+        <td>${escapeHtml(c.weekId.slice(5).replace('-', '/'))}${i === 0 ? ' <span class="card-note">(이번주)</span>' : ''}</td>
+        <td>${fmtNum(c.n)}</td>
+        <td>${p(c.multiPct)}</td>
+        <td>${p(c.returnedPct)}</td>
+        <td title="가입 7일 넘은 ${fmtNum(c.active7Denom)}명 기준">${c.active7Denom ? p(c.active7Pct) : '—'}</td>
+        <td title="추적 ${fmtNum(c.d1Tracked)}명">${p(c.d1Pct)}</td>
+        <td title="추적 ${fmtNum(c.d7Tracked)}명">${p(c.d7Pct)}</td>
+        <td>${fmtNum(c.invited)}</td>
+      </tr>`).join('');
+
+    const capNote = rows.length >= RETENTION_FETCH_CAP
+      ? `<div class="card-note">⚠️ 최신 신규 ${RETENTION_FETCH_CAP}명까지만 집계했어요 — 오래된 코호트는 일부만 들어갔을 수 있어요.</div>` : '';
+
+    el.innerHTML = `
+      ${capNote}
+      <div class="stat-grid small" style="margin-bottom:12px;">${tiles.map(([label, val, sub]) => `
+        <div class="stat-tile compact">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value" style="font-size:17px;">${val}</div>
+          <div class="stat-sub">${sub}</div>
+        </div>`).join('')}
+      </div>
+      <h4 style="margin:10px 0 6px; font-size:13.5px;">주간 코호트 (첫 플레이한 주 기준 · 월요일 시작 KST)</h4>
+      <div class="cohort-wrap">
+        <table class="mini-table cohort-table">
+          <thead><tr>
+            <th>주</th><th>신규</th><th>2판+</th><th>다른날<br>재방문</th><th>최근7일<br>활동</th><th>D1</th><th>D7</th><th>초대</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+      <div class="card-note" style="margin-top:8px; line-height:1.55;">
+        <b>다른날 재방문</b>: 첫날 말고 다른 날에도 한 판 이상 (daysPlayed≥2). 기간 제한 없음.<br>
+        <b>최근7일 활동</b>: 가입 7일 넘은 사람 중 최근 7일 안에 논 비율 — '아직 남아 있는' 비율.<br>
+        <b>D1 / D7</b>: 다음날 / 7일 안에 다시 온 정확한 비율. 2026-09-05 이후 신규만 추적 가능(playDates). 그 전 유저는 —.<br>
+        <b>초대</b>: 친구초대 코드로 들어온 사람 수. 타일의 '초대 유입 vs 그 외' 재방문을 비교하세요.<br>
+        첫 판 완주율은 여기 없어요 — user_stats 는 첫 판을 끝낸 뒤에야 생겨요. (활동 카드의 '시작률'을 보세요.)
+      </div>`;
+  } catch (e) {
+    setError(el, humanError(e));
+  }
+}
+
 export function initAnalyticsTab() {
   const btn = document.getElementById('referrerLoadBtn');
   btn.addEventListener('click', guardBtn(btn, () => loadReferrerData({ force: cache.peek('analytics:referrer') != null })));
+  const rtBtn = document.getElementById('retentionLoadBtn');
+  if (rtBtn) rtBtn.addEventListener('click', guardBtn(rtBtn, () => loadRetentionData({ force: cache.peek('analytics:retention') != null })));
 
   // 🛠 통계 재집계 — 이 기기의 캐시(localStorage 포함)와 저장된 dailyStats를 무시하고
   // 지난 13일을 원본에서 다시 집계. 잘못 저장된 캐시가 의심될 때만 수동 실행.

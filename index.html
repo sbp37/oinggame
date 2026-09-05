@@ -6611,6 +6611,7 @@ async function updateUserStats(nickname, playTimeSeconds, score, sessionCatsArg,
       dailyGoalDate, dailyGoalScore, dailyGoalType, dailyGoalAchievedToday,
       goalStreak, goalStreakLastDate, goalTotalCount, goalMissStreak,
       daysPlayed, maxGoalStreak, // ⭐ 오잉 레벨 재료 — setDoc이 전체 덮어쓰기라 매 저장 포함 필수
+      playDates: mergePlayDates(d.playDates, todayStr), // 🔁 재방문 측정 재료(어드민 D1/D7) — 논 날짜 최근 30일치
     };
   } else {
     const newGoal = computeDailyGoal(null, nickname, todayStr);
@@ -6644,6 +6645,7 @@ async function updateUserStats(nickname, playTimeSeconds, score, sessionCatsArg,
       goalMissStreak: 0,
       daysPlayed: 1,                            // ⭐ 오잉 레벨 재료 — 첫 게임 완료 = 활동 1일차
       maxGoalStreak: goalAchievedNow ? 1 : 0,
+      playDates: [todayStr],                    // 🔁 재방문 측정 재료(어드민 D1/D7)
     };
   }
   if (isUidLinked()) {
@@ -13192,6 +13194,16 @@ function oingNextTitleLevel(lv) {
 // 필드가 없는 기존 유저의 daysPlayed 보수 보정 — firstPlayed가 폴백값(6/22 정각)인 구 유저가
 // 있어 "첫 플레이 후 일수"만으로는 뻥튀기됨 → 실측 기반인 goalTotalCount+3 캡으로 묶는다.
 // 반환값에는 오늘이 이미 포함된다(일수 계산이 오늘 기준이므로 시드 시 +1 금지).
+// 🔁 user_stats.playDates — 게임을 끝낸 날짜(YYYY-MM-DD)를 중복 없이 최근 30일치만 남긴다 (2026-09-05).
+//  어드민 '신규 유저 재방문' 카드가 이걸로 D1(다음날)·D7(7일 안) 재방문을 정확히 잰다.
+//  daysPlayed 는 '며칠 놀았나'만 알고 '언제'는 몰라서, 다음날 왔는지는 이 목록이 있어야 안다.
+//  admin/js/retention.js 의 mergePlayDates 와 같은 규칙 — 바꾸면 둘 다 바꿀 것.
+function mergePlayDates(prev, todayStr, max = 30) {
+  const list = Array.isArray(prev) ? prev.filter((s) => typeof s === 'string') : [];
+  if (todayStr && !list.includes(todayStr)) list.push(todayStr);
+  list.sort();
+  return list.slice(-max);
+}
 function oingSeedDaysPlayed(d, nowMs) {
   const pc = d.playCount || 0;
   if (pc <= 0) return 0;
@@ -14309,7 +14321,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788581200; // v4.29 — 순위등락 축소, 시상대 점수 재측정 보강
+const BUILD = 1788593400; // v4.29 — user_stats.playDates 기록(재방문 측정 재료)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

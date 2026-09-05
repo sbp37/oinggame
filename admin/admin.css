@@ -516,3 +516,10 @@ button.online-chip.more { cursor: pointer; font-family: inherit; font-size: 12.5
 @media (max-width: 400px) {
   .tab-btn { padding: 8px 2px; font-size: 12px; letter-spacing: -0.3px; }
 }
+
+/* 🔁 신규 유저 재방문 코호트 표 — 8열이라 좁은 폰에서는 가로 스크롤 */
+.cohort-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.cohort-table { border-collapse: collapse; font-size: 12.5px; min-width: 460px; }
+.cohort-table th { font-size: 11.5px; color: var(--muted); text-align: right; line-height: 1.25; }
+.cohort-table th:first-child, .cohort-table td:first-child { text-align: left; }
+.cohort-table td { text-align: right; font-variant-numeric: tabular-nums; }
