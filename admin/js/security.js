@@ -972,7 +972,7 @@ function bindVerdictActions(container) {
 // 랭킹에 반영되지 않는다(2026-08 장애). 한 건씩 누르면 수십 번이라 한꺼번에 올린다.
 //
 // 안전장치: ① isUnverifiable(= NO_SESSION 이고 강한 의심 사유가 하나도 없음)인 보류만 대상
-//          ② 실제 반영 판정·상한(15만)·감사 로그는 전부 서버(adminApproveScore)가 담당
+//          ② 실제 반영 판정·상한(30만, gameSession.js OFFICIAL_SCORE_MAX)·감사 로그는 전부 서버(adminApproveScore)가 담당
 //          ③ 순차 호출(동시 호출로 서버·랭킹 트랜잭션을 때리지 않게)
 function bulkApproveTargets() {
   const rows = cache.peek('security:verdicts') || [];
@@ -986,7 +986,7 @@ async function bulkApproveUnverifiable(btn) {
   if (!confirm(
     `검증 불가(서버세션 없음) 보류 ${total}건을 전부 랭킹에 올릴까요?\n\n` +
     `· 강한 의심 사유가 붙은 기록은 대상에서 빠집니다\n` +
-    `· 각 건은 서버가 상한(15만)과 현재 점수를 확인해 반영합니다\n` +
+    `· 각 건은 서버가 상한(30만)과 현재 점수를 확인해 반영합니다\n` +
     `· 되돌리려면 별도 조치가 필요합니다`
   )) return;
 
