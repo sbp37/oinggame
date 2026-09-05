@@ -124,20 +124,22 @@
      실제로 쓰는 굵기 4~5개만 해도 수 MB 라, 폰에서는 한참 동안 기본 글꼴(삼성고딕·Apple SD
      고딕)로 보이다가 뒤늦게 프리텐다드로 바뀌었다. 동적 서브셋은 화면에 실제로 쓰인 글자
      묶음만 몇 KB 씩 받고, 가변 글꼴 하나로 100~900 굵기를 다 낸다. 버전은 v1.3.9 로 고정.
-     Noto Sans KR 은 뺀다 — 프리텐다드가 있으면 쓰이지 않고, 없을 땐 시스템 고딕이 더 낫다.
-     Jua·Do Hyeon(제목용)은 그대로. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Do+Hyeon&display=swap" media="print" onload="this.media='all';this.onload=null;">
+
+     ⚠️ 적용 범위는 '게임 화면(body.game-active)' 뿐이다 (2026-09-05).
+     한때 페이지 전체 기본 글꼴로 뒀더니, 예전엔 느려서 사실상 안 걸리던 프리텐다드가
+     이제 곧바로 걸리면서 메인·시상대(1~3위)·순위등락 글자가 다 같은 px 인데도 커 보이고
+     줄바꿈이 생겼다("메인글자들 넘 커졋잔아", "제이1님 점수 잘리잔아"). 폰트를 바꾸면
+     지시하지 않은 화면까지 전부 바뀐다 — 그래서 게임판 밖은 예전 글꼴 그대로 둔다.
+     Noto Sans KR 을 다시 받는 것도 그 때문이다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap" media="print" onload="this.media='all';this.onload=null;">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all';this.onload=null;">
 <noscript>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Do+Hyeon&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Jua&family=Do+Hyeon&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 </noscript>
 <style>
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-/* 버튼·입력칸은 브라우저 기본 글꼴(시스템 고딕)을 따로 쓴다 — 페이지 글꼴(프리텐다드)을 물려받게 한다.
-   인라인으로 다른 글꼴(Jua 등)을 지정한 곳은 그 지정이 그대로 이긴다. */
-button, input, select, textarea { font-family: inherit; }
 
 :root {
   --bg: #0b0e17;
@@ -201,8 +203,10 @@ body.light #panelGame { background: var(--bg); }
 
 html, body {
   height: 100%;
-  /* 프리텐다드 공식 권장 스택. 가변 글꼴이 먼저, 못 받았을 땐 각 OS 의 기본 고딕. */
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  /* 페이지 기본 글꼴 — 프리텐다드로 바꾸기 전(build 1788276577)과 같다.
+     여기를 건드리면 메인·시상대·순위등락까지 전부 따라 변한다. 프리텐다드는
+     게임 화면(body.game-active)에만 건다 — 아래 'body.game-active' 규칙 참고. */
+  font-family: 'Noto Sans KR', sans-serif;
   background: var(--outer-bg);
   color: var(--text);
   overflow: hidden;
@@ -2191,6 +2195,12 @@ body.light #panelGame .hint-btn.pregame { background: #f5f5f5; border-color: #d0
    ③ 칸 사이 간격 3→2px, 테두리 1.5→1px (위 .grid/.cell 기본 규칙).
    답지(.ended)는 별도 압축 규칙을 그대로 쓴다. 튜토리얼 보드(.tut-grid)는 대상이 아니다.
    ══════════════════════════════════════════════════════════════ */
+/* 프리텐다드는 여기(게임 화면) 안에서만 쓴다. 페이지 전체에 걸면 메인·시상대(1~3위)·
+   순위등락 글자까지 같은 px 인데도 커 보이고 줄바꿈이 생긴다(2026-09-05 피드백).
+   버튼·입력칸은 기본 글꼴을 쓰므로 게임 화면 안에서도 따로 물려받게 해 준다. */
+body.game-active { font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif; }
+body.game-active button, body.game-active input { font-family: inherit; }
+
 body.game-active .grid-wrap:not(.ended) #grid .cell { font-size: calc(var(--cell-px, 36px) * 0.62); }
 body.game-active .grid-wrap:not(.ended) #grid .cell.cat { font-size: calc(var(--cell-px, 36px) * 0.55); }
 
@@ -14240,7 +14250,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788509400; // v4.29 — 프레임 글로우 번짐 축소, 등급 없는 행 테두리 추가 상향
+const BUILD = 1788572600; // v4.29 — 프리텐다드를 게임 화면으로만 한정, 메인·시상대 글꼴 원복
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
