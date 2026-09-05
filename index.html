@@ -1467,6 +1467,15 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   cursor: pointer; white-space: nowrap;
 }
 .rank-find-btn:active { background: rgba(120,145,180,0.22); }
+.jelly-entry-label { font-weight: 700; opacity: .85; }
+/* 🍮 첫 젤리 안내 말풍선 — 1회, 6초 뒤 사라짐 */
+.jelly-entry-hint { position: fixed; z-index: 1200; max-width: 250px; padding: 9px 12px; border-radius: 12px;
+  background: #1c2f4e; border: 1px solid rgba(126,213,255,0.55); color: #e8f6ff; font-size: 12.5px; font-weight: 700;
+  line-height: 1.4; box-shadow: 0 8px 22px rgba(0,0,0,0.45); opacity: 0; transform: translateY(-6px);
+  transition: opacity .25s, transform .25s; cursor: pointer; word-break: keep-all; }
+.jelly-entry-hint.show { opacity: 1; transform: translateY(0); }
+.jelly-entry-hint::before { content: ''; position: absolute; top: -6px; right: 22px; width: 10px; height: 10px;
+  background: #1c2f4e; border-left: 1px solid rgba(126,213,255,0.55); border-top: 1px solid rgba(126,213,255,0.55); transform: rotate(45deg); }
 .rank-find-result {
   max-width: 360px; margin: -8px auto 14px; padding: 9px 12px;
   border: 1px solid rgba(120,145,180,0.28); border-radius: 12px;
@@ -3026,7 +3035,7 @@ if ('serviceWorker' in navigator) {
       background: rgba(60,116,167,0.2); color: #bfeaff;
       font-family: inherit; font-size: 13px; font-weight: 800;
       cursor: pointer; white-space: nowrap;
-    " aria-label="젤리샵 열기">🍮 <span id="jellyBalanceText">0</span></button>
+    " aria-label="젤리샵 열기">🍮 <span id="jellyBalanceText">0</span><span class="jelly-entry-label"> · 꾸미기</span></button>
     <button id="jellyShopBtn" style="
       display:none; margin: 6px 4px 6px 0; padding: 3px 9px; flex-shrink:0;
       border-radius: 20px; border: 1px solid rgba(60,116,167,0.4);
@@ -14208,7 +14217,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788601700; // v4.30 — 앱·웹 통합(OING_PLATFORM v4): 앱도 웹 랭킹·계정·젤리샵, 현금은 Play 결제
+const BUILD = 1788611400; // v4.30 — 상점 깔때기 로그 + 🍮 입구 "· 꾸미기" 라벨·첫 젤리 안내
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14623,6 +14632,29 @@ function updateJellyDisplay(jelly) {
   const n = jelly || 0;
   const topEl = document.getElementById('jellyBalanceText');
   if (topEl) topEl.textContent = n;
+  // 🍮 숫자가 '재화 표시'가 아니라 '꾸미기 상점 버튼'이라는 걸 처음 젤리를 받았을 때 한 번만 알린다
+  // (2026-09-05 — 친구 외엔 젤리에 관심이 없는 이유 가설 ①: 상점 버튼인 줄 모른다).
+  try {
+    const HINT_KEY = 'oeing_jelly_entry_hint_v1';
+    if (n > 0 && !localStorage.getItem(HINT_KEY) && ENABLE_JELLY_SHOP) {
+      localStorage.setItem(HINT_KEY, '1');
+      const btn = document.getElementById('supportTopBtn');
+      if (btn && getComputedStyle(btn).display !== 'none') showJellyEntryHint(btn);
+    }
+  } catch {}
+}
+function showJellyEntryHint(anchor) {
+  const tip = document.createElement('div');
+  tip.className = 'jelly-entry-hint';
+  tip.textContent = '🍮 젤리로 닉네임·고양이·테두리를 꾸밀 수 있어요 — 눌러보라냥!';
+  document.body.appendChild(tip);
+  const r = anchor.getBoundingClientRect();
+  tip.style.top = (r.bottom + 8) + 'px';
+  tip.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  requestAnimationFrame(() => tip.classList.add('show'));
+  const close = () => { tip.classList.remove('show'); setTimeout(() => tip.remove(), 250); };
+  tip.addEventListener('click', close);
+  setTimeout(close, 6000);
 }
 
 async function loadJellyBalance() {
@@ -14650,6 +14682,19 @@ async function openJellyShop() {
   await autoAdoptLegacy();
   // 젤리샵의 실제 화면은 독립 모바일 페이지 하나뿐이다. 예전 인게임 오버레이는
   // 서버 가격표와 어긋난 채 죽은 코드로 남아 있어 2026-08-31 검수에서 제거했다.
+  // 🛒 상점 깔때기 첫 단계 — 상점 페이지의 logFunnel 과 같은 문서 형식·같은 세션 id(sessionStorage).
+  try {
+    const SID_KEY = 'oeing_shop_funnel_sid';
+    let sid = sessionStorage.getItem(SID_KEY);
+    if (!sid) { sid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(SID_KEY, sid); }
+    if (!sessionStorage.getItem(SID_KEY + ':entry') && MY_UID) {
+      sessionStorage.setItem(SID_KEY + ':entry', '1');
+      addDoc(collection(db, 'shop_funnel'), {
+        step: 'entry', ts: Date.now(), date: getTodayDateStr(),
+        platform: IS_APP ? 'app' : 'web', sid,
+      }).catch(() => {});
+    }
+  } catch {}
   location.href = 'shop-v2-preview.html?live=1';
 }
 document.getElementById('jellyShopBtn').addEventListener('click', openJellyShop);

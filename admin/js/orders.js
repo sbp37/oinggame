@@ -46,6 +46,7 @@ function renderOrders(docs) {
       <div class="custom-order-top">
         <span class="custom-order-user">${escapeHtml(d.nickname || '(닉네임 연결 전)')}</span>
         <span class="custom-order-status ${status}">${STATUS_LABEL[status] || status}</span>
+        ${String(d.source || '').startsWith('play-billing') ? '<span class="custom-order-source">▶ Play 결제' + (d.source === 'play-billing' ? ' · 자동발송' : ' · 결제대기') + '</span>' : ''}
       </div>
       <div class="custom-order-choice">${escapeHtml(detail)}</div>
       <div class="custom-order-meta">${Number(d.price || 0).toLocaleString()}원 · ${escapeHtml(formatTime(d.createdAt))}<br>UID ${escapeHtml(d.uid || '-')}<br>주문번호 ${escapeHtml(snap.id)}</div>

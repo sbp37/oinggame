@@ -109,6 +109,49 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 const preview=document.getElementById('rankPreview');const nick=document.getElementById('previewNick');const summary=document.getElementById('summaryName');const summaryPrice=document.getElementById('summaryPrice');const payBtn=document.getElementById('kakaoPayBtn');
 const CUSTOM_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG3e307903';const CAT_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG1ef07932';const BUNDLE_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG5d204014';
 const CUSTOM_ORDER_PENDING_KEY='oeing_custom_order_pending_v1';
+
+// ── 🛒 상점 깔때기 로그 (2026-09-05) ──
+//  "안 본 건지 · 보고 싫었던 건지 · 사려다 포기한 건지"를 구분하려고 단계별로 남긴다.
+//  한 세션(탭)에서 같은 단계는 한 번만 — 그래서 카운트 = 그 단계까지 온 '사람 수'다.
+//  문서: shop_funnel/{auto} = { step, tab?, ts, date, platform, sid }. 닉네임·uid 는 안 남긴다.
+//  sid 는 index.html(🍮 입구 클릭)과 같은 sessionStorage 키라 게임→상점 흐름이 한 세션으로 이어진다.
+//  어드민 통계 → 활동 → '🛒 상점 깔때기' 카드가 읽는다(admin/js/funnel.js).
+const FUNNEL_SID_KEY = 'oeing_shop_funnel_sid';
+function funnelSid() {
+  try {
+    let s = sessionStorage.getItem(FUNNEL_SID_KEY);
+    if (!s) { s = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(FUNNEL_SID_KEY, s); }
+    return s;
+  } catch { return 'nosession'; }
+}
+async function logFunnel(step, extra = {}) {
+  if (!checkoutMode) return;
+  const onceKey = FUNNEL_SID_KEY + ':' + step + (extra.tab ? ':' + extra.tab : '');
+  try { if (sessionStorage.getItem(onceKey)) return; sessionStorage.setItem(onceKey, '1'); } catch {}
+  try {
+    const ctx = await getFunnelCtx();
+    if (!ctx || !ctx.auth || !ctx.auth.currentUser) return;
+    const d = new Date(); const pad = (n) => String(n).padStart(2, '0');
+    await ctx.fsSdk.addDoc(ctx.fsSdk.collection(ctx.db, 'shop_funnel'), {
+      step: String(step).slice(0, 24), ts: Date.now(),
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      platform: window.Capacitor ? 'app' : 'web', sid: funnelSid(),
+      ...(extra.tab ? { tab: String(extra.tab).slice(0, 16) } : {}),
+    });
+  } catch (e) { /* 통계는 실패해도 상점을 막지 않는다 */ }
+}
+
+async function getFunnelCtx(){
+  const [appSdk,authSdk,fsSdk]=await Promise.all([
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js'),
+  ]);
+  const app=appSdk.getApps().find(x=>x.name==='[DEFAULT]')||appSdk.initializeApp(ORDER_FIREBASE_CONFIG);
+  const auth=authSdk.getAuth(app);
+  await new Promise(resolve=>{let settled=false;const off=authSdk.onAuthStateChanged(auth,()=>{if(!settled){settled=true;off();resolve()}});setTimeout(()=>{if(!settled){settled=true;off();resolve()}},1800)});
+  return {auth,db:fsSdk.getFirestore(app),fsSdk};
+}
 // ── 앱(Capacitor)에서는 카카오페이 대신 Google Play 결제 ── (2026-09-05, OING_PLATFORM v4)
 // 앱 안에서 카카오페이 링크를 여는 것은 Play 결제 정책 위반이다. 브리지(iap.purchase)가 있으면
 // 결제 버튼이 Play 결제 창을 열고, 서버(shopAction redeemPlayPurchase)가 영수증을 확인해 바로
@@ -132,6 +175,7 @@ function showOrder(){
 function setOrderType(next){orderType=next;document.querySelectorAll('[data-order-type]').forEach(btn=>{const selected=btn.dataset.orderType===orderType;btn.classList.toggle('on',selected);btn.setAttribute('aria-pressed',String(selected))});showOrder()}
 const params=new URLSearchParams(location.search);const checkoutMode=params.get('checkout')==='1';
 document.getElementById('modeBanner').textContent=checkoutMode?'🛍️ 원하는 꾸미기를 고르고 카카오페이로 결제해요':'🔎 커스텀샵 디자인 미리보기';
+if(checkoutMode)logFunnel('cash_enter');
 document.title=checkoutMode?'오잉게임 커스텀샵':'오잉게임 커스텀샵 미리보기';
 document.getElementById('modeTag').textContent=checkoutMode?'ORDER':'PREVIEW';
 document.getElementById('backToShop').href=checkoutMode?'shop-v2-preview.html?live=1':'shop-v2-preview.html?preview=1';
@@ -213,6 +257,7 @@ async function startPlayPurchase(){
     const pur=await IAP.purchase({sku:PLAY_SKU[orderType],orderId});
     fulfillNote.textContent='결제 확인 중…';
     await ctx.call('shopAction',{action:'redeemPlayPurchase',orderId,purchaseToken:pur.purchaseToken,productId:pur.productId||PLAY_SKU[orderType]});
+    logFunnel('cash_done');
     fulfillNote.textContent='✅ 적용됐어요! 게임으로 돌아갈게요';
     try{localStorage.removeItem(CUSTOM_ORDER_PENDING_KEY)}catch{}
     setTimeout(()=>{location.href='./index.html?customOrderReturn=1'},1200);
@@ -228,6 +273,7 @@ payBtn.addEventListener('click',(event)=>{
     alert('디자인 미리보기에서는 실제 결제가 진행되지 않아요.');
     return;
   }
+  logFunnel('cash_pay_click');
   if(IN_APP){event.preventDefault();startPlayPurchase();return}
   const order=createCustomOrder();
   try{localStorage.setItem(CUSTOM_ORDER_PENDING_KEY,JSON.stringify(order))}catch{}

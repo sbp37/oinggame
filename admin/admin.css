@@ -523,3 +523,14 @@ button.online-chip.more { cursor: pointer; font-family: inherit; font-size: 12.5
 .cohort-table th { font-size: 11.5px; color: var(--muted); text-align: right; line-height: 1.25; }
 .cohort-table th:first-child, .cohort-table td:first-child { text-align: left; }
 .cohort-table td { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 주문함 — Play 결제 경로 배지 */
+.custom-order-source { font-size: 11px; font-weight: 800; color: #9be7c4; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.35); border-radius: 999px; padding: 2px 8px; }
+/* 🛒 상점 깔때기 막대 */
+.funnel-row { display: grid; grid-template-columns: 112px 1fr 64px; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.funnel-row:last-child { border-bottom: none; }
+.funnel-label { color: var(--muted); white-space: nowrap; }
+.funnel-bar { height: 14px; border-radius: 7px; background: rgba(126,194,240,0.12); overflow: hidden; }
+.funnel-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #7ed5ff); border-radius: 7px; }
+.funnel-num { text-align: right; font-variant-numeric: tabular-nums; }
+.funnel-num small { color: var(--muted); margin-left: 3px; }

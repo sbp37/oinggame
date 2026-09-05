@@ -204,6 +204,15 @@
           <div class="card-note" style="margin-bottom:8px;">최신 신규 유저 통계를 읽어야 해서(최대 1,000명) 버튼을 눌렀을 때만 조회합니다. 첫 플레이한 주(월요일 시작)로 묶어 다시 온 비율을 봅니다.</div>
           <div id="retentionResult"></div>
         </div>
+        <!-- 🛒 상점 깔때기 — "안 본 건지·보고 싫었던 건지·사려다 포기한 건지". 계산: js/funnel.js -->
+        <div class="card">
+          <div class="card-head">
+            <h3>🛒 상점 깔때기 (최근 7일)</h3>
+            <button id="funnelLoadBtn" class="btn btn-ghost btn-sm">불러오기</button>
+          </div>
+          <div class="card-note" style="margin-bottom:8px;">상점 단계 로그(shop_funnel)를 읽어야 해서 버튼을 눌렀을 때만 조회합니다. 한 세션에 단계당 1회만 기록돼 숫자는 '그 단계까지 온 사람 수'예요.</div>
+          <div id="funnelResult"></div>
+        </div>
         <button id="statsDetailToggle" class="btn btn-ghost btn-block">상세 통계 보기 ▾</button>
         <div id="statsDetailBox" style="display:none;">
           <div class="card">

@@ -471,6 +471,38 @@ async function getFirebaseContext() {
   })();
   return firebaseContextPromise;
 }
+
+// ── 🛒 상점 깔때기 로그 (2026-09-05) ──
+//  "안 본 건지 · 보고 싫었던 건지 · 사려다 포기한 건지"를 구분하려고 단계별로 남긴다.
+//  한 세션(탭)에서 같은 단계는 한 번만 — 그래서 카운트 = 그 단계까지 온 '사람 수'다.
+//  문서: shop_funnel/{auto} = { step, tab?, ts, date, platform, sid }. 닉네임·uid 는 안 남긴다.
+//  sid 는 index.html(🍮 입구 클릭)과 같은 sessionStorage 키라 게임→상점 흐름이 한 세션으로 이어진다.
+//  어드민 통계 → 활동 → '🛒 상점 깔때기' 카드가 읽는다(admin/js/funnel.js).
+const FUNNEL_SID_KEY = 'oeing_shop_funnel_sid';
+function funnelSid() {
+  try {
+    let s = sessionStorage.getItem(FUNNEL_SID_KEY);
+    if (!s) { s = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(FUNNEL_SID_KEY, s); }
+    return s;
+  } catch { return 'nosession'; }
+}
+async function logFunnel(step, extra = {}) {
+  if (!LIVE_MODE) return;
+  const onceKey = FUNNEL_SID_KEY + ':' + step + (extra.tab ? ':' + extra.tab : '');
+  try { if (sessionStorage.getItem(onceKey)) return; sessionStorage.setItem(onceKey, '1'); } catch {}
+  try {
+    const ctx = await getFirebaseContext();
+    if (!ctx || !ctx.auth || !ctx.auth.currentUser) return;
+    const d = new Date(); const pad = (n) => String(n).padStart(2, '0');
+    await ctx.fsSdk.addDoc(ctx.fsSdk.collection(ctx.db, 'shop_funnel'), {
+      step: String(step).slice(0, 24), ts: Date.now(),
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      platform: window.Capacitor ? 'app' : 'web', sid: funnelSid(),
+      ...(extra.tab ? { tab: String(extra.tab).slice(0, 16) } : {}),
+    });
+  } catch (e) { /* 통계는 실패해도 상점을 막지 않는다 */ }
+}
+
 const CATALOG = {
   color: [
     { key:'pink',   nm:'복숭아', ds:'포근하고 말랑한 코랄빛', price:30, c:'#ff9e91' },
@@ -577,6 +609,7 @@ function applyProfile() {
   });
   const customLink = $('customShopLink');
   if (customLink) {
+    if (!customLink.dataset.funnel) { customLink.dataset.funnel = '1'; customLink.addEventListener('click', () => logFunnel('custom_link')); }
     if (IN_APP && !IAP_READY) customLink.style.display = 'none'; // 앱: Play 결제 없이는 현금 상점으로 안 보낸다
     customParams.set(LIVE_MODE ? 'checkout' : 'preview', '1');
     customLink.href = `custom-shop-preview.html?${customParams}`;
@@ -830,7 +863,7 @@ function renderCatalog() {
     area.innerHTML = sectionHtml(tab, CATALOG[tab]);
   }
   area.querySelectorAll('.item').forEach(el => {
-    el.addEventListener('click', () => selectItem(el.dataset.type, el.dataset.key));
+    el.addEventListener('click', () => { logFunnel('preview'); selectItem(el.dataset.type, el.dataset.key); });
   });
 }
 
@@ -924,6 +957,7 @@ async function buy(type, item) {
     say(`${item.nm} 데려갔다냥! 🎉 다음부턴 무료로 껐다 켤 수 있다냥`);
     return;
   }
+  logFunnel('buy_click');
   if (!confirm(`🍮 ${item.price}개로 ${item.nm}${type === 'frame' ? ' 프레임' : ''}을 구매하고 바로 장착할까요?`)) return;
   try {
     const { auth, fns, fnSdk } = await getFirebaseContext();
@@ -933,6 +967,7 @@ async function buy(type, item) {
       : { action:'buySkin', skinKey:item.key };
     const response = await fnSdk.httpsCallable(fns,'shopAction')(payload);
     const result = (response && response.data) || {};
+    logFunnel('buy_done');
     state.bal = Math.max(0, Number(result.jelly) || 0);
     if (!state.owned[type].includes(item.key)) state.owned[type].push(item.key);
     if (type === 'frame') state.equipped.frame = item.key;
@@ -1052,6 +1087,7 @@ function toast(text) {
 }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   state.tab = t.dataset.tab;
+  logFunnel('tab', { tab: t.dataset.tab });
   document.querySelectorAll('.tab').forEach(x => {
     const selected = x === t;
     x.classList.toggle('on', selected);
@@ -1108,6 +1144,7 @@ $('backBtn').addEventListener('click', () => {
   else location.href = '/';
 });
 if (LIVE_MODE) {
+  logFunnel('enter');
   $('modeBanner').textContent = '🍮 게임으로 모은 젤리로 내 랭킹을 꾸며보세요';
   $('modeBanner').style.background = '#123653';
 } else {

@@ -9,9 +9,10 @@
 //  · 차트는 외부 라이브러리 없이 CSS 막대로 렌더링.
 // ══════════════════════════════════════════════════════════════
 import {
-  db, collection, query, orderBy, limit,
+  db, collection, query, orderBy, limit, where,
   fetchDocs, fmtNum, fmtDuration, escapeHtml, cache, humanError,
 } from './firebase.js';
+import { computeFunnel, lastDates } from './funnel.js';
 import {
   getDailyStatsRange, computeWeeklyMetrics, dailyStatsWriteState,
   countTodayCached, todayNewUsersCount, forceRecomputeRange, SESSION_FETCH_CAP,
@@ -265,7 +266,56 @@ async function loadRetentionData({ force = false } = {}) {
   }
 }
 
+// ── 🛒 상점 깔때기 (최근 7일) — 버튼 클릭 시에만 조회 ──
+//  shop_funnel 문서를 날짜 in(7일) 로 읽는다 — 복합 인덱스 없이 되는 형태. 계산은 funnel.js(순수, 테스트 있음).
+const FUNNEL_DAYS = 7;
+const FUNNEL_FETCH_CAP = 3000;
+async function loadFunnelData({ force = false } = {}) {
+  const el = document.getElementById('funnelResult');
+  setLoading(el, `상점 단계 로그 최근 ${FUNNEL_DAYS}일 조회 중...`);
+  try {
+    if (force) cache.bust('analytics:funnel');
+    const rows = await cache.get('analytics:funnel', () =>
+      fetchDocs(query(collection(db, 'shop_funnel'), where('date', 'in', lastDates(FUNNEL_DAYS)), limit(FUNNEL_FETCH_CAP))));
+    const f = computeFunnel(rows);
+    const p = (v) => (v == null ? '—' : `${v}%`);
+    const bars = (steps, baseLabel) => {
+      const max = Math.max(1, ...steps.map((s) => s.n));
+      return `<div class="mini-list">${steps.map((s) => `
+        <div class="funnel-row" title="웹 ${fmtNum(s.web)} · 앱 ${fmtNum(s.app)}${s.ofPrev == null ? '' : ` · 직전 대비 ${p(s.ofPrev)}`}">
+          <span class="funnel-label">${escapeHtml(s.label)}</span>
+          <span class="funnel-bar"><i style="width:${Math.round(s.n / max * 100)}%"></i></span>
+          <span class="funnel-num">${fmtNum(s.n)}<small>${s.ofBase == null ? '' : p(s.ofBase)}</small></span>
+        </div>`).join('')}
+      </div>
+      <div class="card-note" style="margin-top:4px;">오른쪽 작은 % 는 '${baseLabel}' 대비. 행에 손을 올리면 웹/앱 나눔과 직전 단계 대비가 보여요.</div>`;
+    };
+    const capNote = rows.length >= FUNNEL_FETCH_CAP
+      ? `<div class="card-note">⚠️ 로그 ${FUNNEL_FETCH_CAP}건까지만 읽었어요 — 근사치입니다.</div>` : '';
+    const worst = f.worst
+      ? `<div class="card-note" style="margin:8px 0 6px; color:#fcd34d;">가장 많이 빠지는 구간: <b>${escapeHtml(f.worst.from)} → ${escapeHtml(f.worst.to)}</b> (${fmtNum(f.worst.lost)}명 이탈, 직전 대비 ${p(f.worst.ofPrev)})</div>`
+      : `<div class="card-note" style="margin:8px 0 6px;">표본이 아직 적어(단계당 5명 미만) 이탈 구간을 못 짚어요. 며칠 더 모이면 여기 나와요.</div>`;
+    el.innerHTML = `
+      ${capNote}
+      <div class="card-note" style="margin-bottom:6px;">세션 ${fmtNum(f.sessions)}개 · 최근 ${FUNNEL_DAYS}일</div>
+      <h4 style="margin:6px 0 4px; font-size:13.5px;">🍮 젤리 꾸미기</h4>
+      ${bars(f.jelly, '상점 진입')}
+      ${worst}
+      ${f.tabs.length ? `<div class="card-note" style="margin-bottom:8px;">많이 연 탭: ${f.tabs.slice(0, 5).map((t) => `${escapeHtml(t.tab)} ${fmtNum(t.n)}`).join(' · ')}</div>` : ''}
+      <h4 style="margin:12px 0 4px; font-size:13.5px;">💳 현금 상품</h4>
+      ${bars(f.cash, '현금 상점 링크')}
+      <div class="card-note" style="margin-top:8px; line-height:1.55;">
+        <b>결제 완료</b>는 앱(Google Play)만 잡혀요 — 웹 카카오페이는 완료 신호가 없어서 <b>결제 버튼</b>까지만 보이고, 실제 입금은 주문함에서 확인돼요.<br>
+        <b>입구 클릭</b>은 게임 화면의 🍮 버튼. 상점 진입보다 적으면 상점을 주소로 직접 들어온 사람이 있는 거예요.
+      </div>`;
+  } catch (e) {
+    setError(el, humanError(e));
+  }
+}
+
 export function initAnalyticsTab() {
+  const fnBtn = document.getElementById('funnelLoadBtn');
+  if (fnBtn) fnBtn.addEventListener('click', guardBtn(fnBtn, () => loadFunnelData({ force: cache.peek('analytics:funnel') != null })));
   const btn = document.getElementById('referrerLoadBtn');
   btn.addEventListener('click', guardBtn(btn, () => loadReferrerData({ force: cache.peek('analytics:referrer') != null })));
   const rtBtn = document.getElementById('retentionLoadBtn');
