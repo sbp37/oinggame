@@ -104,15 +104,30 @@ body{display:flex;justify-content:center}.app{width:100%;max-width:430px;min-hei
 
 <div class="buybar"><div class="summary" aria-live="polite"><span id="summaryName">꾸미기 세트 · 무지개 + 네온</span><span id="summaryPrice">1,990원</span></div><small class="fulfillment">결제 확인 후 운영자가 선택한 꾸미기를 적용해요</small><a class="buy" id="kakaoPayBtn" href="https://qr.kakaopay.com/Ej8cZUTdG3e307903" target="_blank" rel="noopener">꾸미기 세트 1,990원 결제하기</a></div>
 </main>
+<script src="./app-bridge.js"></script>
 <script>
 const preview=document.getElementById('rankPreview');const nick=document.getElementById('previewNick');const summary=document.getElementById('summaryName');const summaryPrice=document.getElementById('summaryPrice');const payBtn=document.getElementById('kakaoPayBtn');
 const CUSTOM_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG3e307903';const CAT_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG1ef07932';const BUNDLE_PAY_URL='https://qr.kakaopay.com/Ej8cZUTdG5d204014';
 const CUSTOM_ORDER_PENDING_KEY='oeing_custom_order_pending_v1';
+// ── 앱(Capacitor)에서는 카카오페이 대신 Google Play 결제 ── (2026-09-05, OING_PLATFORM v4)
+// 앱 안에서 카카오페이 링크를 여는 것은 Play 결제 정책 위반이다. 브리지(iap.purchase)가 있으면
+// 결제 버튼이 Play 결제 창을 열고, 서버(shopAction redeemPlayPurchase)가 영수증을 확인해 바로
+// 적용한다 — 운영자 입금 확인 단계가 없다. SKU 는 서버 playBilling.js PLAY_SKUS 와 같아야 한다.
+const IN_APP=!!window.Capacitor;
+const IAP=(window.OING_PLATFORM&&window.OING_PLATFORM.apiVersion>=4&&window.OING_PLATFORM.iap&&typeof window.OING_PLATFORM.iap.purchase==='function')?window.OING_PLATFORM.iap:null;
+const PLAY_SKU={cat:'oing_cat_990',custom:'oing_custom_set_1990',bundle:'oing_bundle_2980'};
+const fulfillNote=document.querySelector('.fulfillment');
+if(IN_APP){
+  // 브리지가 없는 앱(옛 빌드)이면 결제 자체를 막는다 — 카카오페이로 새면 안 된다.
+  fulfillNote.textContent=IAP?'Google Play 로 결제하면 바로 적용돼요':'이 앱 버전에서는 결제할 수 없어요. 앱을 업데이트해주세요';
+  document.getElementById('modeBanner').textContent=IAP?'🛍️ 원하는 꾸미기를 고르고 Google Play 로 결제해요':'⚠️ 앱 업데이트 후 결제할 수 있어요';
+}
 let nickName='무지개',nickKey='rainbow',frameName='네온',frameKey='neon',catName='파란 목도리냥',catKey='blue-scarf',orderType='custom',paymentWindowOpenedAt=0;
 function showOrder(){
-  if(orderType==='cat'){summary.textContent='고양이 스킨 · '+catName;summaryPrice.textContent='990원';payBtn.href=CAT_PAY_URL;payBtn.textContent='고양이 스킨 990원 결제하기';return}
-  if(orderType==='bundle'){summary.textContent='모두 담기 · '+nickName+' + '+frameName+' + '+catName;summaryPrice.textContent='2,980원';payBtn.href=BUNDLE_PAY_URL;payBtn.textContent='모두 담기 2,980원 결제하기';return}
-  summary.textContent='꾸미기 세트 · '+nickName+' + '+frameName;summaryPrice.textContent='1,990원';payBtn.href=CUSTOM_PAY_URL;payBtn.textContent='꾸미기 세트 1,990원 결제하기'
+  if(orderType==='cat'){summary.textContent='고양이 스킨 · '+catName;summaryPrice.textContent='990원';payBtn.href=CAT_PAY_URL;payBtn.textContent='고양이 스킨 990원 결제하기'}
+  else if(orderType==='bundle'){summary.textContent='모두 담기 · '+nickName+' + '+frameName+' + '+catName;summaryPrice.textContent='2,980원';payBtn.href=BUNDLE_PAY_URL;payBtn.textContent='모두 담기 2,980원 결제하기'}
+  else{summary.textContent='꾸미기 세트 · '+nickName+' + '+frameName;summaryPrice.textContent='1,990원';payBtn.href=CUSTOM_PAY_URL;payBtn.textContent='꾸미기 세트 1,990원 결제하기'}
+  if(IN_APP){payBtn.removeAttribute('href');payBtn.removeAttribute('target');payBtn.textContent=IAP?payBtn.textContent.replace('결제하기','Google Play 결제'):'앱 업데이트 후 결제 가능';}
 }
 function setOrderType(next){orderType=next;document.querySelectorAll('[data-order-type]').forEach(btn=>{const selected=btn.dataset.orderType===orderType;btn.classList.toggle('on',selected);btn.setAttribute('aria-pressed',String(selected))});showOrder()}
 const params=new URLSearchParams(location.search);const checkoutMode=params.get('checkout')==='1';
@@ -168,12 +183,52 @@ async function preRegisterOrder(order){
     await fnSdk.httpsCallable(fns,'shopAction')({action:'submitCustomOrder',...order});
   }catch(e){console.warn('주문 선접수 실패(복귀 시 재접수됨):',e)}
 }
+// ── 앱: Google Play 결제 → 서버 영수증 검증 → 즉시 적용 ──
+async function getOrderCtx(){
+  const [appSdk,authSdk,fnSdk]=await Promise.all([
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/12.15.0/firebase-functions.js'),
+  ]);
+  const app=appSdk.getApps().find(x=>x.name==='[DEFAULT]')||appSdk.initializeApp(ORDER_FIREBASE_CONFIG);
+  const auth=authSdk.getAuth(app);
+  await new Promise(resolve=>{let settled=false;const off=authSdk.onAuthStateChanged(auth,()=>{if(!settled){settled=true;off();resolve()}});setTimeout(()=>{if(!settled){settled=true;off();resolve()}},1800)});
+  const fns=fnSdk.getFunctions(app,'asia-northeast3');
+  return {auth,call:(name,payload)=>fnSdk.httpsCallable(fns,name)(payload)};
+}
+let playPurchaseBusy=false;
+async function startPlayPurchase(){
+  if(playPurchaseBusy)return;
+  if(!IAP){alert('이 앱 버전에서는 결제할 수 없어요. 앱을 업데이트해주세요.');return}
+  playPurchaseBusy=true;payBtn.classList.add('busy');
+  const order=createCustomOrder();
+  try{
+    fulfillNote.textContent='주문 접수 중…';
+    const ctx=await getOrderCtx();
+    if(!ctx.auth.currentUser)throw new Error('게임을 한 판 하고 닉네임을 등록한 뒤 구매할 수 있어요');
+    const reg=await ctx.call('shopAction',{action:'submitCustomOrder',...order,source:'play-billing'});
+    const orderId=(reg&&reg.data&&reg.data.orderId)||'';
+    if(!orderId)throw new Error('주문 접수에 실패했어요');
+    fulfillNote.textContent='Google Play 결제 창을 여는 중…';
+    const pur=await IAP.purchase({sku:PLAY_SKU[orderType],orderId});
+    fulfillNote.textContent='결제 확인 중…';
+    await ctx.call('shopAction',{action:'redeemPlayPurchase',orderId,purchaseToken:pur.purchaseToken,productId:pur.productId||PLAY_SKU[orderType]});
+    fulfillNote.textContent='✅ 적용됐어요! 게임으로 돌아갈게요';
+    try{localStorage.removeItem(CUSTOM_ORDER_PENDING_KEY)}catch{}
+    setTimeout(()=>{location.href='./index.html?customOrderReturn=1'},1200);
+  }catch(e){
+    // 취소·실패 — 서버에 남은 pending 주문은 입금 없는 카카오 주문과 같이 어드민 주문함에서 취소된다.
+    fulfillNote.textContent='결제가 완료되지 않았어요: '+((e&&e.message)||e);
+    console.warn('Play 결제 실패:',e);
+  }finally{playPurchaseBusy=false;payBtn.classList.remove('busy')}
+}
 payBtn.addEventListener('click',(event)=>{
   if(!checkoutMode){
     event.preventDefault();
     alert('디자인 미리보기에서는 실제 결제가 진행되지 않아요.');
     return;
   }
+  if(IN_APP){event.preventDefault();startPlayPurchase();return}
   const order=createCustomOrder();
   try{localStorage.setItem(CUSTOM_ORDER_PENDING_KEY,JSON.stringify(order))}catch{}
   preRegisterOrder(order); // fire-and-forget — 결제 새 탭 이동을 막지 않는다

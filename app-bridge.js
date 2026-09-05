@@ -1,22 +1,28 @@
 // ══════════════════════════════════════════════════════════════════════
-//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v3)
+//  app-bridge.js — 오잉게임 플랫폼 브리지 (OING_PLATFORM v4)
 //
 //  이 파일은 "웹에서는 아무 일도 하지 않는 stub"이다.
-//  index.html 은 IS_APP(=!!window.Capacitor)일 때만 아래 훅을 호출하므로,
+//  index.html·상점 페이지는 IS_APP(=!!window.Capacitor)일 때만 아래 훅을 호출하므로,
 //  웹(oinggame.com)에서는 여기 있는 어떤 코드도 실행되지 않는다.
 //
-//  실제 구현(AdMob·Play 게임즈·이메일 문의·오프라인 SDK)은 앱 빌드에서
+//  실제 구현(AdMob·Play 결제·이메일 문의·오프라인 SDK)은 앱 빌드에서
 //  코덱스가 이 파일을 대체해 채운다. 계약은 PLATFORM_HOOKS.md 참고.
 //
-//  ⚠️ 이 파일은 반드시 index.html 의 module script 보다 먼저 로드돼야 한다.
-//     (index.html 상단에 <script src="./app-bridge.js"></script> 로 연결됨)
+//  v4 (2026-09-05) — 운영 결정 "랭킹 합침·기록 보존, 앱 젤리샵 켬(인앱결제)":
+//   · leaderboard.*(Play 게임즈 리더보드)·records.*(앱 로컬 기록) 훅 제거.
+//     앱도 웹과 같은 닉네임·서버 세션·Firebase 랭킹·user_stats 를 쓴다.
+//   · ui.applyAppPolicy 는 더 이상 젤리샵 DOM 을 걷어내지 않는다(후원·후기·문의 게시판만).
+//   · iap.* 신설 — 커스텀샵 현금 상품을 Google Play 결제로 받는다.
 //
-//  ⚠️ 광고·리더보드·문의 훅은 no-op 이라도 안전하다(없으면 그 기능만 빠진다).
+//  ⚠️ 이 파일은 반드시 index.html 의 module script 보다 먼저 로드돼야 한다.
+//     상점 페이지(shop-v2-preview.html, custom-shop-preview.html)도 같은 파일을 로드한다.
+//
+//  ⚠️ 광고·문의·결제 훅은 no-op 이라도 안전하다(없으면 그 기능만 빠진다).
 //     그러나 firebase.loadLocalSdk() 만은 예외다 — 앱에서 이게 SDK 를 돌려주지
 //     않으면 게임이 아예 뜨지 않는다. 앱 빌드는 반드시 실제 구현으로 덮어써야 한다.
 // ══════════════════════════════════════════════════════════════════════
 window.OING_PLATFORM = window.OING_PLATFORM || {
-  apiVersion: 3,
+  apiVersion: 4,
 
   ads: {
     // 앱 광고 초기화 — 실패해도 게임 실행을 막지 않는다.
@@ -29,29 +35,18 @@ window.OING_PLATFORM = window.OING_PLATFORM || {
     setBannerPlacement: () => {},
   },
 
-  leaderboard: {
-    // 앱 전용 — Play 게임즈에 점수 제출. 실패해도 결과 화면은 정상 동작해야 한다.
-    submitClassicScore: async () => {},
-    // 앱 전용 — Play 게임즈에서 랭킹 조회. null 반환 시 빈 상태를 보여준다.
-    loadScores: async () => null,
-  },
-
-  records: {
-    // 앱 전용 로컬 기록 저장 — 앱은 웹 updateUserStats() 경로를 타지 않으므로
-    // 이걸 저장하지 않으면 앱 '내 기록'이 영원히 빈 화면이 된다.
-    // Firebase(rankings·weekly_rankings·user_stats)에는 절대 쓰지 않는다.
-    //  result = { score, maxCombo, clearCount, sessionCats, playTimeSeconds, completedAt }
-    recordClassicResult: () => {},
-    // 앱 '내 기록' 화면이 읽는 스냅샷 (동기 반환).
-    //  { displayName, iconUrl, stats: { playCount, totalPlayTime, firstPlayed, lastPlayed,
-    //    lastScore, bestScore, bestCombo, totalCats, recentScores, daysPlayed, streak, lastPlayDate } }
-    getSnapshot: () => null,
+  iap: {
+    // 앱 전용 — Google Play 결제. sku 는 playBilling.js PLAY_SKUS 와 같은 상품 ID,
+    // orderId 는 submitCustomOrder 가 돌려준 주문 번호(obfuscatedProfileId 로 심어 보낸다).
+    // 성공 시 { purchaseToken, productId, orderId } 를 resolve, 취소·실패는 reject.
+    // 웹 stub 에는 purchase 가 없다 — 상점 페이지는 typeof purchase === 'function' 으로 판별한다.
+    isAvailable: async () => false,
   },
 
   ui: {
-    // 앱 정책 적용 — 상점·후원·후기·문의 게시판 DOM 제거.
+    // 앱 정책 적용 — 후원(카카오페이)·후기·문의 게시판 DOM 제거. 젤리샵은 남긴다(v4).
     // ⚠️ #rankModeFriends 는 DOM 에서 삭제하지 말고 CSS 로만 숨긴다
-    //    (setActiveRankModeBtn() 이 계속 참조한다).
+    //    (setActiveRankModeBtn() 이 계속 참조한다). v4 에서는 친구 랭킹도 앱에서 쓴다.
     applyAppPolicy: () => {},
   },
 

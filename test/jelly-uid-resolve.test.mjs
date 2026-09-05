@@ -188,7 +188,7 @@ test('⑧ 자동 연결을 접속할 때와 젤리샵 진입 때 시도한다', 
   // 이미 연결됐거나 앱이면 서버를 부르지 않는다(비용 0).
   const auto = game.slice(game.indexOf('async function autoAdoptLegacy('));
   const autoBody = auto.slice(0, auto.indexOf('\n}'));
-  assert.match(autoBody, /IS_APP \|\| !MY_UID \|\| isUidLinked\(\) \|\| !loadNickname\(\)/);
+  assert.match(autoBody, /!MY_UID \|\| isUidLinked\(\) \|\| !loadNickname\(\)/); // v4: 앱도 같은 계정 체계 — IS_APP 가드 없음
 
   // 사실과 다른 옛 안내("점수를 한 번 등록하면 자동으로 연결돼요")는 남아 있으면 안 된다 —
   // 점수 제출은 계정 연결을 만들지 않는다.

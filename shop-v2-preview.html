@@ -433,12 +433,19 @@ body { max-width:430px; margin:0 auto; min-height:100vh; padding-bottom:96px; }
 
 <div class="toast" id="toast"></div>
 
+<script src="./app-bridge.js"></script>
 <script>
 // 실제 오픈은 이 파일과 index.html의 ENABLE_JELLY_SHOP을 함께 켜야 한다.
 // 지금은 직접 live=1을 붙여도 구매가 일어나지 않는 안전 상태다.
 const ENABLE_LIVE_SHOP = true;
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const LIVE_MODE = ENABLE_LIVE_SHOP && PAGE_PARAMS.get('live') === '1';
+// 앱(Capacitor) 판별 — index.html 과 같은 한 줄. 젤리 구매(무료 재화)는 앱에서도 그대로 되지만,
+// 현금 상품(커스텀샵)은 Play 결제 브리지(OING_PLATFORM.iap.purchase)가 있을 때만 보낸다.
+// 옛 브리지(v3)로 빌드된 앱이 이 페이지를 열면 카카오페이로 새지 않게 링크를 숨긴다.
+const IN_APP = !!window.Capacitor;
+const IAP_READY = !!(window.OING_PLATFORM && window.OING_PLATFORM.apiVersion >= 4
+  && window.OING_PLATFORM.iap && typeof window.OING_PLATFORM.iap.purchase === 'function');
 const FIREBASE_CONFIG = {
   apiKey:'AIzaSyBzDEJyVEUtrbIeAqwTwbF9FszEmtAw0jg', authDomain:'oing-game.firebaseapp.com',
   projectId:'oing-game', storageBucket:'oing-game.firebasestorage.app',
@@ -570,6 +577,7 @@ function applyProfile() {
   });
   const customLink = $('customShopLink');
   if (customLink) {
+    if (IN_APP && !IAP_READY) customLink.style.display = 'none'; // 앱: Play 결제 없이는 현금 상점으로 안 보낸다
     customParams.set(LIVE_MODE ? 'checkout' : 'preview', '1');
     customLink.href = `custom-shop-preview.html?${customParams}`;
   }

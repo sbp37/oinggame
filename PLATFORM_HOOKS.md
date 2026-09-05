@@ -1,4 +1,11 @@
-# OING_PLATFORM 훅 계약 (apiVersion: 3)
+# OING_PLATFORM 훅 계약 (apiVersion: 4)
+
+> **v4 (2026-09-05) — 운영 결정 「랭킹 합침·기록 보존, 앱 젤리샵 켬(인앱결제)」**
+> · 앱도 웹과 **같은** 닉네임·서버 세션(`startSession`/`submitScore`)·Firebase 랭킹·`user_stats`·젤리샵을 쓴다.
+> · `leaderboard.*`(Play 게임즈 리더보드)·`records.*`(앱 로컬 기록) 훅은 **계약에서 제거**됐다.
+> · `ui.applyAppPolicy()` 는 젤리샵 DOM 을 더 이상 걷어내지 않는다.
+> · `iap.*` 신설 — 커스텀샵 현금 상품을 Google Play 결제로 받는다(§11).
+> · 웹 기존 기록은 전부 보존된다. 앱 유저는 웹과 같은 익명 uid + 닉네임으로 랭킹에 들어간다.
 
 오잉게임은 **웹(oinggame.com)** 과 **안드로이드 앱(오잉게임 클래식)** 이 같은
 `index.html` 을 공유한다. 플랫폼별로 달라야 하는 동작은 전부 이 문서의 훅을 통해서만
@@ -29,8 +36,8 @@ const IS_APP = !!window.Capacitor;
 <script type="module">
   const IS_APP = !!window.Capacitor;
   const PLATFORM = window.OING_PLATFORM;
-  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 3)) {
-    throw new Error('OING_PLATFORM v3가 필요합니다.');
+  if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 4)) {
+    throw new Error('OING_PLATFORM v4가 필요합니다.');
   }
   …
 </script>
@@ -49,8 +56,7 @@ const IS_APP = !!window.Capacitor;
 
 **모든 훅은 실패해도 게임 진행을 막지 않는다(fail-open).**
 훅 호출부는 전부 `try`/`catch` 또는 `.catch()` 로 감싸여 있고, 실패 시 `console.warn` 만 남긴다.
-단 하나의 예외는 **랭킹**으로, 앱에서 Play 게임즈 조회·제출이 실패해도
-**Firebase 랭킹으로 폴백하지 않는다**(아래 3·4번 참고).
+(v3 의 "앱 랭킹은 Play 게임즈 단독, Firebase 폴백 금지" 예외는 v4 에서 사라졌다 — 앱 랭킹이 곧 Firebase 랭킹이다.)
 
 ---
 
@@ -148,82 +154,17 @@ function restoreAppBanner() {
 
 ---
 
-## 4. `await PLATFORM.leaderboard.loadScores(options)`
+## 4·5. ~~`PLATFORM.leaderboard.*`~~ — v4 에서 제거
 
-| 항목 | 내용 |
-|---|---|
-| 인자 | `{ period: 'weekly' \| 'all', collection: 'public' }` |
-| 반환 | 아래 형식 또는 `null` |
-| 호출 시점 | 앱에서 랭킹 화면을 렌더할 때 (`renderRankingInner` 최상단) |
-| 목적 | 앱 랭킹을 Google Play 게임즈에서 가져온다 |
-| 실패 처리 | `catch` 후 `null` — **Firebase 랭킹으로 폴백하지 않고** 빈 상태를 보여준다 |
+Play 게임즈 리더보드 조회(`loadScores`)·제출(`submitClassicScore`)은 **더 이상 호출되지 않는다.**
+앱의 `endGame()` 은 `ads.recordClassicGameComplete()` 만 부르고 웹과 같은 Firebase 저장 경로를
+그대로 탄다(닉네임 등록 → `submitScore` 서버 세션 판정 → `rankings`/`weekly_rankings`).
+랭킹 화면도 웹의 시상대·주간·전체·친구 탭을 그대로 그린다. `#rankModeFriends` 도 앱에서 쓴다.
 
-**반환 형식**
+앱 저장소의 브리지는 이 두 훅을 **지워도 되고 남겨도 된다** — index.html 이 부르지 않는다.
+Play 게임즈 로그인·업적은 이 계약 밖이다(앱이 독자적으로 쓰는 건 무방).
 
-```js
-{
-  playerName: string,
-  playerId: string,
-  scores: [
-    {
-      rank: number,
-      score: number,
-      displayName: string,
-      playerId: string,
-      iconUrl: string,
-      isCurrentPlayer: boolean,
-      timestamp: number
-    }
-  ],
-  currentScore: { …위와 동일…, isCurrentPlayer: true } | null
-}
-```
-
-**앱에서 사용하지 않는 것**
-
-Firebase `rankings` · `weekly_rankings` · 웹 닉네임 랭킹 · 친구 랭킹 · Firebase 폴백.
-
-**렌더 구현 상태** — `renderAppLeaderboard(data)` 는 `#rankList` 에 목록을 그리고,
-본인 행에 `.rank-row.me` 클래스를 붙인다(웹 CSS 와 동일).
-앱에서 쓰지 않는 웹 전용 영역은 렌더 시 `display:none` 으로 정리한다:
-`#podiumWrap` · `#podiumFloor` · `#myRankInfo` · `#myWeeklyLink` ·
-`#weeklyThanksToggle` · `#weeklyThanksDisplay` · `#weekSpurtBanner`
-
-**미완** — 웹의 시상대(1~3위) 연출 통합은 앱 실기기에서 실제 Play 게임즈 데이터를
-보며 마감한다. 데이터 계약(위 형식)은 확정이다.
-
-**친구 랭킹** — 앱은 사용하지 않는다. `applyAppPolicy()` 가 `#rankModeFriends` 를
-숨기고, index.html 의 클릭 핸들러 진입부에도 `if (IS_APP) return;` 가드가 있어
-DOM 조작으로 눌러도 전체 랭킹이 친구 랭킹처럼 표시되지 않는다.
-
-> ⚠️ **`#rankModeFriends` 를 DOM 에서 삭제하면 안 된다.**
-> `setActiveRankModeBtn()` 이 계속 이 요소를 참조하므로 제거하면 랭킹 탭 전환이 깨진다.
-> **반드시 CSS(`display:none`)로만 숨긴다.**
-
----
-
-## 5. `await PLATFORM.leaderboard.submitClassicScore(score)`
-
-| 항목 | 내용 |
-|---|---|
-| 인자 | `score` — 0 이상의 정수형 최종 점수 |
-| 반환 | `Promise<void>` |
-| 호출 시점 | `endGame()` 안, `isFreeMode` 분기 뒤 · 1번 훅 바로 다음 |
-| 목적 | 앱 점수를 Play 게임즈 리더보드에 제출 |
-| 실패 처리 | `.catch()` 로 경고만 — 결과 화면·재시작은 정상 동작 |
-
-**중요**
-
-- 앱 랭킹은 기존 웹 기록 없이 **새로 시작**한다.
-- 앱 점수를 Firebase `rankings` / `weekly_rankings` 에 저장하지 않는다.
-- Play 게임즈 제출 실패 시 **Firebase 랭킹으로 폴백 금지**.
-- 이 훅 블록은 **반드시 `return` 으로 끝난다.** return 하지 않으면 아래 웹
-  `savedNick`/Firebase 저장 경로가 이어서 실행돼 **점수가 양쪽에 이중 저장**된다.
-- 앱에서는 닉네임 입력(`#nickSection2`)을 숨기고 `#nickDone` 에 등록 상태를 표시한다
-  (등록 중 → 등록 완료 / 실패 안내).
-
-> 참고: 웹의 점수 등록은 닉네임 입력(`#submitScore` 버튼) 흐름을 그대로 쓴다.
-> 앱은 Play 게임즈가 신원을 제공하므로 그 흐름을 타지 않고 `endGame()` 에서 바로 제출한다.
+**기록 보존** — 통합 전 앱의 Play 게임즈 점수는 Firebase 로 옮기지 않는다(운영 결정: 웹 기록 보존, 앱은 웹 체계로 새 출발).
 
 ---
 
@@ -234,16 +175,19 @@ DOM 조작으로 눌러도 전체 랭킹이 친구 랭킹처럼 표시되지 않
 | 인자 | 없음 |
 | 반환 | 없음 |
 | 호출 시점 | module script 실행 완료 후 다음 틱 (모든 DOM 리스너 연결 완료 시점), **1회** |
-| 목적 | 앱에서 상점·후원·후기·기존 문의 게시판 DOM 제거 |
+| 목적 | 앱에서 **후원(카카오페이)·후기·기존 문의 게시판** DOM 제거 — 젤리샵은 남긴다(v4) |
 | 실패 처리 | `try`/`catch` 로 감싸 무시 |
 
-**DOM 제거 대상 (app-bridge.js 가 담당)**
+**DOM 제거 대상 (app-bridge.js 가 담당) — v4**
 
-`#jellyShopBtn` · `#jellyBalanceBtn` · `#skinOpenBtn` · `#supportTopBtn` ·
-`#donateLink` · `#snackBtn` · 젤리 상점 오버레이 · 후원 오버레이 · 스킨 구매 오버레이 ·
-카카오페이 외부 링크 · `#contactOverlay` · `#feedbackBoardOverlay` ·
-`#feedbackWriteOverlay` · `#myFeedbackOverlay` · `#replyNotifyBanner` ·
-`.review-entry-chip` · `#reviewBoardOverlay` · `#reviewWriteOverlay` · `#reviewPromptCard`
+`#donateLink` · `#snackBtn` · 후원 오버레이 · 카카오페이 외부 링크(`qr.kakaopay.com`) ·
+`#contactOverlay` · `#feedbackBoardOverlay` · `#feedbackWriteOverlay` · `#myFeedbackOverlay` ·
+`#replyNotifyBanner` · `.review-entry-chip` · `#reviewBoardOverlay` · `#reviewWriteOverlay` · `#reviewPromptCard`
+
+**⛔ v4 에서 제거하면 안 되는 것(젤리샵 입구·잔액)** — `#supportTopBtn` · `#jellyShopBtn` · `#jellyBalanceBtn` ·
+`#skinOpenBtn`(젤리샵으로 연결됨) · 젤리 상점 오버레이. 젤리는 출석·초대·환영으로만 얻는 무료 재화라
+Play 결제 정책과 무관하고, 현금 상품은 §11 의 Play 결제로만 간다.
+`#skinOverlay`(옛 유료 스킨 오버레이)는 index.html 의 `openSkinOverlay()` 가 앱에서 즉시 return 하므로 그대로 두면 된다.
 
 `#contactBtnGame` 은 **제거하지 않는다.** 앱에서 이메일 문의 버튼으로 재사용한다.
 
@@ -251,10 +195,10 @@ DOM 조작으로 눌러도 전체 랭킹이 친구 랭킹처럼 표시되지 않
 
 | 함수 | 앱 동작 |
 |---|---|
-| `openJellyShop()` | 즉시 `return` |
+| `openJellyShop()` | **v4: 웹과 동일하게 동작** (`shop-v2-preview.html?live=1` 로 이동) |
 | `openDonateOverlay()` | 즉시 `return` |
-| `openSkinOverlay()` | 즉시 `return` |
-| 랭킹 `.rank-bubble-empty` 클릭 | 즉시 `return` (상점 유도 차단) |
+| `openSkinOverlay()` | 즉시 `return` (옛 유료 스킨 오버레이 — 현금 상품은 §11 로) |
+| 랭킹 `.rank-bubble-empty` 클릭 | **v4: 웹과 동일** (젤리샵 유도) |
 | `renderFeedbackBoard()` | 즉시 `return` |
 | `openMyFeedbackDetail()` | 즉시 `return` |
 | `checkUnreadReply()` | 즉시 `return` |
@@ -374,82 +318,13 @@ Firebase 로드 블록에 함께 넣는다.
 
 ---
 
-## 9-B. `PLATFORM.records.*` — 앱 전용 로컬 기록 (v3 신설)
+## 9-B. ~~`PLATFORM.records.*`~~ — v4 에서 제거
 
-앱의 `endGame()` 분기는 Play 게임즈 제출 후 **`return` 으로 끝나므로**
-웹의 `updateUserStats()` 가 실행되지 않는다. 그 결과 앱의 '내 기록' 화면이
-`loadNickname()` + `oeing_local_stats_{nickname}` 을 읽어 **빈 기록**으로 나온다.
+앱의 `endGame()` 이 더 이상 `return` 으로 끊기지 않고 웹의 `updateUserStats()` 를 그대로 타므로,
+'내 기록'·레벨·오늘 목표는 웹과 같은 `user_stats`/로컬 통계에서 나온다. `recordClassicResult` /
+`getSnapshot` 은 호출되지 않는다. `openMyInfoOverlay()` 도 닉네임 수정·기록 삭제·PIN/연결을 앱에서 숨기지 않는다.
 
-`return` 을 웹 저장 코드 아래로 옮기는 것은 **금지**다 — Firebase 이중 저장이 생긴다.
-그래서 앱 전용 기록 경로를 따로 둔다.
-
-### `PLATFORM.records.recordClassicResult(result)`
-
-| 항목 | 내용 |
-|---|---|
-| 인자 | 아래 형식 |
-| 반환 | 없음 (동기) |
-| 호출 시점 | `endGame()` 의 `isFreeMode` return 뒤 → `ads.recordClassicGameComplete()` **직후** → Play 게임즈 제출 **전** |
-| 목적 | 앱 전용 로컬 기록 저장 |
-| 실패 처리 | `try`/`catch` 로 감싸 무시 |
-
-```js
-{
-  score: number,
-  maxCombo: number,
-  clearCount: number,
-  sessionCats: number,
-  playTimeSeconds: number,
-  completedAt: number
-}
-```
-
-`playTimeSeconds` 는 웹 경로에서만 계산되므로 index.html 이 훅 지점에서
-같은 식(`Math.round((Date.now() - gameStartTime) / 1000)`)으로 직접 구해 넘긴다.
-
-**Firebase `rankings` · `weekly_rankings` · `user_stats` 에는 쓰지 않는다.**
-
-### `PLATFORM.records.getSnapshot()`
-
-| 항목 | 내용 |
-|---|---|
-| 인자 | 없음 |
-| 반환 | 아래 형식 또는 `null` (**동기** 반환) |
-| 호출 시점 | `openMyInfoOverlay()` 진입 시, 앱에서만 |
-| 목적 | 앱 '내 기록' 화면 데이터 |
-| 실패 처리 | `catch` 후 `null` — 웹 로컬통계로 폴백하지 않고 빈 값으로 표시 |
-
-```js
-{
-  displayName: string,
-  iconUrl: string,
-  stats: {
-    playCount: number, totalPlayTime: number,
-    firstPlayed: number, lastPlayed: number,
-    lastScore: number, bestScore: number, bestCombo: number,
-    totalCats: number, recentScores: number[],
-    daysPlayed: number, streak: number, lastPlayDate: string
-  }
-}
-```
-
-앱에서는 `loadNickname()` 과 `oeing_local_stats_{nickname}` 대신 이 스냅샷을 쓴다.
-`iconUrl` 이 있으면 아바타로 표시하고, 없으면 기존 고양이 아이콘을 쓴다.
-
-### 앱에서 숨기는 웹 계정 기능
-
-`openMyInfoOverlay()` 가 앱에서 아래를 `display:none` 처리한다.
-
-| 요소 | 내용 |
-|---|---|
-| `#myiEditBtn` | 닉네임 수정 |
-| `#deleteMyRankBtn` | 기록 삭제 |
-| `#myiLink` | PIN / 연결 정보 |
-
-추가로 `syncPlayXpFromServer()` 진입부에 `if (IS_APP) return;` 가드가 있다
-(앱은 웹 계정 XP 미러를 쓰지 않는다).
-
-**최고점수·최고콤보·플레이 수·고양이 수 등 일반 기록은 앱에서도 정상 표시된다.**
+**⚠️ v3 앱에 남아 있던 로컬 기록은 옮기지 않는다** — 통합 후 첫 판부터 웹 체계로 쌓인다.
 
 ---
 
@@ -481,13 +356,58 @@ Firebase 로드 블록에 함께 넣는다.
 
 ---
 
+## 11. `PLATFORM.iap.*` — Google Play 결제 (v4 신설)
+
+앱 안에서 카카오페이 링크를 여는 것은 Play 결제 정책 위반이다. 커스텀샵(`custom-shop-preview.html`)의
+현금 상품 3종은 앱에서 **반드시** 이 훅으로만 결제한다. 젤리샵(무료 재화)은 이 훅과 무관하다.
+
+**상점 페이지도 `app-bridge.js` 를 로드한다** — `shop-v2-preview.html` · `custom-shop-preview.html` 상단에
+`<script src="./app-bridge.js"></script>` 가 있다. 앱은 `!!window.Capacitor` 로 판별하고, 브리지가
+`apiVersion >= 4` 이며 `typeof iap.purchase === 'function'` 일 때만 결제를 연다. 옛(v3) 브리지로 빌드된 앱은
+젤리샵에서 커스텀샵 링크가 숨겨지고, 커스텀샵을 직접 열어도 "앱 업데이트 후 결제" 로 막힌다.
+
+### `await PLATFORM.iap.purchase({ sku, orderId })`
+
+| 항목 | 내용 |
+|---|---|
+| 인자 | `sku`: Play Console 상품 ID(아래 표) · `orderId`: `submitCustomOrder` 가 돌려준 주문 번호 |
+| 반환 | `{ purchaseToken, productId, orderId }` — 결제 성공 시. 취소·실패는 **reject** |
+| 요구사항 | `orderId` 를 `obfuscatedProfileId`(BillingFlowParams.setObfuscatedProfileId) 로 심어 보낸다. 서버가 영수증의 이 값과 주문 번호를 대조한다 |
+| 소비/확인 | **acknowledge 는 서버가 한다**(Developer API). 클라이언트에서 consume 하지 않는다 — 꾸미기는 비소모성이다 |
+
+| 주문 종류(`orderType`) | SKU | 가격 |
+|---|---|---|
+| `cat` 고양이 스킨 | `oing_cat_990` | 990원 |
+| `custom` 닉네임 효과 + 테두리 | `oing_custom_set_1990` | 1,990원 |
+| `bundle` 모두 담기 | `oing_bundle_2980` | 2,980원 |
+
+SKU 는 서버 `playBilling.js PLAY_SKUS` · 커스텀샵 `PLAY_SKU` 와 **세 곳이 같아야** 한다.
+
+### 서버 검증 — `shopAction { action: 'redeemPlayPurchase', orderId, purchaseToken, productId }`
+
+서버가 Google Play Developer API(`purchases.products.get`)로 영수증을 직접 조회해
+`purchaseState === 0`, SKU ↔ 주문 종류 일치, 영수증의 `obfuscatedExternalProfileId === orderId`,
+주문 uid === 호출자 uid, purchaseToken 미사용을 확인한 뒤 `buildFulfillmentPatch` 로 **즉시 발송**한다.
+운영자 입금 확인 단계가 없다. 같은 토큰 재호출은 `duplicate: true` 로 무해하다.
+
+### 운영자 설정 절차 (한 번만)
+
+1. Play Console → 설정 → API 액세스 → 서비스 계정 연결, 권한 「주문 및 구독 보기·관리」.
+2. 그 서비스 계정 JSON 키를 Firebase 시크릿으로: `firebase functions:secrets:set PLAY_BILLING_SA_KEY`
+3. `functions/index.js` 의 `shopAction` onCall 옵션에 `secrets: ['PLAY_BILLING_SA_KEY']` 추가,
+   패키지명은 `PLAY_PACKAGE_NAME` 환경변수(`.env`)로. **둘이 없으면 redeem 은 "아직 준비되지 않았어요" 로 거부**되고 웹엔 영향이 없다.
+4. Play Console 에 위 SKU 3개를 비소모성 인앱 상품으로 등록(가격 동일).
+5. 앱 브리지에 `iap.purchase` 구현(Play Billing Library 6+ 또는 Capacitor 결제 플러그인), 실기기에서 테스트 트랙으로 검증.
+
+---
+
 ## 계약 변경 절차
 
 훅 이름·인자·반환 형식은 **이 문서를 함께 고치지 않고 바꾸지 않는다.**
 
 1. 변경이 필요하면 먼저 이 문서에서 해당 항목을 고치고 `apiVersion` 을 올린다.
 2. `app-bridge.js` 의 `apiVersion` 을 같은 값으로 올린다.
-3. index.html 의 버전 검사(`PLATFORM.apiVersion !== 1`)를 새 값으로 고친다.
+3. index.html 의 버전 검사(`PLATFORM.apiVersion !== 4`)를 새 값으로 고친다.
 4. 앱 저장소를 동기화하고 실기기에서 확인한다.
 
 `apiVersion` 이 맞지 않으면 앱은 시작 시점에 즉시 예외를 던진다.
