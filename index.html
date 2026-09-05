@@ -1592,16 +1592,24 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
    기본색으로 보였다(2026-08-31 실사용 보고). 기본색은 .podium-nick-text 가 갖고
    스킨 클래스는 뒤에 정의돼 있어 같은 특정도로 자연스럽게 이긴다.
    크기·굵기만 순위별로 준다. */
-.rank1 .podium-nick-text { font-size: 16px; font-weight: 900; }
-.rank2 .podium-nick-text { font-size: 15px; font-weight: 900; }
-.rank3 .podium-nick-text { font-size: 15px; font-weight: 900; }
+/* 크기 이력 — 운영자가 화면 보고 조정한다(2026-09-05: 16/15/15 → 14.5/13.5/13.5).
+   "잘 보이는 것도 중요하지만 잘려 보이면 안 된다" — 칸(rank1 98px)에 들어가는 게 우선. */
+.rank1 .podium-nick-text { font-size: 14.5px; font-weight: 900; }
+.rank2 .podium-nick-text { font-size: 13.5px; font-weight: 900; }
+.rank3 .podium-nick-text { font-size: 13.5px; font-weight: 900; }
 .podium-score {
   font-size: 16px; font-weight: 900; margin-bottom: 8px; color: var(--ivory);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; padding: 0 2px;
+  /* 점수는 숫자뿐이라 폭이 일정한 tabular-nums 가 맞고, 자간을 좁혀 한 글자라도 더 들어가게 한다.
+     1위 칸 안쪽은 94px 뿐인데 7자리(1,984,079pt = 9글자)까지 나온다(2026-09-05 실측). */
+  font-variant-numeric: tabular-nums; letter-spacing: -0.4px;
 }
-.rank1 .podium-score { color: var(--ivory); font-size: 21px; }
-.rank2 .podium-score { color: var(--ivory); font-size: 16px; }
-.rank3 .podium-score { color: var(--ivory); font-size: 16px; }
+/* 크기 이력 — 2026-09-05: 21/16/16 → 17/14.5/14.5.
+   21px 는 9글자에 126px 이 필요해 94px 칸을 넘겼다("1등 점수가 .. 로 나온다"는 운영 보고).
+   아래 fitPodiumScores 가 넘칠 때 더 줄여 주지만, 기본값부터 들어가야 대부분의 판에서 안 줄어든다. */
+.rank1 .podium-score { color: var(--ivory); font-size: 17px; }
+.rank2 .podium-score { color: var(--ivory); font-size: 14.5px; }
+.rank3 .podium-score { color: var(--ivory); font-size: 14.5px; }
 
 .podium-base {
   width: 100%; border-radius: 6px;
@@ -1733,7 +1741,7 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
 .rank-nick-line .rank-title-count, .rank-nick-line .rank-hot { margin-left:0; flex-shrink:0; }
 /* 랭킹 닉네임 크기: 원래 14.5px → 한 번 키웠더니(16~17.5) 이번엔 너무 커졌다는 피드백.
    그 사이값으로 내린다. 그래도 원래보다는 크다. */
-.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(15.2px, 4.2vw, 16.4px); line-height:1.18; }
+.rank-identity .rank-nick { width:auto; min-width:0; flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; font-size:clamp(14.2px, 3.9vw, 15.2px); line-height:1.18; }
 .rank-meta { display:flex; align-items:center; gap:3px; max-width:100%; min-height:14px; overflow:hidden; white-space:nowrap; }
 .rank-meta:empty { display:none; }
 .rank-title-count { color:#DA9845; font-size:9.5px; line-height:1; font-weight:800; white-space:nowrap; flex-shrink:0; }
@@ -1776,9 +1784,9 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .rank-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px 0; }
 @media (max-width: 360px) {
   #panelRank .podium-wrap { gap:8px; }
-  #panelRank .rank1 .podium-nick-text { font-size:14px; }
+  #panelRank .rank1 .podium-nick-text { font-size:13px; }
   #panelRank .rank2 .podium-nick-text,
-  #panelRank .rank3 .podium-nick-text { font-size:13px; }
+  #panelRank .rank3 .podium-nick-text { font-size:12.5px; }
   #panelRank .rank-row { gap:3px; padding-left:6px; padding-right:7px; }
   #panelRank .rank-change { min-width:26px; max-width:26px; }
   #panelRank .rank-tail { min-width:66px; }
@@ -2009,18 +2017,20 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
    2차: 농도만 낮춤 → 여전히 링이 두꺼워 보인다
    3차: 링·색조를 전부 제거하고 테두리는 원래의 얇은 1px 로 되돌린 뒤 글로우만 확대
         (14px 52% + 30px spread2 20%) → "글로우가 너무 멀리까지 번진다, 너무 튄다"
-   4차(현재): 선 두께는 그대로 두고 번지는 '거리'만 줄인다.
-        · 넓은 헤일로의 spread 2px 를 없애고 30px → 17px
-        · 가까운 광 14px → 9px, 대신 농도는 52% → 58% 로 살짝 올려
-          테두리 바로 옆은 여전히 또렷하게
+   4차: 선 두께는 그대로 두고 번지는 '거리'만 줄임 (9px 58% + 17px 17%)
+        → "너무 강하게 했더니 등수별 위계가 없고 정신없다"(2026-09-05)
+   5차(현재): 세기를 한 단계 더 낮춘다 — 9px 58% → 6px 42%, 17px 17% → 12px 11%.
+        산 사람의 색은 그대로 알아볼 수 있으면서, 화면을 먼저 읽는 건
+        Top10(금색)·Top30(보라) 등급 테두리가 되게 한다. 프레임은 그 위에 얹히는
+        '개인 취향' 표시지 등수보다 앞설 이유가 없다.
    빛이 줄 밖으로 새 나가지 않고 테두리에 붙어 있어, 옆줄까지 밝아 보이지 않는다. */
 .rank-row[class*="frame-"] {
   position: relative;
   border-color: var(--frame-color, var(--border));
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.05),
-    0 0 9px color-mix(in srgb, var(--frame-color, transparent) 58%, transparent),
-    0 0 17px color-mix(in srgb, var(--frame-color, transparent) 17%, transparent),
+    0 0 6px color-mix(in srgb, var(--frame-color, transparent) 42%, transparent),
+    0 0 12px color-mix(in srgb, var(--frame-color, transparent) 11%, transparent),
     0 2px 5px rgba(0,0,0,0.22);
 }
 /* 프레임을 산 내 행도 남의 행과 똑같이 프레임 색으로만 빛난다 — 내 행 특례 없음. */
@@ -11607,25 +11617,39 @@ async function showMyRankCardIfBelowCut(myNick, isWeek) {
 // isTodayNew: 오늘(KST) 진짜 신규 가입한 닉네임인지 (todayNewSet 기반). 순위가 처음 발견 시점과
 //   그대로면 NEW를 계속 보여주고, 오르거나 내리면(diff !== 0) 그 즉시 ▲▼로 자연스럽게 넘어간다.
 // 시상대 점수가 칸을 넘치면 그 칸의 글자만 줄여 잘리지 않게 한다 (2026-09-05).
-//  · 사고: 1위가 198409pt 가 되자 "19840…" 으로 잘렸다(.podium-score 는 text-overflow:ellipsis).
-//  · 순위별 기본 크기(1위 21px, 2·3위 16px)는 그대로 둔다 — 안 넘치면 아무것도 안 한다.
-//    운영에서 "1~3등 글씨 크기는 건드리지 말라"고 했으므로, 잘릴 때만 그 칸을 줄인다.
-//  · 1위 칸은 98px 이라 7자리(1,984,079pt)까지 들어가려면 12px 까지는 열어 둬야 한다.
+//  · 사고: 1위 점수가 7자리가 되자 "198407…" 으로 잘렸다(.podium-score 는 text-overflow:ellipsis).
+//  · 이건 '마지막 안전망'이다. 기본 크기(1위 17px, 2·3위 14.5px)부터 칸에 들어가야 하고,
+//    여기서 줄이는 건 아주 긴 점수(10자리 이상)일 때뿐이다. 안 넘치면 아무것도 안 한다.
 //
-//  ⚠️ 한 번만 재면 안 된다 (2026-09-05, 1차 수정이 실제로 안 먹은 이유):
-//   ① 랭킹 패널이 아직 안 보이는 상태에서 그리면 clientWidth 가 0 이라 '넘침'을 못 재고,
-//      나중에 화면에 뜨면 그대로 잘린 채 남는다.
-//   ② 웹폰트(Noto Sans KR)가 늦게 도착하면 글자 폭이 커져서, 먼저 잰 결과가 무의미해진다.
-//  그래서 폭이 0 이면 건너뛰고, 다음 프레임과 폰트 로드 완료 시점에 한 번씩 더 잰다.
+//  ⚠️ 한 번만 재면 안 된다 — 1·2차 수정이 실제 화면에서 안 먹은 이유:
+//   ① 랭킹 패널이 아직 안 보이면 clientWidth 가 0 이라 '넘침'을 못 재고, 나중에 뜨면 잘린 채 남는다.
+//   ② 웹폰트(Noto Sans KR)가 늦게 도착하면 글자 폭이 커져 먼저 잰 결과가 무의미해진다.
+//   ③ 폰트를 media="print" onload 로 늦게 붙이기 때문에, document.fonts.ready 가
+//      "아직 대기 중인 폰트가 없다"며 그 스타일시트가 붙기도 전에 resolve 될 수 있다.
+//      실제로 이게 범인이었다 — 폰트가 나중에 넓어졌는데 다시 재는 사람이 없었다.
+//  그래서 폭이 0 이면 건너뛰고, 다음 프레임 · fonts.ready · 그 뒤 0.4초 · 1.5초에 한 번씩 더 잰다.
+//  대상은 시상대 3칸뿐이라 이 정도 반복은 화면에 부담이 되지 않는다.
+//  ⚠️ 넘침 판정에 scrollWidth > clientWidth 를 쓰면 안 된다 (2026-09-05 실측으로 확인).
+//   text-overflow:ellipsis 가 걸린 칸은 브라우저가 "…" 까지 넣어 칸에 맞춘 뒤
+//   scrollWidth 를 clientWidth 와 같게 보고한다. 그래서 눈에는 "198407…" 으로 잘려 보이는데
+//   코드는 '안 넘쳤다'고 판단해 그대로 뒀다 — 두 번의 수정이 화면에서 안 먹은 진짜 이유다.
+//   대신 max-width 를 잠깐 풀어 '자를 수 없을 때의 진짜 너비'를 재고 칸 너비와 비교한다.
+function podiumScoreNaturalWidth(el) {
+  const prev = el.style.maxWidth;
+  el.style.maxWidth = 'none';
+  const w = el.scrollWidth;   // 제한이 없으니 글자 전체 너비(안쪽 여백 포함)
+  el.style.maxWidth = prev;
+  return w;
+}
 function fitPodiumScoresOnce(podiumEl) {
   if (!podiumEl) return;
   podiumEl.querySelectorAll('.podium-score').forEach((el) => {
     el.style.fontSize = '';
-    if (!el.clientWidth) return; // 아직 화면에 없다 — 다음 기회에 잰다
+    const avail = el.parentElement ? el.parentElement.clientWidth : 0; // 시상대 칸(rank1 98px)
+    if (!avail) return; // 아직 화면에 없다 — 다음 기회에 잰다
     const base = parseFloat(getComputedStyle(el).fontSize) || 16;
-    // scrollWidth 는 넘친 실제 너비, clientWidth 는 보이는 폭. 1px 여유를 둔다.
-    // size > 12 (>= 아님): 12 에서 한 번 더 돌면 11.5px 이 돼 하한선을 넘는다.
-    for (let size = base; size > 12 && el.scrollWidth > el.clientWidth + 1; size -= 0.5) {
+    // size > 11 (>= 아님): 11 에서 한 번 더 돌면 10.5px 이 돼 하한선을 넘는다.
+    for (let size = base; size > 11 && podiumScoreNaturalWidth(el) > avail; size -= 0.5) {
       el.style.fontSize = (size - 0.5) + 'px';
     }
   });
@@ -11637,6 +11661,9 @@ function fitPodiumScores(podiumEl) {
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => fitPodiumScoresOnce(podiumEl)).catch(() => {});
     }
+    // ③ 늦게 붙는 웹폰트 대비 — fonts.ready 가 너무 일찍 끝나는 경우가 있어 두 번 더 확인한다.
+    setTimeout(() => fitPodiumScoresOnce(podiumEl), 400);
+    setTimeout(() => fitPodiumScoresOnce(podiumEl), 1500);
   } catch (e) {}
 }
 try { window.fitPodiumScores = fitPodiumScores; } catch (e) {} // test/podium-score-fit.test.mjs 가 같은 함수를 직접 태운다
@@ -14217,7 +14244,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788612600; // v4.30 — 상점 깔때기 로그 + 🍮 입구 "· 꾸미기" 라벨·첫 젤리 안내
+const BUILD = 1788618900; // v4.30 — 랭킹 글자 축소(목록·시상대), 1위 점수 잘림 해결, 프레임 글로우 완화
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

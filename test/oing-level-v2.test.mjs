@@ -72,15 +72,16 @@ test('모든 랭킹은 레벨·닉네임·왕관·불꽃을 같은 줄에 표시
   assert.match(src, /<div class="podium-meta">\$\{oingLevelBadgeHtml\(entry, isMe\)\}\$\{rankHotHtml\(entry\.ts\)\}/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{titleHtml\}\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
   assert.match(src, /<span class="rank-nick-line">\$\{oingLevelBadgeHtml\(entry, isMe\)\}<span class="rank-nick">\$\{skinnedNickHtml\(entry\.nickname, entry\.nickname\)\}<\/span>\$\{rankHotHtml\(entry\.ts\)\}<\/span>/);
-  // 닉네임 크기는 운영 피드백에 따라 계속 조정되므로 값을 박지 않고 '범위'만 고정한다.
-  //  · 원래 14.5px → "작아 보인다"(2026-09-04) → 16~17.5px → "너무 커졌다"(같은 날) → 15.2~16.4px.
-  // 위아래를 다 막아 둔다: 원래만큼 작아져도, 지나치게 커져도 여기서 걸린다.
+  // 닉네임 크기는 운영자가 화면 보고 계속 조정하는 값이라 정확한 수치를 박지 않고 '읽히는 범위'만 막는다.
+  //  이력: 14.5~16 → "작아 보인다"(2026-09-04) → 16~17.5 → "너무 커졌다" → 15.2~16.4
+  //        → "살짝 줄여줘"(2026-09-05) → 14.2~15.2.
+  //  아래로는 14px(작은 폰에서 읽기 힘들어지는 선), 위로는 17px(한 줄에 안 들어가기 시작하는 선).
   {
     const m = src.match(/\.rank-identity \.rank-nick \{[^}]*font-size:clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\)/);
     assert.ok(m, '랭킹 닉네임은 화면 폭에 따라 늘어나는 clamp 크기여야 한다');
     const [min, , max] = [Number(m[1]), Number(m[2]), Number(m[3])];
-    assert.ok(min > 14.5, `닉네임 최소 크기가 ${min}px — 키우기 전(14.5px)으로 되돌아갔다`);
-    assert.ok(max >= 16 && max <= 17, `닉네임 최대 크기가 ${max}px — 16~17px 사이여야 한다`);
+    assert.ok(min >= 14, `닉네임 최소 크기가 ${min}px — 작은 폰에서 읽기 어렵다`);
+    assert.ok(max > min && max <= 17, `닉네임 최대 크기가 ${max}px — 최소보다 크고 17px 이하여야 한다`);
   }
   // 30위 밖(Top10/Top30 배지가 없는) 행 테두리 — "넘 안 보인다"(2026-09-04).
   // 색 값을 박으면 톤을 못 바꾸므로, 어두운 배경 위에서 실제로 구분되는 밝기인지만 잰다.

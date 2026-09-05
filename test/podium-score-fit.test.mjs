@@ -3,19 +3,23 @@
 //
 //  사고(2026-09-05): 1위 점수가 7자리가 되자 화면에 "198407…" 으로 잘려 나왔다.
 //   · .podium-score 는 칸(.podium-item.rank1 = 98px)을 넘치면 ellipsis 로 잘라 버린다.
-//   · 순위별 글자 크기(1위 21px, 2·3위 16px)는 운영에서 "건드리지 말라"고 못 박은 값이다.
-//   · 그래서 크기를 낮추는 대신, '넘칠 때 그 칸만' 12px 까지 줄이는 fitPodiumScores 를 뒀다.
+//   · 처음엔 크기를 그대로 두고(1위 21px) '넘칠 때만 줄이는' fitPodiumScores 로 막으려 했다.
+//     두 번 고쳤는데 실제 화면에선 계속 잘렸다 — 결국 기본 크기를 17px 로 낮췄다(2026-09-05).
+//     교훈: 안전망이 매번 돌아야 겨우 맞는 상태면, 조건이 조금만 달라져도 다시 잘린다.
 //
-//  1차 수정이 실제로는 안 먹었다. 원인이 될 수 있는 두 가지를 여기서 같이 막는다:
+//  안전망이 안 먹던 이유 세 가지 — 지금은 모두 막혀 있다:
 //   ① 마크업만 만들어 놓고 재면 화면에 없을 때 clientWidth 가 0 이라 못 잰다.
 //   ② 웹폰트가 늦게 도착하면 먼저 잰 결과가 무의미해진다.
-//  그래서 아래 ①번 테스트는 '실제 랭킹 렌더 경로'(탭 클릭 → 주간 랭킹 렌더)를 그대로 타고,
+//   ③ 폰트를 media="print" onload 로 늦게 붙여, document.fonts.ready 가 그 전에 resolve 된다.
+//  그래서 아래 테스트는 '실제 랭킹 렌더 경로'(탭 클릭 → 주간 랭킹 렌더)를 그대로 타고,
 //  폰트 로드까지 기다린 뒤에 잰다. 마크업을 직접 꽂는 방식으로는 이 사고가 안 잡혔다.
 //
 //  이 테스트가 지키는 약속:
 //   ① 실제 렌더 경로에서 7자리 점수(1984079pt)가 잘리지 않는다.
-//   ② 안 넘치는 점수는 순위별 기본 크기(1위 21px)를 그대로 쓴다 — 멀쩡한 걸 줄이지 않는다.
-//   ③ 아무리 길어도 12px 밑으로는 안 내려간다(읽을 수 없어지므로).
+//   ② 안 넘치는 점수는 순위별 기본 크기를 그대로 쓴다 — 멀쩡한 걸 줄이지 않는다.
+//      (기본값은 CSS 에서 읽어 비교한다. 운영자가 크기를 조정해도 이 약속은 그대로 유효하다.)
+//   ③ 아무리 길어도 11px 밑으로는 안 내려간다(읽을 수 없어지므로).
+//   ④ 실제 7자리 점수는 '줄이지 않고도' 기본 크기로 칸에 들어간다 — 안전망에 기대지 않는다.
 //
 //  실행: node --test test/podium-score-fit.test.mjs
 // ══════════════════════════════════════════════════════════════
@@ -24,6 +28,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 
 const ROOT = new URL('../', import.meta.url);
 const DAY = 86400000;
@@ -113,12 +118,23 @@ async function renderPodium(scores) {
     await p.waitForTimeout(3500);
     await p.evaluate(() => document.fonts && document.fonts.ready);
     await p.waitForTimeout(500);
-    return await p.evaluate(() => [...document.querySelectorAll('#podiumWrap .podium-score')].map((el) => ({
-      cls: el.parentElement.className.match(/rank[123]/)?.[0] || '?',
-      text: el.textContent,
-      px: Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10,
-      clipped: el.scrollWidth > el.clientWidth + 1,
-    })));
+    return await p.evaluate(() => [...document.querySelectorAll('#podiumWrap .podium-score')].map((el) => {
+      // ⚠️ scrollWidth > clientWidth 로는 잘림을 못 잡는다 — ellipsis 가 걸린 칸은
+      //    브라우저가 "…" 을 넣어 맞춘 뒤 둘을 같게 보고한다(2026-09-05 실측).
+      //    max-width 를 잠깐 풀어 진짜 너비를 재서 칸 너비와 비교한다.
+      const prev = el.style.maxWidth;
+      el.style.maxWidth = 'none';
+      const natural = el.scrollWidth;
+      el.style.maxWidth = prev;
+      const avail = el.parentElement.clientWidth;
+      return {
+        cls: el.parentElement.className.match(/rank[123]/)?.[0] || '?',
+        text: el.textContent,
+        px: Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10,
+        clipped: natural > avail,
+        natural, avail,
+      };
+    }));
   } finally {
     await b.close();
     await new Promise((r) => server.close(r));
@@ -129,20 +145,39 @@ test('① 실제 랭킹 렌더 경로에서 7자리 점수(1984079pt)가 잘리�
   const out = await renderPodium([1984079, 119448, 90794, 60999, 59372]);
   assert.ok(out.length >= 3, `시상대가 안 그려졌다: ${JSON.stringify(out)}`);
   for (const r of out) {
-    assert.equal(r.clipped, false, `${r.cls} "${r.text}" 이 ${r.px}px 에서 잘렸다 — 화면엔 "198407…" 처럼 나온다`);
+    assert.equal(r.clipped, false, `${r.cls} "${r.text}" 이 ${r.px}px 에서 잘렸다(필요 ${r.natural}px > 칸 ${r.avail}px) — 화면엔 "198407…" 처럼 나온다`);
   }
 });
 
-test('② 안 넘치는 점수는 순위별 기본 크기를 그대로 쓴다 (1위 21px)', async () => {
+// CSS 에 선언된 1위 점수 기본 크기 — 운영자가 조정하는 값이라 테스트에 박지 않고 읽어 온다.
+function declaredRank1ScorePx() {
+  const src = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const m = src.match(/\.rank1 \.podium-score \{ color: var\(--ivory\); font-size: ([\d.]+)px;/);
+  assert.ok(m, '.rank1 .podium-score 기본 크기를 찾지 못했다');
+  return Number(m[1]);
+}
+
+test('② 안 넘치는 점수는 순위별 기본 크기를 그대로 쓴다', async () => {
   const out = await renderPodium([9428, 5252, 3616, 2100, 1800]);
   const first = out.find((r) => r.cls === 'rank1');
   assert.ok(first, `1위 칸을 못 찾았다: ${JSON.stringify(out)}`);
-  assert.equal(first.px, 21, `짧은 점수(${first.text})인데 ${first.px}px 로 줄었다 — 멀쩡한 걸 건드리면 안 된다`);
+  assert.equal(first.px, declaredRank1ScorePx(),
+    `짧은 점수(${first.text})인데 ${first.px}px 로 줄었다 — 멀쩡한 걸 건드리면 안 된다`);
 });
 
-test('③ 아무리 길어도 12px 밑으로는 내려가지 않는다', async () => {
+test('③ 아무리 길어도 11px 밑으로는 내려가지 않는다', async () => {
   const out = await renderPodium([1234567890123, 1234567890123, 1234567890123, 100, 90]);
   for (const r of out) {
-    assert.ok(r.px >= 12, `${r.cls} ${r.px}px — 너무 작아 읽을 수 없다`);
+    assert.ok(r.px >= 11, `${r.cls} ${r.px}px — 너무 작아 읽을 수 없다`);
   }
+});
+
+test('④ 실제 7자리 점수는 줄이지 않고도 기본 크기로 들어간다 — 안전망에 기대지 않는다', async () => {
+  // 안전망(fitPodiumScores)이 매번 돌아야 겨우 맞는 상태면, 웹폰트가 늦게 오는 실제 폰에서
+  // 다시 잘린다(2026-09-05 실사례). 기본 크기부터 여유가 있어야 한다.
+  const out = await renderPodium([1984079, 119448, 90794, 60999, 59372]);
+  const first = out.find((r) => r.cls === 'rank1');
+  assert.equal(first.clipped, false, `${first.text} 가 잘렸다(필요 ${first.natural}px > 칸 ${first.avail}px)`);
+  assert.equal(first.px, declaredRank1ScorePx(),
+    `7자리 점수에서 벌써 ${first.px}px 로 줄었다 — 기본 크기가 칸보다 크다`);
 });
