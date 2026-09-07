@@ -1859,17 +1859,21 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
   font-size: 11px; font-weight: 800; padding: 3.3px 6.6px;
   border-radius: 9px; white-space: nowrap; flex-shrink: 0;
 }
-/* Top10/Top30 배지 — 등급 표시. TOP3 배지보다 15~20% 작게 */
+/* Top10/Top30 배지 — 등급 표시. TOP3 배지보다 15~20% 작게.
+   ⚠️ 이 크기는 닉네임 크기와 함께 봐야 한다. 2026-09-07 에 닉네임을 16.4→15.2px 로 줄였더니
+   배지는 그대로인데 "왜 이렇게 커졌냐"는 지적이 나왔다 — 배지 높이(18.4px)가 닉네임 높이(17.9px)를
+   넘어서면서 줄에서 배지가 먼저 읽혔다. 그래서 예전 비율(배지/닉 = 9.2/16.4 = 0.56)에 맞춰
+   9.2 → 8.5px 로 함께 내렸다. 닉네임을 다시 조정하면 이 값도 같은 비율로 따라와야 한다. */
 .rank-badge-top10 {
-  font-size: 9.2px; padding: 2.7px 5.5px; border-radius: 7.5px;
+  font-size: 8.5px; padding: 2.4px 5px; border-radius: 7px;
   background: linear-gradient(135deg, #6F5418 0%, #9A741F 55%, #C99B35 100%);
   border: 1px solid #F4D77E; color: #FFF7DF;
   box-shadow: 0 0 10px rgba(255,213,103,0.38), inset 0 1px 0 rgba(255,255,255,0.20);
   display: inline-flex; align-items: center; gap: 3px;
 }
-.rank-badge-flame-img { width: 10px; height: 10px; object-fit: contain; vertical-align: middle; pointer-events: none; }
+.rank-badge-flame-img { width: 9px; height: 9px; object-fit: contain; vertical-align: middle; pointer-events: none; }
 .rank-badge-top30 {
-  font-size: 9.2px; padding: 2.7px 5.5px; border-radius: 7.5px;
+  font-size: 8.5px; padding: 2.4px 5px; border-radius: 7px;
   background: linear-gradient(135deg, #4B4F96 0%, #5D63B8 55%, #8E97FF 100%);
   border: 1px solid #B7BFFF; color: #F5F6FF;
   box-shadow: 0 0 9px rgba(142,151,255,0.30), inset 0 1px 0 rgba(255,255,255,0.18);
@@ -1996,8 +2000,12 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
    예전엔 오로라빛이 민트→파랑→보라(#62e6c4,#89b9ff,#d7a7ff)로 세 색을 돌아 무지개와
    구분이 안 됐다("컬러변화를 좀 적게, 좀 더 얌전하게. 그 위에 무지개는 유료인데
    저거랑 비슷해서 차별화가 안 됨"). 한 번 크게 낮췄다가(#b3b9de, 채도 39%) "너무 톤다운된 듯,
-   보라만 살짝 채도 높이자"는 요청으로 #b5a8e4(채도 53%)로 되돌렸다 — 민트는 그대로.
-   즉 보라 채도는 100% → 39% → 53% 를 거쳤다. 더 올리면 다시 무지개와 겹치기 시작한다.
+   보라만 살짝 채도 높이자"는 요청으로 채도 53%(H 253°)로 되돌렸다 — 보라 채도 이력 100%→39%→53%.
+   그 다음엔 "색이 어두워서 닉네임이 오히려 안 보인다"는 지적. 원인은 채도가 아니라 명도였다 —
+   일반 닉네임은 흰색(L 100%)인데 오로라는 L 63~78% 라 같은 줄에서 어둡게 읽혔다. 그래서
+   색상·채도는 그대로 두고 명도만 올렸다: L 63/75/78% → 74/82/84%.
+   더 올리면 색이 날아가 흰색처럼 되고, 더 내리면 다시 안 읽힌다.
+   채도를 올리는 방식으로는 조절하지 않는다 — 무지개(현금 전용)와 겹치기 시작한다.
    ⚠️ 색을 바꿀 땐 상점 두 곳도 같이 바꾼다 — shop-v2-preview.html 과 custom-shop-preview.html 의
       .fx-* 규칙. 미리보기와 실제가 다르면 산 사람이 속았다고 느낀다. */
 .nick-rainbow, .nick-goldshine, .nick-diamond, .nick-bluewave, .nick-auroraglow, .nick-cherry {
@@ -2011,7 +2019,7 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .nick-goldshine, .nick-bluewave, .nick-auroraglow, .nick-cherry { animation-duration: 3.6s; }
 .nick-goldshine { background-image: linear-gradient(90deg,#c08f34,#f2dc9e,#e3c264,#f2dc9e,#c08f34); }
 .nick-bluewave { background-image:linear-gradient(90deg,#4f9ce0,#8ecbea,#a9d9f0,#69b0e0,#4f9ce0); filter:drop-shadow(0 0 4px rgba(74,174,255,.20)); }
-.nick-auroraglow { background-image:linear-gradient(90deg,#6ed3bb,#a3d6d9,#b5a8e4,#6ed3bb); }
+.nick-auroraglow { background-image:linear-gradient(90deg,#99e0cf,#bee2e4,#cac1ec,#99e0cf); }
 .nick-cherry { position:relative; background-image:linear-gradient(90deg,#ef8cb0,#f5c2d4,#f2a2c0,#f7d2e0,#ef8cb0); }
 @keyframes nickShine { to { background-position:-300% center; } }
 @keyframes tinyNickTwinkle { 0%,100% { opacity:.35; transform:scale(.75); } 50% { opacity:1; transform:scale(1.08); } }
@@ -14256,7 +14264,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788782400; // v4.30 — 오로라빛 보라 채도 39%→53% (민트는 그대로)
+const BUILD = 1788784800; // v4.30 — Top10·Top30 배지를 닉네임 비율에 맞춰 축소, 오로라 명도 상향
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
