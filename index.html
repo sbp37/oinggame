@@ -1987,16 +1987,29 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .nick-red { color:#f87171; }
 .nick-sky { color:#38bdf8; }
 .nick-apricot { color:#ffb36b; }
+/* 닉네임 '움직이는 효과' — 색이 흐르는 그라데이션.
+   ⚠️ 등급 규칙 (2026-09-07 운영 결정):
+     · 무지개(rainbow)는 현금 커스텀 세트(1,990원)에서만 살 수 있는 유일한 효과다.
+       '여러 색이 도는' 자리는 무지개 혼자 갖는다 — 그게 유료의 차별점이다.
+     · 젤리 60개로 사는 네 가지(블루웨이브·오로라빛·벚꽃비·골드샤인)는 각각
+       한 색 계열 안에서만, 명암 차도 좁게 해서 은은하게 흐른다.
+   예전엔 오로라빛이 민트→파랑→보라로 세 색을 돌아 무지개와 구분이 안 됐다
+   ("컬러변화를 좀 적게, 좀 더 얌전하게. 그 위에 무지개는 유료인데 저거랑 비슷해서 차별화가 안 됨").
+   ⚠️ 색을 바꿀 땐 상점 두 곳도 같이 바꾼다 — shop-v2-preview.html 과 custom-shop-preview.html 의
+      .fx-* 규칙. 미리보기와 실제가 다르면 산 사람이 속았다고 느낀다. */
 .nick-rainbow, .nick-goldshine, .nick-diamond, .nick-bluewave, .nick-auroraglow, .nick-cherry {
   background-size:300% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
   animation: nickShine 2.4s linear infinite;
 }
+/* 유료·판매종료 — 여러 색이 빠르게 돈다 */
 .nick-rainbow { background-image: linear-gradient(90deg,#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f472b6,#f87171); }
-.nick-goldshine { background-image: linear-gradient(90deg,#92600a,#fde68a,#fbbf24,#fde68a,#92600a); }
 .nick-diamond { background-image: linear-gradient(90deg,#7dd3fc,#ffffff,#a5f3fc,#ffffff,#7dd3fc); }
-.nick-bluewave { background-image:linear-gradient(90deg,#2f8cff,#83dcff,#c3efff,#68b8ff,#2f8cff); filter:drop-shadow(0 0 4px rgba(74,174,255,.35)); }
-.nick-auroraglow { background-image:linear-gradient(90deg,#62e6c4,#89b9ff,#d7a7ff,#62e6c4); }
-.nick-cherry { position:relative; background-image:linear-gradient(90deg,#ff7fae,#ffd1df,#ff9fc4,#ffe0e8,#ff7fae); }
+/* 젤리 60개 — 한 색 계열, 느리게(2.4s→3.6s) */
+.nick-goldshine, .nick-bluewave, .nick-auroraglow, .nick-cherry { animation-duration: 3.6s; }
+.nick-goldshine { background-image: linear-gradient(90deg,#c08f34,#f2dc9e,#e3c264,#f2dc9e,#c08f34); }
+.nick-bluewave { background-image:linear-gradient(90deg,#4f9ce0,#8ecbea,#a9d9f0,#69b0e0,#4f9ce0); filter:drop-shadow(0 0 4px rgba(74,174,255,.20)); }
+.nick-auroraglow { background-image:linear-gradient(90deg,#6ed3bb,#a3d6d9,#b3b9de,#6ed3bb); }
+.nick-cherry { position:relative; background-image:linear-gradient(90deg,#ef8cb0,#f5c2d4,#f2a2c0,#f7d2e0,#ef8cb0); }
 @keyframes nickShine { to { background-position:-300% center; } }
 @keyframes tinyNickTwinkle { 0%,100% { opacity:.35; transform:scale(.75); } 50% { opacity:1; transform:scale(1.08); } }
 
@@ -14240,7 +14253,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788620400; // v4.30 — 프레임 테두리 효과를 맨 처음(단일 글로우 12px 48%)으로 원복
+const BUILD = 1788780600; // v4.30 — 젤리 닉네임 효과를 한 색 계열로 완화(무지개 유료 차별화)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
