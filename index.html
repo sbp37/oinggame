@@ -2001,11 +2001,14 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
    구분이 안 됐다("컬러변화를 좀 적게, 좀 더 얌전하게. 그 위에 무지개는 유료인데
    저거랑 비슷해서 차별화가 안 됨"). 한 번 크게 낮췄다가(#b3b9de, 채도 39%) "너무 톤다운된 듯,
    보라만 살짝 채도 높이자"는 요청으로 채도 53%(H 253°)로 되돌렸다 — 보라 채도 이력 100%→39%→53%.
-   그 다음엔 "색이 어두워서 닉네임이 오히려 안 보인다"는 지적. 원인은 채도가 아니라 명도였다 —
-   일반 닉네임은 흰색(L 100%)인데 오로라는 L 63~78% 라 같은 줄에서 어둡게 읽혔다. 그래서
-   색상·채도는 그대로 두고 명도만 올렸다: L 63/75/78% → 74/82/84%.
-   더 올리면 색이 날아가 흰색처럼 되고, 더 내리면 다시 안 읽힌다.
-   채도를 올리는 방식으로는 조절하지 않는다 — 무지개(현금 전용)와 겹치기 시작한다.
+   그 다음엔 "색이 어두워서 닉네임이 오히려 안 보인다"는 지적 → 명도를 올렸다(L 63/75/78% → 74/82/84%).
+   그래도 잘 안 보인다고 해서 명도는 그대로 두고 채도를 올렸다(S 53/41/53% → 76/63/75%).
+   지금 값의 근거: 일반 닉네임은 흰색(L 100%)이라 같은 줄에서 색 있는 글자는 옅으면 바로 묻힌다.
+   높은 명도 + 높은 채도 조합이라 밝으면서도 색이 살아 있다.
+   · 명도를 더 올리면 색이 날아가 흰색처럼 되고, 내리면 다시 안 읽힌다(L 74~84% 유지).
+   · 채도는 여기가 상한선이다 — 더 올리면 무지개(현금 전용)와 구분이 흐려진다.
+     무지개와의 차이는 '색 수'다: 무지개는 빨강·노랑·초록·파랑·보라를 다 돌고,
+     오로라는 민트→청록→라벤더 한 흐름만 돈다. 이 차이를 유지하는 한 채도는 문제되지 않는다.
    ⚠️ 색을 바꿀 땐 상점 두 곳도 같이 바꾼다 — shop-v2-preview.html 과 custom-shop-preview.html 의
       .fx-* 규칙. 미리보기와 실제가 다르면 산 사람이 속았다고 느낀다. */
 .nick-rainbow, .nick-goldshine, .nick-diamond, .nick-bluewave, .nick-auroraglow, .nick-cherry {
@@ -2019,7 +2022,7 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .nick-goldshine, .nick-bluewave, .nick-auroraglow, .nick-cherry { animation-duration: 3.6s; }
 .nick-goldshine { background-image: linear-gradient(90deg,#c08f34,#f2dc9e,#e3c264,#f2dc9e,#c08f34); }
 .nick-bluewave { background-image:linear-gradient(90deg,#4f9ce0,#8ecbea,#a9d9f0,#69b0e0,#4f9ce0); filter:drop-shadow(0 0 4px rgba(74,174,255,.20)); }
-.nick-auroraglow { background-image:linear-gradient(90deg,#99e0cf,#bee2e4,#cac1ec,#99e0cf); }
+.nick-auroraglow { background-image:linear-gradient(90deg,#8aefd7,#b4ebee,#c5b8f5,#8aefd7); }
 .nick-cherry { position:relative; background-image:linear-gradient(90deg,#ef8cb0,#f5c2d4,#f2a2c0,#f7d2e0,#ef8cb0); }
 @keyframes nickShine { to { background-position:-300% center; } }
 @keyframes tinyNickTwinkle { 0%,100% { opacity:.35; transform:scale(.75); } 50% { opacity:1; transform:scale(1.08); } }
@@ -14264,7 +14267,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788784800; // v4.30 — Top10·Top30 배지를 닉네임 비율에 맞춰 축소, 오로라 명도 상향
+const BUILD = 1788868200; // v4.30 — 오로라빛 채도 상향(명도는 유지)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
