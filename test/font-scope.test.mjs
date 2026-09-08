@@ -50,17 +50,19 @@ test('② 프리텐다드는 게임 화면 안에서만 쓴다', () => {
 });
 
 test('③ 시상대(1~3위)·순위등락 글자 크기는 지시받은 값에 고정돼 있다', () => {
-  // 이력: build 1788276577 값(16/15/15, 21/16/16)을 오래 유지했다 — "1~3등은 수정하지 말라".
-  // 2026-09-05 운영 요청 "1~3등 닉네임이랑 점수도 살짝 줄여줘. 1등 점수가 아직도 .. 로 나와":
-  //  닉네임 16/15/15 → 14.5/13.5/13.5, 점수 21/16/16 → 17/14.5/14.5.
-  //  1위 칸 안쪽은 98px 인데 21px 로는 9글자(1,984,079pt)에 126px 이 필요해 잘렸다.
+  // 시상대 크기 이력:
+  //  16/15/15 · 21/16/16 (build 1788276577 부터 오래 유지, "1~3등은 수정하지 말라") → 2026-09-05 "살짝 줄여줘, 1등 점수가 .. 로 나와" → 14.5/13.5/13.5 · 17/14.5/14.5
+  //  → 2026-09-08 "살짝 키워, 대신 절대 ... 으로 줄여지지 않을 정도로만" → 16/15/15 · 19/16/16.
+  //  이번엔 글자만 키운 게 아니라 칸도 함께 넓혔다(98/80/76 → 112/86/82) — 그래서 더 커도 안 잘린다.
+  //  실제 잘림 여부는 test/podium-score-fit.test.mjs 가 브라우저로 잰다. 여기서는 값만 고정한다.
   const pinned = [
-    [/\.rank1 \.podium-nick-text \{ font-size: 14\.5px;/, '시상대 1위 닉네임 14.5px'],
-    [/\.rank2 \.podium-nick-text \{ font-size: 13\.5px;/, '시상대 2위 닉네임 13.5px'],
-    [/\.rank3 \.podium-nick-text \{ font-size: 13\.5px;/, '시상대 3위 닉네임 13.5px'],
-    [/\.rank1 \.podium-score \{ color: var\(--ivory\); font-size: 17px;/, '시상대 1위 점수 17px'],
-    [/\.rank2 \.podium-score \{ color: var\(--ivory\); font-size: 14\.5px;/, '시상대 2위 점수 14.5px'],
-    [/\.rank3 \.podium-score \{ color: var\(--ivory\); font-size: 14\.5px;/, '시상대 3위 점수 14.5px'],
+    [/\.rank1 \.podium-nick-text \{ font-size: 16px;/, '시상대 1위 닉네임 16px'],
+    [/\.rank2 \.podium-nick-text \{ font-size: 15px;/, '시상대 2위 닉네임 15px'],
+    [/\.rank3 \.podium-nick-text \{ font-size: 15px;/, '시상대 3위 닉네임 15px'],
+    [/\.rank1 \.podium-score \{ color: var\(--ivory\); font-size: 19px;/, '시상대 1위 점수 19px'],
+    [/\.rank2 \.podium-score \{ color: var\(--ivory\); font-size: 16px;/, '시상대 2위 점수 16px'],
+    [/\.rank3 \.podium-score \{ color: var\(--ivory\); font-size: 16px;/, '시상대 3위 점수 16px'],
+    [/\.podium-item\.rank1 \{ width: 112px; \}/, '시상대 1위 칸 112px'],
     // 순위등락만 12.5→11px 로 내렸다 — 2026-09-05 "등락 초록빨강 숫자랑 삼각형 크기 줄여"라는
     // 명시적 요청이 있었다. 시상대 값들은 여전히 손대면 안 되는 값이다.
     [/\.rank-change \{ font-size: 11px;/, '순위등락 11px'],

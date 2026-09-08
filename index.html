@@ -1509,9 +1509,13 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   gap: 14px; margin: 6px 0 0;
 }
 .podium-item { display: flex; flex-direction: column; align-items: center; }
-.podium-item.rank1 { width: 98px; }
-.podium-item.rank2 { width: 80px; }
-.podium-item.rank3 { width: 76px; }
+/* 시상대 칸 너비 — 점수가 잘리지 않을 만큼 확보한다(2026-09-08).
+   실측 가용폭: 320px 폰 292 · 360px 332 · 375px 347 · 390px 362 · 412px 384.
+   예전 98/80/76(+gap) = 282px 라 넓은 폰에서 80px 이상 놀고 있었다. 그 여유를 1위 칸에 준다.
+   ⚠️ 320px 폰은 여유가 22px 뿐이라 아래 @media(max-width:360px) 에서 다시 좁힌다. */
+.podium-item.rank1 { width: 112px; }
+.podium-item.rank2 { width: 86px; }
+.podium-item.rank3 { width: 82px; }
 .podium-trophy { display: none; }
 
 /* 시상대 아바타 위 왕관 */
@@ -1594,9 +1598,9 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
    크기·굵기만 순위별로 준다. */
 /* 크기 이력 — 운영자가 화면 보고 조정한다(2026-09-05: 16/15/15 → 14.5/13.5/13.5).
    "잘 보이는 것도 중요하지만 잘려 보이면 안 된다" — 칸(rank1 98px)에 들어가는 게 우선. */
-.rank1 .podium-nick-text { font-size: 14.5px; font-weight: 900; }
-.rank2 .podium-nick-text { font-size: 13.5px; font-weight: 900; }
-.rank3 .podium-nick-text { font-size: 13.5px; font-weight: 900; }
+.rank1 .podium-nick-text { font-size: 16px; font-weight: 900; }
+.rank2 .podium-nick-text { font-size: 15px; font-weight: 900; }
+.rank3 .podium-nick-text { font-size: 15px; font-weight: 900; }
 .podium-score {
   font-size: 16px; font-weight: 900; margin-bottom: 8px; color: var(--ivory);
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; padding: 0 2px;
@@ -1604,12 +1608,17 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
      1위 칸 안쪽은 94px 뿐인데 7자리(1,984,079pt = 9글자)까지 나온다(2026-09-05 실측). */
   font-variant-numeric: tabular-nums; letter-spacing: -0.4px;
 }
-/* 크기 이력 — 2026-09-05: 21/16/16 → 17/14.5/14.5.
-   21px 는 9글자에 126px 이 필요해 94px 칸을 넘겼다("1등 점수가 .. 로 나온다"는 운영 보고).
-   아래 fitPodiumScores 가 넘칠 때 더 줄여 주지만, 기본값부터 들어가야 대부분의 판에서 안 줄어든다. */
-.rank1 .podium-score { color: var(--ivory); font-size: 17px; }
-.rank2 .podium-score { color: var(--ivory); font-size: 14.5px; }
-.rank3 .podium-score { color: var(--ivory); font-size: 14.5px; }
+/* 크기 이력 — 21/16/16 → 17/14.5/14.5(2026-09-05, 잘림 해결) → 19/16/16(2026-09-08, "살짝 키워").
+   "절대 ... 으로 줄여지지 않을 정도로만" 이라는 조건이 붙었으므로 칸 너비와 함께 정했다.
+   1위 칸 112px(안쪽 108px)에서 이 저장소 렌더 기준 폭:
+     8글자(322809pt) 19px → 83px · 9글자(1984079pt) 19px → 93px.
+   ⚠️ 실기기 글꼴(Noto Sans KR)은 이 저장소의 대체 글꼴보다 넓다 — 예전에 여기서 "안 잘린다"고
+   잰 값이 실기기에서 잘린 적이 있다. 그래서 15% 안전 여유를 두고 계산했다:
+     8글자 95px · 9글자 107px ≤ 108px. 둘 다 줄이지 않고 들어간다.
+   더 키우려면 칸부터 넓혀야 하는데, 320px 폰은 남는 폭이 22px 뿐이라 여기가 상한선이다. */
+.rank1 .podium-score { color: var(--ivory); font-size: 19px; }
+.rank2 .podium-score { color: var(--ivory); font-size: 16px; }
+.rank3 .podium-score { color: var(--ivory); font-size: 16px; }
 
 .podium-base {
   width: 100%; border-radius: 6px;
@@ -1719,8 +1728,10 @@ body.light .oing-ticker-sep { color:rgba(127,91,27,0.52); }
   white-space:nowrap; max-width:100%; }
 .podium-creator img { width:11px; height:10px; object-fit:contain; }
 /* 내 친구 표시(🤍) — 🔥보다 한 단계 작게, Top뱃지/점수 왼쪽에 조용히 붙는 정도.
-   row의 기본 gap(8px)에 더해 왼쪽은 살짝 띄우고 오른쪽 간격은 좁혀서 뱃지/점수 쪽에 붙인다. */
-.rank-friend-badge { font-size: 10px; margin-left: 2px; margin-right: -4px; flex-shrink: 0; vertical-align: middle; opacity: 0.9; }
+   예전엔 margin-right:-4px 로 배지에 딱 붙여 뒀는데, row gap(4px)을 상쇄해 간격이 0이 되면서
+   "친추 하트랑 탑10 뱃지 사이 너무 붙었다"는 지적이 나왔다(2026-09-08). 0 으로 되돌려
+   row gap 4px 이 그대로 살아나게 하고, 오른쪽에 2px 을 더해 6px 을 띄운다. */
+.rank-friend-badge { font-size: 10px; margin-left: 2px; margin-right: 2px; flex-shrink: 0; vertical-align: middle; opacity: 0.9; }
 /* 전체 랭킹 '더보기'로 접어둔 하위 순위 */
 .rank-extra-hidden { display: none; }
 .rank-more-btn {
@@ -1784,9 +1795,16 @@ body.light .oing-level-badge { color:#7f5b1b; background:rgba(218,152,69,0.12); 
 .rank-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px 0; }
 @media (max-width: 360px) {
   #panelRank .podium-wrap { gap:8px; }
-  #panelRank .rank1 .podium-nick-text { font-size:13px; }
+  /* 320px 폰 가용폭 292px — 넓은 칸(112/86/82 = 280+16) 은 안 들어간다. 104/80/76 = 260+16 = 276px. */
+  #panelRank .podium-item.rank1 { width:104px; }
+  #panelRank .podium-item.rank2 { width:80px; }
+  #panelRank .podium-item.rank3 { width:76px; }
+  #panelRank .rank1 .podium-nick-text { font-size:14.5px; }
   #panelRank .rank2 .podium-nick-text,
-  #panelRank .rank3 .podium-nick-text { font-size:12.5px; }
+  #panelRank .rank3 .podium-nick-text { font-size:13.5px; }
+  #panelRank .rank1 .podium-score { font-size:18px; }
+  #panelRank .rank2 .podium-score,
+  #panelRank .rank3 .podium-score { font-size:15px; }
   #panelRank .rank-row { gap:3px; padding-left:6px; padding-right:7px; }
   #panelRank .rank-change { min-width:26px; max-width:26px; }
   #panelRank .rank-tail { min-width:66px; }
@@ -14267,7 +14285,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788868200; // v4.30 — 오로라빛 채도 상향(명도는 유지)
+const BUILD = 1788870600; // v4.30 — 시상대 칸 확장 + 1~3위 닉·점수 확대, 친구 하트 간격
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;

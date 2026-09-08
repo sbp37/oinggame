@@ -172,12 +172,21 @@ test('③ 아무리 길어도 11px 밑으로는 내려가지 않는다', async (
   }
 });
 
-test('④ 실제 7자리 점수는 줄이지 않고도 기본 크기로 들어간다 — 안전망에 기대지 않는다', async () => {
+test('④ 실제 7자리 점수는 줄이지 않고도, 15% 여유를 두고 칸에 들어간다', async () => {
   // 안전망(fitPodiumScores)이 매번 돌아야 겨우 맞는 상태면, 웹폰트가 늦게 오는 실제 폰에서
   // 다시 잘린다(2026-09-05 실사례). 기본 크기부터 여유가 있어야 한다.
+  //
+  // ⚠️ 여유 15% 를 요구하는 이유: 이 저장소는 gstatic 이 막혀 Noto Sans KR 을 못 받고
+  // 대체 글꼴로 렌더한다. 대체 글꼴이 더 좁아서, 여기서 "딱 맞는다"고 잰 값이 실기기에서
+  // 잘린 적이 있다(2026-09-05, 19.5px 에서 필요 98px = 칸 98px 인데 화면엔 "198407…").
+  // 그래서 '넘치지 않는다'가 아니라 '15% 여유가 있다'로 검사한다.
   const out = await renderPodium([1984079, 119448, 90794, 60999, 59372]);
   const first = out.find((r) => r.cls === 'rank1');
   assert.equal(first.clipped, false, `${first.text} 가 잘렸다(필요 ${first.natural}px > 칸 ${first.avail}px)`);
   assert.equal(first.px, declaredRank1ScorePx(),
     `7자리 점수에서 벌써 ${first.px}px 로 줄었다 — 기본 크기가 칸보다 크다`);
+  const margin = (first.avail - first.natural) / first.avail;
+  assert.ok(margin >= 0.15,
+    `여유가 ${(margin * 100).toFixed(0)}% 뿐이다(필요 ${first.natural}px / 칸 ${first.avail}px) — `
+    + '실기기 글꼴은 이보다 넓어서 잘릴 수 있다. 글자를 줄이거나 .podium-item.rank1 칸을 넓힐 것.');
 });
