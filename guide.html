@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>플레이 방법 - 오잉게임</title>
+<meta name="description" content="오잉게임 규칙과 점수 계산: 두 칸을 탭해 합이 10인 직사각형을 지우는 2분 퍼즐. 콤보 배수(최대 25), 고양이 보너스 +5, WOW 보너스, 7콤보마다 아이템, 올클리어 보상까지 코드 기준으로 정리.">
+<link rel="canonical" href="https://oinggame.com/guide.html">
+<meta property="og:title" content="플레이 방법 - 오잉게임">
+<meta property="og:description" content="오잉게임 규칙과 점수 계산: 두 칸을 탭해 합이 10인 직사각형을 지우는 2분 퍼즐. 콤보 배수(최대 25), 고양이 보너스 +5, WOW 보너스, 7콤보마다 아이템, 올클리어 보상까지 코드 기준으로 정리.">
+<meta property="og:url" content="https://oinggame.com/guide.html">
+<meta property="og:type" content="article">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9269666926580954" crossorigin="anonymous"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0b0e17; color:#e8edf5; font-family:'Pretendard','Noto Sans KR','Malgun Gothic',sans-serif;
+  line-height:1.8; padding:24px 20px 60px; max-width:680px; margin:0 auto; font-size:15.5px; }
+nav.site-nav { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:13.5px; padding:10px 0; border-bottom:1px solid #1f2a3d; margin-bottom:22px; }
+nav.site-nav.bottom { border-bottom:0; border-top:1px solid #1f2a3d; margin:34px 0 0; padding-top:14px; }
+nav.site-nav a { color:#9ec8ec; text-decoration:none; }
+nav.site-nav a:hover { text-decoration:underline; }
+nav.site-nav a.cur { color:#fff; font-weight:700; }
+nav.site-nav .more { width:100%; font-size:12.5px; color:#7a8ba3; }
+h1 { font-size:24px; color:#7ec2f0; margin-bottom:6px; line-height:1.35; }
+.lead { color:#aebad0; margin-bottom:22px; }
+h2 { font-size:17px; color:#7ec2f0; margin:30px 0 8px; }
+h3 { font-size:15.5px; color:#cfe3f7; margin:18px 0 6px; }
+p, li { color:#c6d2e2; }
+p { margin-bottom:12px; }
+ul, ol { padding-left:22px; margin:6px 0 14px; }
+li { margin-bottom:5px; }
+a { color:#7ec2f0; }
+table { border-collapse:collapse; width:100%; margin:8px 0 16px; font-size:14px; }
+th, td { border:1px solid #243046; padding:7px 9px; text-align:left; vertical-align:top; }
+th { background:#141c2c; color:#cfe3f7; }
+.note { background:#121a2a; border:1px solid #243046; border-radius:10px; padding:12px 14px; margin:14px 0; font-size:14px; }
+.date { font-size:12.5px; color:#7a8ba3; margin-bottom:18px; }
+.cta { display:inline-block; margin-top:22px; padding:10px 22px; background:#2f7ec9; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; }
+footer.site-foot { margin-top:30px; font-size:12.5px; color:#7a8ba3; line-height:1.7; }
+</style>
+</head>
+<body>
+<nav class="site-nav " aria-label="사이트 메뉴"><a href="index.html">게임</a> <a href="guide.html" class="cur">플레이 방법</a> <a href="about.html">소개</a> <a href="faq.html">FAQ</a> <a href="updates.html">업데이트</a> <a href="ranking.html">랭킹</a> <a href="terms.html">이용약관</a> <a href="privacy.html">개인정보</a><span class="more">더 보기: <a href="levels.html">레벨·칭호</a> · <a href="goals.html">오늘의 목표</a> · <a href="jelly.html">젤리·꾸미기</a> · <a href="tips-combo.html">콤보 공략</a> · <a href="tips-wow.html">WOW 공략</a> · <a href="tips-allclear.html">올클리어 공략</a></span></nav>
+<main>
+
+<h1>오잉게임 플레이 방법</h1>
+<p class="lead">오잉게임은 숫자판에서 합이 10이 되는 직사각형을 찾아 지우는 2분 퍼즐 게임입니다. 규칙은 한 줄이지만, 콤보와 아이템을 어떻게 쓰느냐에 따라 점수가 크게 달라집니다. 이 페이지는 게임 안 규칙 안내와 실제 게임 코드에 있는 수치를 기준으로 정리했습니다.</p>
+
+<h2>기본 규칙</h2>
+<ol>
+<li><strong>두 칸을 탭</strong>하면 그 두 칸을 모서리로 하는 직사각형 영역이 선택됩니다. 영역 안에 빈칸이 섞여 있어도 됩니다.</li>
+<li>영역 안 숫자의 <strong>합이 정확히 10</strong>이면 그 칸들이 사라집니다. 빈칸은 합에 들어가지 않습니다.</li>
+<li>합이 10이 아니면 오답입니다. 오답을 고르면 콤보가 70% 수준으로 줄어듭니다(코드 기준 소수점 버림). 점수가 깎이지는 않습니다.</li>
+<li>제한 시간은 <strong>2분(120초)</strong>입니다. 시간이 끝나면 그 판의 점수가 최종 점수가 되고, 자기 최고점이면 랭킹에 반영됩니다.</li>
+</ol>
+
+<h2>점수 계산</h2>
+<p>한 번 지울 때 얻는 점수는 <strong>(지운 칸 수 + 고양이 보너스) × 콤보 배수</strong>입니다.</p>
+<ul>
+<li><strong>콤보 배수</strong>는 연속으로 맞힌 횟수와 같고, <strong>최대 25</strong>까지만 곱해집니다. 콤보 25 이후로는 배수가 더 오르지 않습니다. 이 상한은 상위권과 일반 플레이어의 점수 격차를 줄이기 위해 v3.2에서 도입됐습니다.</li>
+<li><strong>고양이 🐱 칸</strong>은 숫자가 아닌 와일드카드입니다. 직사각형에 고양이가 들어가면 고양이 한 마리당 <strong>+5</strong>가 칸 수에 더해진 뒤 콤보 배수가 곱해집니다. 매 판 고양이는 7마리로 고정입니다.</li>
+<li><strong>WOW 보너스</strong>: 한 번에 5칸 이상을 지우면 (지운 칸 수 − 4) × 10점이 추가로 붙습니다. 이 보너스에는 콤보 배수가 곱해지지 않습니다. 대신 WOW 클리어는 콤보가 한 번에 +2 오릅니다(일반 클리어는 +1).</li>
+</ul>
+<div class="note">예: 콤보 12 상태에서 숫자 4칸과 고양이 1마리를 지우면 (5 + 5) × 12 = 120점, 여기에 5칸 이상이므로 WOW 보너스 (5 − 4) × 10 = 10점이 더해져 130점입니다.</div>
+
+<h2>콤보와 아이템</h2>
+<p>콤보가 <strong>7의 배수(7, 14, 21…)</strong>를 지날 때마다 판 위에 아이템이 하나 생깁니다. 콤보 구간에 따라 나오는 아이템이 달라집니다.</p>
+<table>
+<tr><th>구간</th><th>콤보</th><th>나올 수 있는 아이템</th></tr>
+<tr><td>1단계</td><td>7 이상</td><td>💣 폭탄, ⏰ 시계 (초반에는 🍬 콤보사탕도)</td></tr>
+<tr><td>2단계</td><td>14 이상</td><td>💣 폭탄, ⏰ 시계, 💥 메가폭탄</td></tr>
+<tr><td>3단계</td><td>21 이상</td><td>💣 폭탄, ⏰ 시계, 💥 메가폭탄, ❄️ 타임프리즈</td></tr>
+</table>
+<ul>
+<li><strong>💣 폭탄</strong>: 주변 숫자칸을 한 번에 터뜨리고, 터진 칸의 숫자값만큼 점수를 얻습니다. 고양이도 포함됩니다.</li>
+<li><strong>💥 메가폭탄</strong>: 폭탄의 2배 범위로 터집니다. 범위 안에 다른 아이템이 있으면 같이 발동합니다.</li>
+<li><strong>⏰ 시계</strong>: 남은 시간이 8초 늘어납니다.</li>
+<li><strong>❄️ 타임프리즈</strong>: 타이머가 15초 동안 멈춥니다.</li>
+<li><strong>🍬 콤보사탕</strong>: 콤보가 2 오릅니다. 1~2번째 판까지만 나옵니다.</li>
+<li><strong>🍀 클로버</strong>: 정답 조합 하나를 알려주는 힌트 아이템입니다. 게임당 1개만 나옵니다.</li>
+</ul>
+<p>못 쓴 아이템은 다음 판으로 이어집니다. 판이 넘어간다고 사라지지 않으니 급하게 쓸 필요는 없습니다.</p>
+
+<h2>판을 비우면(올클리어)</h2>
+<p>숫자를 전부 지워 판을 비우면 다음 판으로 넘어가면서 세 가지 보상이 있습니다.</p>
+<ul>
+<li>남은 시간 <strong>+15초</strong></li>
+<li>다음 판에서 쓸 수 있는 <strong>힌트 3개</strong></li>
+<li><strong>콤보가 유지</strong>됩니다. 판이 바뀌어도 콤보가 0으로 돌아가지 않으므로 올클리어를 이어가면 배수 25에 빨리 도달합니다.</li>
+</ul>
+<p>고양이 칸만 외따로 남아 더 지울 수 없을 때는 자동으로 다음 판으로 넘어갑니다.</p>
+
+<h2>막혔을 때 쓰는 기능</h2>
+<ul>
+<li><strong>💡 힌트</strong>: 정답 조합을 표시합니다. 기본 힌트는 게임당 2회이고, 올클리어하면 다음 판에 3개가 주어집니다.</li>
+<li><strong>🔀 셔플</strong>: 남은 숫자들의 자리를 뒤섞습니다. 판마다 1번 쓸 수 있습니다. 조합이 도저히 안 보일 때 탈출용으로 쓰세요.</li>
+<li><strong>연습모드(자유모드)</strong>: 시간 제한 없이 편하게 연습하는 모드입니다. 점수와 랭킹에는 기록되지 않습니다.</li>
+<li><strong>튜토리얼</strong>: 처음이라면 시작 화면의 "처음이라면 튜토리얼"에서 규칙과 아이템을 순서대로 익힐 수 있습니다.</li>
+</ul>
+
+<h2>기록과 랭킹</h2>
+<p>닉네임을 등록하면 점수가 서버에 저장되고 전체 랭킹과 이번 주 랭킹에 올라갑니다. 닉네임은 최대 6자이고, 등록할 때 4자리 PIN이 자동 발급됩니다. PIN이 있으면 다른 기기에서도 같은 닉네임으로 이어서 할 수 있습니다. 랭킹 구조는 <a href="ranking.html">랭킹 안내</a>에서, 꾸준히 플레이하면 오르는 레벨은 <a href="levels.html">레벨·칭호 안내</a>에서 설명합니다.</p>
+
+<h2>더 읽기</h2>
+<ul>
+<li><a href="tips-combo.html">콤보를 끊지 않는 법</a></li>
+<li><a href="tips-wow.html">WOW 보너스를 노리는 법</a></li>
+<li><a href="tips-allclear.html">올클리어와 시간 관리</a></li>
+<li><a href="faq.html">자주 묻는 질문</a></li>
+</ul>
+<a class="cta" href="index.html">게임 하러 가기</a>
+
+</main>
+<nav class="site-nav bottom" aria-label="사이트 메뉴"><a href="index.html">게임</a> <a href="guide.html" class="cur">플레이 방법</a> <a href="about.html">소개</a> <a href="faq.html">FAQ</a> <a href="updates.html">업데이트</a> <a href="ranking.html">랭킹</a> <a href="terms.html">이용약관</a> <a href="privacy.html">개인정보</a><span class="more">더 보기: <a href="levels.html">레벨·칭호</a> · <a href="goals.html">오늘의 목표</a> · <a href="jelly.html">젤리·꾸미기</a> · <a href="tips-combo.html">콤보 공략</a> · <a href="tips-wow.html">WOW 공략</a> · <a href="tips-allclear.html">올클리어 공략</a></span></nav>
+<footer class="site-foot">오잉게임 · 운영 오잉스튜디오(개인) · 문의 <a href="mailto:sbpark0307@gmail.com">sbpark0307@gmail.com</a><br>
+마지막 수정 2026-09-15</footer>
+</body>
+</html>
