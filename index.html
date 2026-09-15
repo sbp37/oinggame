@@ -3284,24 +3284,34 @@ if ('serviceWorker' in navigator) {
               </div>
               <div id="buildTag" style="margin-top:5px; font-size:11px; color:rgba(44,74,104,0.9);">build #1783602069</div>
               <!-- 검색엔진·심사용 정적 소개 — 게임 로직과 무관한 순수 텍스트. 앱(Capacitor)에서는 아래 스크립트가 숨긴다. -->
-              <section id="seoIntro" style="margin-top:18px; padding-top:12px; border-top:1px solid rgba(126,194,240,0.16); text-align:left; font-size:12.5px; line-height:1.7; color:rgba(174,186,208,0.9); word-break:keep-all;">
-                <h1 style="font-size:14px; color:var(--blue-light); margin:0 0 6px;">오잉게임 — 합이 10이면 지워지는 2분 숫자 퍼즐</h1>
-                <p style="margin:0 0 8px;">숫자판에서 두 칸을 탭해 직사각형을 고르고, 안의 숫자 합이 딱 10이면 사라집니다. 연속으로 맞히면 콤보 배수(최대 25)가 붙고, 콤보 7·14·21마다 폭탄·시계·타임프리즈 같은 아이템이 나옵니다. 고양이 🐱 칸을 같이 지우면 +5, 판을 싹 비우면 +15초와 힌트 3개를 받습니다. 닉네임과 4자리 PIN만으로 기록이 저장되고, 매주 월요일 0시에 새로 시작하는 이번 주 랭킹과 역대 전체 랭킹에서 겨룹니다. 설치 없이 브라우저에서 무료로 즐기는 게임이며, 오잉스튜디오(개인)가 만들고 운영합니다.</p>
-                <details style="margin:0 0 8px;">
-                  <summary style="cursor:pointer; color:var(--blue-light); font-weight:700;">처음이라면 이렇게 시작하세요</summary>
-                  <p style="margin:6px 0 0;">먼저 1과 9, 2와 8, 3과 7처럼 두 칸으로 10이 되는 짝부터 찾으면 콤보가 안전하게 오릅니다. 두 칸 사이에 다른 숫자가 끼어 있으면 그 숫자도 합에 들어가니 네모 안을 한 번 훑고 누르세요. 오답을 고르면 점수는 안 깎이지만 콤보가 줄어듭니다. 5칸 이상을 한 번에 지우면 WOW 보너스와 콤보 +2를 받고, 막히면 판마다 1번 쓸 수 있는 셔플이나 힌트를 쓰면 됩니다. 매일 자동으로 정해지는 오늘의 목표를 넘기면 연속 달성 기록과 젤리가 쌓이고, 꾸준히 하면 새싹냥부터 오잉신까지 20단계 레벨이 오릅니다.</p>
+              <section id="seoIntro" style="margin-top:14px; padding-top:10px; border-top:1px solid rgba(126,194,240,0.16); text-align:left; font-size:12.5px; line-height:1.7; color:rgba(174,186,208,0.9); word-break:keep-all;">
+                <style>
+                  /* 접힌 상태가 기본 — 메인은 한 줄만 보이고, 펼치면 하단 고양이 그림(우하단 고정, 폭 최대 235px)에 글이 가리지 않게 아래 여백을 둔다 */
+                  #seoIntro > details > summary { cursor:pointer; list-style:none; color:var(--blue-light); font-weight:700; font-size:12.5px; padding-right:38%; }
+                  #seoIntro > details > summary::-webkit-details-marker { display:none; }
+                  #seoIntro > details > summary::before { content:'▸ '; }
+                  #seoIntro > details[open] > summary::before { content:'▾ '; }
+                  #seoIntro > details[open] { padding-bottom:clamp(170px, 38vw, 260px); }
+                  #seoIntro a { color:var(--blue-light); }
+                </style>
+                <details>
+                  <summary>오잉게임 소개 · 플레이 방법 · FAQ</summary>
+                  <h1 style="font-size:14px; color:var(--blue-light); margin:10px 0 6px;">오잉게임 — 합이 10이면 지워지는 2분 숫자 퍼즐</h1>
+                  <p style="margin:0 0 8px;">숫자판에서 두 칸을 탭해 직사각형을 고르고, 안의 숫자 합이 딱 10이면 사라집니다. 연속으로 맞히면 콤보 배수(최대 25)가 붙고, 콤보 7·14·21마다 폭탄·시계·타임프리즈 같은 아이템이 나옵니다. 고양이 🐱 칸을 같이 지우면 +5, 판을 싹 비우면 +15초와 힌트 3개를 받습니다. 닉네임과 4자리 PIN만으로 기록이 저장되고, 매주 월요일 0시에 새로 시작하는 이번 주 랭킹과 역대 전체 랭킹에서 겨룹니다. 설치 없이 브라우저에서 무료로 즐기는 게임이며, 오잉스튜디오(개인)가 만들고 운영합니다.</p>
+                  <h2 style="font-size:13px; color:var(--blue-light); margin:10px 0 4px;">처음이라면 이렇게 시작하세요</h2>
+                  <p style="margin:0 0 8px;">먼저 1과 9, 2와 8, 3과 7처럼 두 칸으로 10이 되는 짝부터 찾으면 콤보가 안전하게 오릅니다. 두 칸 사이에 다른 숫자가 끼어 있으면 그 숫자도 합에 들어가니 네모 안을 한 번 훑고 누르세요. 오답을 고르면 점수는 안 깎이지만 콤보가 줄어듭니다. 5칸 이상을 한 번에 지우면 WOW 보너스와 콤보 +2를 받고, 막히면 판마다 1번 쓸 수 있는 셔플이나 힌트를 쓰면 됩니다. 매일 자동으로 정해지는 오늘의 목표를 넘기면 연속 달성 기록과 젤리가 쌓이고, 꾸준히 하면 새싹냥부터 오잉신까지 20단계 레벨이 오릅니다.</p>
+                  <p style="margin:0;">
+                    <a href="guide.html">플레이 방법</a> ·
+                    <a href="about.html">소개</a> ·
+                    <a href="faq.html">FAQ</a> ·
+                    <a href="updates.html">업데이트</a> ·
+                    <a href="ranking.html">랭킹 안내</a> ·
+                    <a href="levels.html">레벨·칭호</a> ·
+                    <a href="tips-combo.html">콤보 공략</a> ·
+                    <a href="terms.html">이용약관</a> ·
+                    <a href="privacy.html">개인정보</a>
+                  </p>
                 </details>
-                <p style="margin:0;">
-                  <a href="guide.html" style="color:var(--blue-light);">플레이 방법</a> ·
-                  <a href="about.html" style="color:var(--blue-light);">소개</a> ·
-                  <a href="faq.html" style="color:var(--blue-light);">FAQ</a> ·
-                  <a href="updates.html" style="color:var(--blue-light);">업데이트</a> ·
-                  <a href="ranking.html" style="color:var(--blue-light);">랭킹 안내</a> ·
-                  <a href="levels.html" style="color:var(--blue-light);">레벨·칭호</a> ·
-                  <a href="tips-combo.html" style="color:var(--blue-light);">콤보 공략</a> ·
-                  <a href="terms.html" style="color:var(--blue-light);">이용약관</a> ·
-                  <a href="privacy.html" style="color:var(--blue-light);">개인정보</a>
-                </p>
               </section>
               <script>try { if (window.Capacitor) document.getElementById('seoIntro').hidden = true; } catch (e) {}</script>
             </div>
