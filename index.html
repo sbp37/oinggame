@@ -6472,6 +6472,10 @@ async function refreshStartScreenFromServer() {
   // 열려 있으면 maybeCelebrate 내부 큐가 닫힐 때까지 기다리므로 서로 덮지 않는다.
   try {
     await syncPlayXpFromServer(true);
+    // 인증·시간 XP 동기화가 끝난 지금 홈 칩과 전광판의 "나는 Lv.X"를 다시 그린다.
+    // 둘 다 접속 200~350ms에 먼저 그려지는데, 그때 인증이 안 끝났으면 낮은 레벨로 굳어
+    // 한 판 끝낼 때까지 안 바뀌었다(2026-09-15).
+    try { refreshMyInfoChip(); refreshHomeTickerPersonal(); } catch {}
     if (!mergedStats) {
       try { mergedStats = JSON.parse(localStorage.getItem('oeing_local_stats_' + nick) || 'null'); } catch {}
     }
@@ -13239,8 +13243,7 @@ function oingLegacyLevelOfStats(d) {
 // 표시용 max-hold — 다중 기기 저장 경합으로 계산값이 순간 낮아져도 화면 레벨이 후퇴해 보이지
 // 않게, 이 기기에서 확인한 최고 XP를 UID별 로컬에만 기억한다(서버 저장 없음).
 function oingHeldXp(computedXp) {
-  let key = 'oeing_xp_hold_';
-  try { key += (MY_UID || loadNickname() || 'anon'); } catch { key += 'anon'; }
+  const key = 'oeing_xp_hold_' + oingLevelIdentity();
   let held = 0;
   try { held = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch {}
   const shown = Math.max(computedXp, held);
@@ -13293,7 +13296,7 @@ function oingLevelBadgeHtml(entry, isMe = false) {
 const PLAY_XP_CAP = 15;
 let _lastPlayXpGrant = 0;
 function kstTodayStr() { return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10); }
-function playXpKey() { let k = 'oeing_playxp_'; try { k += (MY_UID || loadNickname() || 'anon'); } catch { k += 'anon'; } return k; }
+function playXpKey() { return 'oeing_playxp_' + oingLevelIdentity(); }
 function loadPlayXpMirror() {
   try {
     const m = JSON.parse(localStorage.getItem(playXpKey()) || 'null');
@@ -13351,8 +13354,7 @@ let _xpDeltaBase = null;
 function renderMyXpDelta(shownXp) {
   const el = document.getElementById('myiLvDelta');
   if (!el) return;
-  let key = 'oeing_xp_seen_';
-  try { key += (MY_UID || loadNickname() || 'anon'); } catch { key += 'anon'; }
+  const key = 'oeing_xp_seen_' + oingLevelIdentity();
   if (_xpDeltaBase === null) {
     try { _xpDeltaBase = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch { _xpDeltaBase = 0; }
   }
@@ -13455,8 +13457,17 @@ let _pendingOingLevelUp = null;
 let _oingLevelUpTimer = null;
 let _oingLevelUpAck = null;
 let _oingLevelPreviewFlow = false;
+// 레벨 관련 로컬 키(시간 XP 미러·표시 hold·승급 ack·▲+N 기준)가 공통으로 쓰는 "나" 식별자.
+// 인증이 끝나기 전(MY_UID 없음)에도 이 기기에 저장된 연결 UID를 먼저 쓴다 — 예전엔 닉네임으로
+// 떨어져서, 홈 칩·전광판이 200~350ms에 그려질 때 UID 키에 있는 시간 XP를 못 찾았다.
+// 그 결과 Lv.11인 사람이 접속마다 Lv.9~10으로 찍히고 한 판 끝내야 11로 돌아왔다(2026-09-15, 오짱3).
 function oingLevelIdentity() {
-  try { return MY_UID || loadNickname() || 'anon'; } catch { return 'anon'; }
+  try {
+    if (MY_UID) return MY_UID;
+    const linked = localStorage.getItem(UID_LINKED_KEY);
+    if (linked) return linked;
+    return loadNickname() || 'anon';
+  } catch { return 'anon'; }
 }
 function oingLevelAckKey() { return `oeing_lv_ack_v${OING_LEVEL_VERSION}_${oingLevelIdentity()}`; }
 function oingLegacySeenKey() { return `oeing_lv_celebrated_${oingLevelIdentity()}`; }
@@ -14285,7 +14296,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1788870600; // v4.30 — 시상대 칸 확장 + 1~3위 닉·점수 확대, 친구 하트 간격
+const BUILD = 1789460000; // v4.31 — 홈 칩·전광판 레벨이 인증 전 값(시간 XP 누락)으로 굳던 문제
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
