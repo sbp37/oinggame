@@ -82,6 +82,48 @@
   }
 })();
 </script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   토스(앱인토스) 웹뷰 판별 — 레이아웃 보정용 클래스만 붙인다.
+   · 토스 웹뷰는 자체 상단 바(⋯ · ✕)를 페이지 위쪽에 겹쳐 그린다. 그런데
+     env(safe-area-inset-top) 은 0 으로 오기 때문에, 우리 탭바(메인·게임·랭킹)가
+     그 아래에 깔려 아예 눌리지 않는다(2026-09-16 실제 화면 확인).
+   · 그래서 토스에서만 상단에 여유 공간을 따로 확보한다. 웹·앱은 한 글자도 안 바뀐다.
+   · 첫 페인트 전에 클래스가 붙어야 화면이 덜컹거리지 않으므로 <head> 의 일반 script 다.
+
+   판별 순서:
+     ① 주소의 ?platform=toss (또는 ?toss=1 / ?from=toss) — 가장 확실. 토스 콘솔에
+        등록하는 주소에 이걸 붙이면 기기·버전과 무관하게 항상 동작한다.
+     ② 한 번 토스로 열렸으면 저장해 둔다 — 상점 페이지로 넘어가도 유지된다.
+     ③ UA 에 toss 가 들어있거나 토스 SDK 전역이 있으면 자동 인식(보조 수단).
+   상단 여백은 ?topinset=64 처럼 주소로 조절할 수 있다(기본 56px).
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  var KEY = 'oeing_platform_toss_v1';
+  var q;
+  try { q = new URLSearchParams(location.search); } catch (e) { q = null; }
+  var byParam = !!q && (q.get('platform') === 'toss' || q.get('toss') === '1' || q.get('from') === 'toss');
+  var stored = false;
+  try { stored = localStorage.getItem(KEY) === '1'; } catch (e) {}
+  var byUa = /toss/i.test(navigator.userAgent || '');
+  var bySdk = !!(window.TossAppsInToss || window.AppsInToss || window.__TOSS_APPS_IN_TOSS__ || window.TossApp);
+  var isToss = byParam || stored || byUa || bySdk;
+  if (!isToss) return;
+  if (byParam) { try { localStorage.setItem(KEY, '1'); } catch (e) {} }
+  document.documentElement.classList.add('is-toss');
+  window.IS_TOSS = true;
+  // 상단 여백 — 토스 상단 바 높이. 기본 56px, 주소로 조절 가능(40~120 사이만 인정).
+  var top = q && parseInt(q.get('topinset'), 10);
+  if (top >= 40 && top <= 120) {
+    document.documentElement.style.setProperty('--toss-top', top + 'px');
+    try { localStorage.setItem('oeing_toss_topinset_v1', String(top)); } catch (e) {}
+  } else {
+    var saved = 0;
+    try { saved = parseInt(localStorage.getItem('oeing_toss_topinset_v1'), 10); } catch (e) {}
+    if (saved >= 40 && saved <= 120) document.documentElement.style.setProperty('--toss-top', saved + 'px');
+  }
+})();
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -270,6 +312,49 @@ html, body {
   transition: all 0.2s;
 }
 .tab-btn.active { color: var(--blue-bright); border-bottom-color: var(--blue-bright); }
+
+/* ══════════════════════════════════════════════════════════════════
+   토스(앱인토스) 웹뷰 전용 보정 — html.is-toss 안에서만 적용된다.
+   웹·앱(Capacitor)에는 이 블록이 아예 걸리지 않으므로 기존 화면은 그대로다.
+
+   문제(2026-09-16 실기 확인):
+    · 토스가 페이지 위쪽에 자기 상단 바(⋯ · ✕)를 겹쳐 그리는데
+      env(safe-area-inset-top) 은 0 으로 와서, 우리 탭바가 그 아래 깔려
+      "게임·랭킹·꾸미기" 가 아예 눌리지 않았다.
+    · 게임 화면의 🔄 다시하기도 오른쪽 맨 끝이라 ⋯ 버튼에 가렸다.
+    · 아래쪽은 홈 인디케이터(아이폰)와 버튼이 거의 붙었다.
+
+   해결:
+    ① 상단에 --toss-top(기본 56px) 만큼 실제 여백을 만들어 탭바를 내린다.
+       토스가 나중에 safe-area 를 제대로 주더라도 max() 라 두 번 밀리지 않는다.
+    ② 다시하기를 오른쪽 맨 끝에서 빼고 🔊 를 맨 끝으로 — 가려져도 덜 치명적인 걸 끝에 둔다.
+    ③ 위에서 뺏긴 높이를 탭바·헤더 여백에서 조금 돌려줘 작은 폰에서 판이 안 눌리게 한다.
+    ④ 하단 고정 바와 랭킹 버튼에 홈 인디케이터 여유를 준다.
+   ══════════════════════════════════════════════════════════════════ */
+html.is-toss { --toss-top: 56px; --toss-bottom: 10px; }
+html.is-toss .tab-bar {
+  padding-top: max(env(safe-area-inset-top, 0px), var(--toss-top));
+}
+/* 시작 화면(전체를 덮는 불투명 오버레이)에서도 탭바가 "보이게" 한다.
+   원래는 오버레이가 탭바를 덮고, 그 자리만 클릭이 통과되게 돼 있었다(투명 여백).
+   웹에선 그래도 됐지만 토스에선 그 통과 구역을 토스 상단 바가 가려 아예 못 눌렀고,
+   내려놓기만 하면 이번엔 "보이지 않는 버튼"이 된다. 그래서 토스에서만 순서를 바꾼다.
+   85 < 88 < 90(카운트다운) < 100(다른 팝업들) — 다른 팝업은 여전히 탭바 위에 뜬다. */
+html.is-toss #startOverlay { z-index: 85; }
+html.is-toss .tab-bar { position: relative; z-index: 88; }
+/* 뺏긴 높이 일부를 돌려준다 — 판이 있는 게임 화면에서만 살짝 촘촘하게 */
+html.is-toss .tab-btn { padding: 8px 4px; }
+html.is-toss body.game-active .game-header { padding: 4px 14px 4px; }
+/* 🔄 다시하기를 오른쪽 위 구석에서 빼낸다 — ⋯ 버튼이 덮는 자리를 아예 비운다.
+   제목 옆으로 붙이고, 덜 중요한 🔊 를 오른쪽 끝으로 보낸다.
+   (두 버튼 모두 style="" 로 margin 이 박혀 있어 !important 로 확실히 덮는다) */
+html.is-toss .title-row #bottomRestartBtn { order: 1; margin-left: 8px !important; margin-right: auto !important; }
+html.is-toss .title-row #bgmToggleBtn { order: 2; margin-left: 0 !important; }
+/* 아래쪽 — 홈 인디케이터와 버튼이 붙지 않게 */
+html.is-toss .bottom-bar { bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
+html.is-toss .grid-wrap { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
+html.is-toss .rank-scroll-bottom-btn { bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
+html.is-toss .rank-capture-btn { bottom: calc(80px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
 
 .tab-content {
   flex: 1;
@@ -14340,7 +14425,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1789460000; // v4.31 — 홈 칩·전광판 레벨이 인증 전 값(시간 XP 누락)으로 굳던 문제
+const BUILD = 1789550000; // v4.32 — 토스 웹뷰 상단 가림 보정(탭바·다시하기)
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
