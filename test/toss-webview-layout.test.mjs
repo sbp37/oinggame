@@ -43,7 +43,7 @@ const STUBS = {
 };
 
 // 실제 index.html 을 띄워 화면을 재고, 필요한 수치만 돌려준다.
-async function measure(browser, port, { width, height, toss }) {
+async function measure(browser, port, { width, height, toss, rnWebView }) {
   const ctx = await browser.newContext({ viewport: { width, height } });
   try {
     await ctx.route('https://www.gstatic.com/firebasejs/**', (r) => {
@@ -53,6 +53,8 @@ async function measure(browser, port, { width, height, toss }) {
     await ctx.route(/googletagmanager|google-analytics|adsbygoogle|pagead|kakao|doubleclick|fonts\.g/, (r) => r.abort());
     const p = await ctx.newPage();
     await p.addInitScript(() => { try { localStorage.setItem('oeing_nickname_v1', '오잉이'); } catch (e) {} });
+    // 앱인토스 미니앱은 React Native 웹뷰 안에서 돈다 — 주소에 아무것도 안 붙여도 잡히는지 본다
+    if (rnWebView) await p.addInitScript(() => { window.ReactNativeWebView = { postMessage() {} }; });
     await p.goto(`http://127.0.0.1:${port}/index.html${toss ? '?platform=toss' : ''}`, { waitUntil: 'domcontentloaded' });
     await p.waitForTimeout(1600);
     const start = await p.evaluate(({ DANGER_H, DANGER_W }) => {
@@ -70,8 +72,11 @@ async function measure(browser, port, { width, height, toss }) {
       const jelly = document.getElementById('supportTopBtn');
       jelly.style.display = 'inline-flex'; // 젤리샵이 열린 상태를 흉내 — 자리만 확인한다
       const all = [...tabs, jelly];
+      const contact = document.getElementById('contactBtnGame');
       return {
         isToss: document.documentElement.classList.contains('is-toss'),
+        contactShown: getComputedStyle(contact).display !== 'none',
+        contactDotShown: getComputedStyle(document.getElementById('updContactDot')).display !== 'none',
         tabBarPadTop: Math.round(parseFloat(getComputedStyle(document.querySelector('.tab-bar')).paddingTop)),
         tabTop: Math.round(Math.min(...all.map((e) => e.getBoundingClientRect().top))),
         tabsInDanger: all.filter(inDanger).map((e) => e.textContent.trim().slice(0, 8)),
@@ -143,6 +148,9 @@ test('토스 웹뷰 — 상단 탭바·다시하기가 토스 상단 바에 가�
         assert.equal(m.game.hOverflow, 0, '게임 화면이 가로로 넘친다');
         assert.ok(m.game.gridOverBar <= 0, `게임판이 하단 바를 ${m.game.gridOverBar}px 밟는다`);
         assert.ok(m.game.gridBelowScreen <= 0, `게임판이 화면 아래로 ${m.game.gridBelowScreen}px 잘린다`);
+        // ⑥ 토스는 미니앱 밖 링크를 막는다 — 카카오로 나가는 문의하기는 안 보인다
+        assert.equal(m.contactShown, false, '토스인데 문의하기가 그대로 보인다');
+        assert.equal(m.contactDotShown, false, '문의하기를 지웠는데 앞의 가운뎃점이 혼자 남았다');
         web[name] = m;
       });
     }
@@ -152,10 +160,18 @@ test('토스 웹뷰 — 상단 탭바·다시하기가 토스 상단 바에 가�
         const m = await measure(browser, port, { width, height, toss: false });
         assert.equal(m.isToss, false, `${name}: 웹인데 토스로 인식했다`);
         assert.equal(m.tabBarPadTop, 0, `${name}: 웹 탭바에 토스용 여백(${m.tabBarPadTop}px)이 붙었다`);
+        assert.equal(m.contactShown, true, `${name}: 웹에서 문의하기가 사라졌다`);
         assert.ok(m.game.restartFromRight < 30, `${name}: 웹 다시하기가 ${m.game.restartFromRight}px 로 밀렸다 — 토스 규칙이 새어 나왔다`);
         // 칸 크기는 토스에서도 같아야 한다 — 위를 56px 뺏겨도 판이 쪼그라들지 않는다
         assert.equal(m.game.cellPx, web[name].game.cellPx, `${name}: 토스에서 게임판 칸이 ${web[name].game.cellPx}px 로 달라졌다(웹 ${m.game.cellPx}px)`);
       }
+    });
+
+    await t.test('⑦ 주소에 아무것도 안 붙여도 — React Native 웹뷰면 토스로 본다', async () => {
+      const m = await measure(browser, port, { width: 393, height: 852, toss: false, rnWebView: true });
+      assert.equal(m.isToss, true, '앱인토스(RN 웹뷰)인데 못 알아봤다 — 주소에 ?platform=toss 를 붙여야만 동작한다');
+      assert.ok(m.tabTop >= DANGER_H, `탭 버튼 맨 위가 ${m.tabTop}px — 자동 인식됐는데 여백이 안 붙었다`);
+      assert.equal(m.contactShown, false, '자동 인식인데 문의하기가 남아 있다');
     });
   } finally {
     await browser.close();
@@ -172,6 +188,7 @@ test('토스 판별과 여백 조절이 코드에 남아 있다', () => {
   assert.match(src, /platform'\) === 'toss'/, '?platform=toss 로 켜는 길이 없다');
   assert.match(src, /oeing_platform_toss_v1/, '한 번 토스로 열린 걸 기억하지 않는다 — 상점 페이지로 가면 풀린다');
   assert.match(src, /q\.get\('topinset'\)/, '상단 여백을 주소로 조절할 수 없다');
+  assert.match(src, /window\.ReactNativeWebView && !window\.Capacitor/, '앱인토스(RN 웹뷰) 자동 인식이 빠졌다');
   assert.match(
     src,
     /html\.is-toss \.tab-bar \{\s*padding-top: max\(env\(safe-area-inset-top, 0px\), var\(--toss-top\)\);/,

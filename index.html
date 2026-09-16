@@ -95,7 +95,10 @@
      ① 주소의 ?platform=toss (또는 ?toss=1 / ?from=toss) — 가장 확실. 토스 콘솔에
         등록하는 주소에 이걸 붙이면 기기·버전과 무관하게 항상 동작한다.
      ② 한 번 토스로 열렸으면 저장해 둔다 — 상점 페이지로 넘어가도 유지된다.
-     ③ UA 에 toss 가 들어있거나 토스 SDK 전역이 있으면 자동 인식(보조 수단).
+     ③ 자동 인식 — UA 에 toss 가 있거나, 토스 SDK 전역이 있거나,
+        React Native 웹뷰(window.ReactNativeWebView)이면 토스로 본다.
+        앱인토스 미니앱은 RN 웹뷰 안에서 돌아가고, 일반 브라우저에는 이 전역이 없다.
+        혹시 다른 RN 앱의 웹뷰에서 잘못 걸려도 손해는 위 여백 56px 정도라 감수한다.
    상단 여백은 ?topinset=64 처럼 주소로 조절할 수 있다(기본 56px).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -107,7 +110,8 @@
   try { stored = localStorage.getItem(KEY) === '1'; } catch (e) {}
   var byUa = /toss/i.test(navigator.userAgent || '');
   var bySdk = !!(window.TossAppsInToss || window.AppsInToss || window.__TOSS_APPS_IN_TOSS__ || window.TossApp);
-  var isToss = byParam || stored || byUa || bySdk;
+  var byRnWebView = !!window.ReactNativeWebView && !window.Capacitor; // 우리 앱(Capacitor)은 제외
+  var isToss = byParam || stored || byUa || bySdk || byRnWebView;
   if (!isToss) return;
   if (byParam) { try { localStorage.setItem(KEY, '1'); } catch (e) {} }
   document.documentElement.classList.add('is-toss');
@@ -350,6 +354,10 @@ html.is-toss body.game-active .game-header { padding: 4px 14px 4px; }
    (두 버튼 모두 style="" 로 margin 이 박혀 있어 !important 로 확실히 덮는다) */
 html.is-toss .title-row #bottomRestartBtn { order: 1; margin-left: 8px !important; margin-right: auto !important; }
 html.is-toss .title-row #bgmToggleBtn { order: 2; margin-left: 0 !important; }
+/* 토스는 미니앱 밖으로 나가는 링크를 막는다 — 카카오 오픈채팅으로 나가는 '문의하기'를 뺀다.
+   버튼만 지우면 앞의 가운뎃점이 혼자 남아서 같이 감춘다. 웹·앱은 그대로 둔다. */
+html.is-toss #contactBtnGame,
+html.is-toss #updContactDot { display: none !important; }
 /* 아래쪽 — 홈 인디케이터와 버튼이 붙지 않게 */
 html.is-toss .bottom-bar { bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
 html.is-toss .grid-wrap { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
@@ -3361,7 +3369,7 @@ if ('serviceWorker' in navigator) {
                   background:none; border:none; color:rgba(122,139,163,0.82);
                   font-size:13px; font-family:inherit; cursor:pointer;
                 ">업데이트 내역 <span id="updateLogBtnNew" style="display:none;background:rgba(200,84,44,0.88);color:rgba(255,255,255,0.92);font-size:8.5px;font-weight:800;padding:0.5px 4px;border-radius:6px;letter-spacing:0.2px;vertical-align:1px;">NEW</span></button>
-                <span style="color:var(--border); margin:0 4px;">·</span>
+                <span id="updContactDot" style="color:var(--border); margin:0 4px;">·</span>
                 <button id="contactBtnGame" style="
                   background:none; border:none; color:rgba(122,139,163,0.82);
                   font-size:13px; font-family:inherit; cursor:pointer;
@@ -14425,7 +14433,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1789550000; // v4.32 — 토스 웹뷰 상단 가림 보정(탭바·다시하기)
+const BUILD = 1789556000; // v4.33 — 토스 자동 인식(RN 웹뷰) + 토스에서 문의하기 숨김
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
