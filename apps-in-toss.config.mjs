@@ -12,7 +12,7 @@
 import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
-  appName: process.env.AIT_APP_NAME || 'oing-game',
+  appName: process.env.AIT_APP_NAME || 'oinggame-classic',   // 토스 콘솔에 등록된 이름
   brand: {
     // 게임 메인 버튼과 같은 파랑 — 토스 안에서 앱 기본색으로 쓰인다.
     primaryColor: '#2F7EC9',
