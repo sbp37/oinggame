@@ -4,3 +4,5 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 *.log
+toss-dist/
+*.ait

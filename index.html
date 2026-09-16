@@ -99,7 +99,7 @@
         React Native 웹뷰(window.ReactNativeWebView)이면 토스로 본다.
         앱인토스 미니앱은 RN 웹뷰 안에서 돌아가고, 일반 브라우저에는 이 전역이 없다.
         혹시 다른 RN 앱의 웹뷰에서 잘못 걸려도 손해는 위 여백 56px 정도라 감수한다.
-   상단 여백은 ?topinset=64 처럼 주소로 조절할 수 있다(기본 56px).
+   상단 여백은 ?topinset=64 처럼 주소로 조절할 수 있다(기본 56px, 0 이면 끔).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   var KEY = 'oeing_platform_toss_v1';
@@ -118,13 +118,13 @@
   window.IS_TOSS = true;
   // 상단 여백 — 토스 상단 바 높이. 기본 56px, 주소로 조절 가능(40~120 사이만 인정).
   var top = q && parseInt(q.get('topinset'), 10);
-  if (top >= 40 && top <= 120) {
+  if (top >= 0 && top <= 120) {   // 0 = 여백 끔(토스 상단 바를 불투명으로 둔 경우)
     document.documentElement.style.setProperty('--toss-top', top + 'px');
     try { localStorage.setItem('oeing_toss_topinset_v1', String(top)); } catch (e) {}
   } else {
-    var saved = 0;
+    var saved = NaN;
     try { saved = parseInt(localStorage.getItem('oeing_toss_topinset_v1'), 10); } catch (e) {}
-    if (saved >= 40 && saved <= 120) document.documentElement.style.setProperty('--toss-top', saved + 'px');
+    if (saved >= 0 && saved <= 120) document.documentElement.style.setProperty('--toss-top', saved + 'px');
   }
 })();
 </script>
@@ -3411,7 +3411,7 @@ if ('serviceWorker' in navigator) {
                   </p>
                 </details>
               </section>
-              <script>try { if (window.Capacitor) document.getElementById('seoIntro').hidden = true; } catch (e) {}</script>
+              <script>try { if (window.Capacitor || window.IS_TOSS) document.getElementById('seoIntro').hidden = true; } catch (e) {}</script>
             </div>
           </div>
         </div>
@@ -14441,7 +14441,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1789562000; // v4.34 — 토스에서 후원·외부 문의 링크 숨김
+const BUILD = 1789568000; // v4.35 — 토스 번들(ait) 설정 + 상단 여백 0 허용
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
