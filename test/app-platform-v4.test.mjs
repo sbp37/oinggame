@@ -75,7 +75,9 @@ test('④ 앱도 젤리샵·잔액 입구·친구 랭킹·닉네임 찾기를 �
 });
 
 test('⑤ 앱에서 여전히 막는 것 — 카카오페이 후원·옛 유료 스킨 오버레이·내부 후기', () => {
-  assert.match(body('function openDonateOverlay()'), /if \(IS_APP\) return;/);
+  // 2026-09-16: 토스도 외부 결제를 막아서 같은 자리에 IS_TOSS 가 붙었다.
+  // 여기서 지킬 건 "앱은 여전히 막힌다" 이므로 플랫폼이 더 붙는 것은 허용한다.
+  assert.match(body('function openDonateOverlay()'), /if \(IS_APP(?: \|\| IS_TOSS)?\) return;/);
   assert.match(body('async function openSkinOverlay()'), /if \(IS_APP\) return;/);
   assert.match(body('function openReviewBoard('), /if \(IS_APP\) return;/);
   // 앱 번들엔 새로고침 배너가 의미 없다

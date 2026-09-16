@@ -354,10 +354,15 @@ html.is-toss body.game-active .game-header { padding: 4px 14px 4px; }
    (두 버튼 모두 style="" 로 margin 이 박혀 있어 !important 로 확실히 덮는다) */
 html.is-toss .title-row #bottomRestartBtn { order: 1; margin-left: 8px !important; margin-right: auto !important; }
 html.is-toss .title-row #bgmToggleBtn { order: 2; margin-left: 0 !important; }
-/* 토스는 미니앱 밖으로 나가는 링크를 막는다 — 카카오 오픈채팅으로 나가는 '문의하기'를 뺀다.
-   버튼만 지우면 앞의 가운뎃점이 혼자 남아서 같이 감춘다. 웹·앱은 그대로 둔다. */
+/* 토스는 미니앱 밖으로 나가는 링크와 외부 결제를 막는다 — 웹·앱은 그대로 두고 토스에서만 뺀다.
+    · 문의하기(카카오 오픈채팅) — 버튼만 지우면 앞의 가운뎃점이 혼자 남아 같이 감춘다
+    · 후원 화면 — 카카오페이 QR + 오픈채팅이 들어 있다. JS 쪽 openDonateOverlay 도 막아두지만,
+      옛 꾸미기 주문 경로가 display:flex 로 직접 열기 때문에 여기서 한 번 더 못 열게 한다.
+    · 점수 확인 안내 팝업 안의 카카오 문의 버튼 */
 html.is-toss #contactBtnGame,
-html.is-toss #updContactDot { display: none !important; }
+html.is-toss #updContactDot,
+html.is-toss #donateOverlay,
+html.is-toss .kakao-contact-link { display: none !important; }
 /* 아래쪽 — 홈 인디케이터와 버튼이 붙지 않게 */
 html.is-toss .bottom-bar { bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
 html.is-toss .grid-wrap { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--toss-bottom)); }
@@ -4568,6 +4573,9 @@ if ('serviceWorker' in navigator) {
 //    현금 결제는 카카오페이 대신 PLATFORM.iap(Play 결제)로 간다.
 // ══════════════════════════════════════════════════════════════════════
 const IS_APP = !!window.Capacitor;
+// 토스(앱인토스) 웹뷰 — <head> 판별 스크립트가 켜 둔 값을 그대로 받는다.
+// window. 을 붙여 읽는다: 웹에서는 전역 자체가 없어 맨이름으로 읽으면 ReferenceError 다.
+const IS_TOSS = !!window.IS_TOSS;
 const PLATFORM = window.OING_PLATFORM;
 if (IS_APP && (!PLATFORM || PLATFORM.apiVersion !== 4)) {
   throw new Error('OING_PLATFORM v4가 필요합니다.');
@@ -5357,7 +5365,7 @@ function showScoreNoticePopup() {
       <div style="font-size:16px;font-weight:800;color:var(--blue-light,#eaf0ff);margin-bottom:10px;">기록 확인이 조금 더 필요해요</div>
       <div style="font-size:13.5px;line-height:1.7;color:var(--muted,#b8c4dc);margin-bottom:18px;">점수는 안전하게 보관 중이며<br>게임은 정상적으로 이용할 수 있어요.<br>랭킹 반영 확인을 원하시면<br>오픈채팅으로 문의해주세요 🐾</div>
       <div style="display:flex;gap:8px;">
-        <a href="https://open.kakao.com/o/spD6cpBi" target="_blank" rel="noopener" style="flex:1.4;padding:13px;border-radius:12px;background:#F7C948;color:#241704;font-weight:800;font-size:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;">💬 오픈채팅 문의</a>
+        <a class="kakao-contact-link" href="https://open.kakao.com/o/spD6cpBi" target="_blank" rel="noopener" style="flex:1.4;padding:13px;border-radius:12px;background:#F7C948;color:#241704;font-weight:800;font-size:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;">💬 오픈채팅 문의</a>
         <button id="scoreNoticeClose" style="flex:1;padding:13px;border-radius:12px;border:none;background:rgba(255,255,255,0.1);color:var(--blue-light,#cdd6ea);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">닫기</button>
       </div>
     </div>`;
@@ -14433,7 +14441,7 @@ document.addEventListener('mouseup', () => {
 // 업데이트 내역 팝업
 const UPDATE_VERSION = 'v4.10';
 // 배포마다 이 숫자만 올리면 됨(클수록 최신). 새로고침 배너의 기준값이자 화면 표시 build 번호.
-const BUILD = 1789556000; // v4.33 — 토스 자동 인식(RN 웹뷰) + 토스에서 문의하기 숨김
+const BUILD = 1789562000; // v4.34 — 토스에서 후원·외부 문의 링크 숨김
 try { const _bt = document.getElementById('buildTag'); if (_bt) _bt.textContent = 'build #' + BUILD; } catch {}
 let lastVersionCheck = 0;
 let updateAvailable = false;
@@ -14571,7 +14579,7 @@ function closeContactOverlay() {
 }
 const DEFAULT_DONATE_BUBBLE = '🐱 오잉게임은 냥집사가 혼자 취미로<br>개발하고 운영하고 있다냥!<br>여러분의 응원은 <b>서버 유지</b>와<br><b>꾸준한 업데이트</b>에 큰 힘이 된다냥! ♥︎';
 function openDonateOverlay() {
-  if (IS_APP) return; // 앱: 외부 결제(카카오페이) 링크 노출 금지
+  if (IS_APP || IS_TOSS) return; // 앱·토스: 외부 결제(카카오페이) 링크 노출 금지
   const bubbleEl0 = document.getElementById('donateBubbleText');
   if (bubbleEl0) bubbleEl0.innerHTML = DEFAULT_DONATE_BUBBLE;
   const noteElX = document.getElementById('donateSkinNote');

@@ -73,8 +73,16 @@ async function measure(browser, port, { width, height, toss, rnWebView }) {
       jelly.style.display = 'inline-flex'; // 젤리샵이 열린 상태를 흉내 — 자리만 확인한다
       const all = [...tabs, jelly];
       const contact = document.getElementById('contactBtnGame');
+      // 후원 화면은 옛 꾸미기 주문 경로가 display:flex 로 직접 연다 —
+      // 그 상황을 흉내 내서, 그래도 안 열리는지 본다(확인 뒤 되돌린다).
+      const donate = document.getElementById('donateOverlay');
+      const donateBefore = donate.style.display;
+      donate.style.display = 'flex';
+      const donateShown = getComputedStyle(donate).display !== 'none';
+      donate.style.display = donateBefore;
       return {
         isToss: document.documentElement.classList.contains('is-toss'),
+        donateShown,
         contactShown: getComputedStyle(contact).display !== 'none',
         contactDotShown: getComputedStyle(document.getElementById('updContactDot')).display !== 'none',
         tabBarPadTop: Math.round(parseFloat(getComputedStyle(document.querySelector('.tab-bar')).paddingTop)),
@@ -151,6 +159,7 @@ test('토스 웹뷰 — 상단 탭바·다시하기가 토스 상단 바에 가�
         // ⑥ 토스는 미니앱 밖 링크를 막는다 — 카카오로 나가는 문의하기는 안 보인다
         assert.equal(m.contactShown, false, '토스인데 문의하기가 그대로 보인다');
         assert.equal(m.contactDotShown, false, '문의하기를 지웠는데 앞의 가운뎃점이 혼자 남았다');
+        assert.equal(m.donateShown, false, '토스인데 후원 화면(카카오페이 QR)이 열린다');
         web[name] = m;
       });
     }
@@ -161,6 +170,7 @@ test('토스 웹뷰 — 상단 탭바·다시하기가 토스 상단 바에 가�
         assert.equal(m.isToss, false, `${name}: 웹인데 토스로 인식했다`);
         assert.equal(m.tabBarPadTop, 0, `${name}: 웹 탭바에 토스용 여백(${m.tabBarPadTop}px)이 붙었다`);
         assert.equal(m.contactShown, true, `${name}: 웹에서 문의하기가 사라졌다`);
+        assert.equal(m.donateShown, true, `${name}: 웹에서 후원 화면까지 막혔다 — 토스 규칙이 새어 나왔다`);
         assert.ok(m.game.restartFromRight < 30, `${name}: 웹 다시하기가 ${m.game.restartFromRight}px 로 밀렸다 — 토스 규칙이 새어 나왔다`);
         // 칸 크기는 토스에서도 같아야 한다 — 위를 56px 뺏겨도 판이 쪼그라들지 않는다
         assert.equal(m.game.cellPx, web[name].game.cellPx, `${name}: 토스에서 게임판 칸이 ${web[name].game.cellPx}px 로 달라졌다(웹 ${m.game.cellPx}px)`);
@@ -189,6 +199,9 @@ test('토스 판별과 여백 조절이 코드에 남아 있다', () => {
   assert.match(src, /oeing_platform_toss_v1/, '한 번 토스로 열린 걸 기억하지 않는다 — 상점 페이지로 가면 풀린다');
   assert.match(src, /q\.get\('topinset'\)/, '상단 여백을 주소로 조절할 수 없다');
   assert.match(src, /window\.ReactNativeWebView && !window\.Capacitor/, '앱인토스(RN 웹뷰) 자동 인식이 빠졌다');
+  // 모듈 쪽에서도 토스를 알아야 후원 열기를 막을 수 있다
+  assert.match(src, /const IS_TOSS = !!window\.IS_TOSS;/, '모듈 스크립트에 IS_TOSS 가 없다');
+  assert.match(src, /if \(IS_APP \|\| IS_TOSS\) return; \/\/ 앱·토스/, 'openDonateOverlay 가 토스에서 안 막힌다');
   assert.match(
     src,
     /html\.is-toss \.tab-bar \{\s*padding-top: max\(env\(safe-area-inset-top, 0px\), var\(--toss-top\)\);/,
